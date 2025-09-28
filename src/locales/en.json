@@ -1,0 +1,25 @@
+{
+  "translation": {
+    "app": {
+      "title": "Bookmark Manager",
+      "all_bookmarks": "All Bookmarks"
+    },
+    "sidebar": {
+      "collections": "Collections",
+      "tags": "Tags"
+    },
+    "bookmark": {
+      "add": "Add Bookmark",
+      "add_new": "Add a new bookmark",
+      "add_description": "Enter the details of the bookmark you want to add.",
+      "save": "Save bookmark",
+      "url": "URL",
+      "title": "Title",
+      "description": "Description",
+      "placeholder_url": "https://example.com",
+      "placeholder_title": "A cool website",
+      "placeholder_description": "A short description",
+      "screenshot": "Screenshot"
+    }
+  }
+}
