@@ -2,7 +2,8 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { collections } from '../../data/mock';
 import { Collection } from '../../types';
-import { ArchiveIcon, PersonIcon, DrawingPinIcon, CodeIcon, VercelLogoIcon } from '@radix-ui/react-icons'; // Example icons
+import { ArchiveIcon, PersonIcon, DrawingPinIcon, CodeIcon, VercelLogoIcon, DashboardIcon } from '@radix-ui/react-icons';
+import { Link } from '@tanstack/react-router';
 
 const iconMap: { [key: string]: React.ElementType } = {
   briefcase: ArchiveIcon,
@@ -15,10 +16,15 @@ const iconMap: { [key: string]: React.ElementType } = {
 const CollectionItem = ({ collection }: { collection: Collection }) => {
   const Icon = iconMap[collection.icon] || VercelLogoIcon;
   return (
-    <div className="flex items-center space-x-2 p-2 hover:bg-accent rounded-md cursor-pointer">
+    <Link
+      to="/collections/$collectionId"
+      params={{ collectionId: collection.id }}
+      className="flex items-center space-x-2 p-2 hover:bg-accent rounded-md cursor-pointer"
+      activeProps={{ className: 'bg-accent' }}
+    >
       <Icon className="h-4 w-4" />
       <span>{collection.name}</span>
-    </div>
+    </Link>
   );
 };
 
@@ -30,10 +36,18 @@ const Collections = () => {
     <div className="p-4">
       <h2 className="text-lg font-semibold mb-4">{t('sidebar.collections')}</h2>
       <div className="space-y-1">
+        <Link
+          to="/"
+          className="flex items-center space-x-2 p-2 hover:bg-accent rounded-md cursor-pointer"
+          activeProps={{ className: 'bg-accent' }}
+        >
+          <DashboardIcon className="h-4 w-4" />
+          <span>{t('app.all')}</span>
+        </Link>
         {topLevelCollections.map(collection => (
           <div key={collection.id}>
             <CollectionItem collection={collection} />
-            <div className="ml-4">
+            <div className="ml-4 mt-1 space-y-1">
               {collections.filter(c => c.parentId === collection.id).map(child => (
                 <CollectionItem key={child.id} collection={child} />
               ))}

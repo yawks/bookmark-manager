@@ -1,6 +1,7 @@
 import React from 'react';
 import Collections from '../sidebar/Collections';
 import Tags from '../sidebar/Tags';
+import Header from './Header';
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   return (
@@ -13,9 +14,12 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
           <Tags />
         </div>
       </aside>
-      <main className="flex-1 p-8 overflow-y-auto">
-        {children}
-      </main>
+      <div className="flex-1 flex flex-col">
+        <Header />
+        <main className="flex-1 p-8 overflow-y-auto">
+          {children}
+        </main>
+      </div>
     </div>
   );
 };

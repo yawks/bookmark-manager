@@ -2,7 +2,8 @@
   "translation": {
     "app": {
       "title": "Bookmark Manager",
-      "all_bookmarks": "All Bookmarks"
+      "all_bookmarks": "All Bookmarks",
+      "all": "All"
     },
     "sidebar": {
       "collections": "Collections",
@@ -19,7 +20,13 @@
       "placeholder_url": "https://example.com",
       "placeholder_title": "A cool website",
       "placeholder_description": "A short description",
-      "screenshot": "Screenshot"
+      "screenshot": "Screenshot",
+      "collection": "Collection",
+      "tags": "Tags",
+      "select_collection": "Select a collection",
+      "select_tags": "Select tags...",
+      "edit_title": "Edit Bookmark",
+      "edit_description": "Make changes to your bookmark here. Click save when you're done."
     }
   }
 }

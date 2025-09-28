@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import {
@@ -8,11 +8,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PlusIcon } from '@radix-ui/react-icons';
 import {
   Select,
   SelectContent,
@@ -22,24 +20,37 @@ import {
 } from "@/components/ui/select"
 import MultipleSelector, { Option } from '@/components/ui/multi-select';
 import { collections, tags as allTags } from '../../data/mock';
+import { Bookmark } from '../../types';
 
+interface EditBookmarkFormProps {
+  bookmark: Bookmark | null;
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
+}
 
-export function AddBookmarkForm() {
+export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmarkFormProps) {
   const { t } = useTranslation();
+  const [selectedTags, setSelectedTags] = useState<Option[]>([]);
   const tagOptions: Option[] = allTags.map(tag => ({ label: tag.name, value: tag.id }));
 
+  useEffect(() => {
+    if (bookmark) {
+      const currentTags = allTags
+        .filter(tag => bookmark.tags.includes(tag.id))
+        .map(tag => ({ label: tag.name, value: tag.id }));
+      setSelectedTags(currentTags);
+    }
+  }, [bookmark]);
+
+  if (!bookmark) return null;
+
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button>
-          <PlusIcon className="mr-2 h-4 w-4" /> {t('bookmark.add')}
-        </Button>
-      </DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{t('bookmark.add_new')}</DialogTitle>
+          <DialogTitle>{t('bookmark.edit_title')}</DialogTitle>
           <DialogDescription>
-            {t('bookmark.add_description')}
+            {t('bookmark.edit_description')}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -47,25 +58,25 @@ export function AddBookmarkForm() {
             <Label htmlFor="url" className="text-right">
               {t('bookmark.url')}
             </Label>
-            <Input id="url" placeholder={t('bookmark.placeholder_url')} className="col-span-3" />
+            <Input id="url" defaultValue={bookmark.url} className="col-span-3" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="title" className="text-right">
               {t('bookmark.title')}
             </Label>
-            <Input id="title" placeholder={t('bookmark.placeholder_title')} className="col-span-3" />
+            <Input id="title" defaultValue={bookmark.title} className="col-span-3" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="description" className="text-right">
               {t('bookmark.description')}
             </Label>
-            <Input id="description" placeholder={t('bookmark.placeholder_description')} className="col-span-3" />
+            <Input id="description" defaultValue={bookmark.description} className="col-span-3" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="collection" className="text-right">
               {t('bookmark.collection')}
             </Label>
-            <Select>
+            <Select defaultValue={bookmark.collectionId}>
               <SelectTrigger className="col-span-3">
                 <SelectValue placeholder={t('bookmark.select_collection')} />
               </SelectTrigger>
@@ -82,6 +93,8 @@ export function AddBookmarkForm() {
             </Label>
             <div className="col-span-3">
               <MultipleSelector
+                value={selectedTags}
+                onChange={setSelectedTags}
                 options={tagOptions}
                 placeholder={t('bookmark.select_tags')}
                 emptyIndicator="No tags found."
