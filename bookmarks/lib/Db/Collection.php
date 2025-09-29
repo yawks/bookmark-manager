@@ -1,0 +1,16 @@
+<?php
+
+namespace OCA\Bookmarks\Db;
+
+use OCP\AppFramework\Db\Entity;
+
+class Collection extends Entity {
+    public string $name;
+    public ?string $icon;
+    public ?int $parentId;
+    public string $userId;
+
+    public function __construct() {
+        $this->addType('parent_id', 'integer');
+    }
+}
