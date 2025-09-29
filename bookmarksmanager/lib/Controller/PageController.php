@@ -11,8 +11,6 @@ class PageController extends Controller {
 
     public function __construct(string $appName, IRequest $request) {
         parent::__construct($appName, $request);
-        Util::addScript($this->appName, 'main', '', ['type' => 'module']);
-        Util::addStyle($this->appName, 'style');
     }
 
     /**
@@ -20,6 +18,8 @@ class PageController extends Controller {
      * @NoCSRFRequired
      */
     public function index(): TemplateResponse {
+        Util::addScript($this->appName, 'main', '', ['type' => 'module']);
+        Util::addStyle($this->appName, 'style');
         return new TemplateResponse($this->appName, 'main');
     }
 }

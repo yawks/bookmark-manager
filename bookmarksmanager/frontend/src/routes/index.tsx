@@ -1,12 +1,11 @@
-import { createLazyFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useRouteContext } from '@tanstack/react-router'
 import React from 'react'
 import BookmarkList from '../components/bookmarks/BookmarkList'
 import { AddBookmarkForm } from '../components/bookmarks/AddBookmarkForm'
 import { useTranslation } from 'react-i18next'
 import { Bookmark } from '../types'
-import { useRouteContext } from '@tanstack/react-router'
 
-export const Route = createLazyFileRoute('/')({
+export const Route = createFileRoute('/')({
   component: Index,
 })
 

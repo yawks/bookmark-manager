@@ -8,15 +8,12 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { createFileRoute } from '@tanstack/react-router'
-
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TagsRouteImport } from './routes/tags'
 import { Route as CollectionsRouteImport } from './routes/collections'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as TagsTagIdRouteImport } from './routes/tags.$tagId'
 import { Route as CollectionsCollectionIdRouteImport } from './routes/collections.$collectionId'
-
-const IndexLazyRouteImport = createFileRoute('/')()
 
 const TagsRoute = TagsRouteImport.update({
   id: '/tags',
@@ -28,11 +25,11 @@ const CollectionsRoute = CollectionsRouteImport.update({
   path: '/collections',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexLazyRoute = IndexLazyRouteImport.update({
+const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
-} as any).lazy(() => import('./routes/index.lazy').then((d) => d.Route))
+} as any)
 const TagsTagIdRoute = TagsTagIdRouteImport.update({
   id: '/$tagId',
   path: '/$tagId',
@@ -45,14 +42,14 @@ const CollectionsCollectionIdRoute = CollectionsCollectionIdRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexLazyRoute
+  '/': typeof IndexRoute
   '/collections': typeof CollectionsRouteWithChildren
   '/tags': typeof TagsRouteWithChildren
   '/collections/$collectionId': typeof CollectionsCollectionIdRoute
   '/tags/$tagId': typeof TagsTagIdRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexLazyRoute
+  '/': typeof IndexRoute
   '/collections': typeof CollectionsRouteWithChildren
   '/tags': typeof TagsRouteWithChildren
   '/collections/$collectionId': typeof CollectionsCollectionIdRoute
@@ -60,7 +57,7 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexLazyRoute
+  '/': typeof IndexRoute
   '/collections': typeof CollectionsRouteWithChildren
   '/tags': typeof TagsRouteWithChildren
   '/collections/$collectionId': typeof CollectionsCollectionIdRoute
@@ -91,7 +88,7 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexLazyRoute: typeof IndexLazyRoute
+  IndexRoute: typeof IndexRoute
   CollectionsRoute: typeof CollectionsRouteWithChildren
   TagsRoute: typeof TagsRouteWithChildren
 }
@@ -116,7 +113,7 @@ declare module '@tanstack/react-router' {
       id: '/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexLazyRouteImport
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/tags/$tagId': {
@@ -159,7 +156,7 @@ const TagsRouteChildren: TagsRouteChildren = {
 const TagsRouteWithChildren = TagsRoute._addFileChildren(TagsRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexLazyRoute: IndexLazyRoute,
+  IndexRoute: IndexRoute,
   CollectionsRoute: CollectionsRouteWithChildren,
   TagsRoute: TagsRouteWithChildren,
 }
