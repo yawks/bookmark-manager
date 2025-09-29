@@ -4,6 +4,7 @@ namespace OCA\BookmarksManager\AppInfo;
 
 use OCA\BookmarksManager\Controller\BookmarkController;
 use OCA\BookmarksManager\Controller\CollectionController;
+use OCA\BookmarksManager\Controller\PageController;
 use OCA\BookmarksManager\Controller\TagController;
 use OCA\BookmarksManager\Controller\PageInfoController;
 use OCA\BookmarksManager\Db\BookmarkMapper;
@@ -18,6 +19,7 @@ use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\IDBConnection;
+use OCP\INavigationManager;
 use OCP\IUserSession;
 
 class Application extends App implements IBootstrap {
@@ -29,6 +31,13 @@ class Application extends App implements IBootstrap {
     }
 
     public function register(IRegistrationContext $context): void {
+        $context->registerService('PageController', function ($c) {
+            return new PageController(
+                $c->get('AppName'),
+                $c->get('Request')
+            );
+        });
+
         $context->registerService('CollectionMapper', function ($c) {
             return new CollectionMapper($c->get(IDBConnection::class));
         });
@@ -93,7 +102,16 @@ class Application extends App implements IBootstrap {
     }
 
     public function boot(IBootContext $context): void {
-        // Run any code that needs to be executed when the app is enabled
+        $context->get(INavigationManager::class)->add(function () {
+            $urlGenerator = \OC::$server->getURLGenerator();
+            return [
+                'id' => self::APP_ID,
+                'order' => 10,
+                'href' => $urlGenerator->linkToRoute(self::APP_ID . '.page.index'),
+                'icon' => $urlGenerator->imagePath(self::APP_ID, 'app.svg'),
+                'name' => \OC::$server->getL10N(self::APP_ID)->t('Bookmarks Manager'),
+            ];
+        });
     }
 
 }

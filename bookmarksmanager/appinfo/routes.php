@@ -2,6 +2,9 @@
 
 return [
     'routes' => [
+        // Main page
+        ['name' => 'page#index', 'url' => '/', 'verb' => 'GET'],
+
         // Bookmarks
         ['name' => 'bookmark#index', 'url' => '/api/v1/bookmarks', 'verb' => 'GET'],
         ['name' => 'bookmark#create', 'url' => '/api/v1/bookmarks', 'verb' => 'POST'],
