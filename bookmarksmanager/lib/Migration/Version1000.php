@@ -97,8 +97,8 @@ class Version1000 extends SimpleMigrationStep {
                 'notnull' => true,
             ]);
             $table->setPrimaryKey(['bookmark_id', 'tag_id']);
-            $table->addForeignKeyConstraint($schema->getTable('bookmarksmanager_bookmarks'), ['bookmark_id'], ['id'], ['onDelete' => 'CASCADE']);
-            $table->addForeignKeyConstraint($schema->getTable('bookmarksmanager_tags'), ['tag_id'], ['id'], ['onDelete' => 'CASCADE']);
+            $table->addForeignKeyConstraint($schema->getTable('bookmarksmanager_bookmarks'), ['bookmark_id'], ['id'], ['onDelete' => 'CASCADE'], 'bkmgr_bkm_fk');
+            $table->addForeignKeyConstraint($schema->getTable('bookmarksmanager_tags'), ['tag_id'], ['id'], ['onDelete' => 'CASCADE'], 'bkmgr_tag_fk');
         }
 
         return $schema;
