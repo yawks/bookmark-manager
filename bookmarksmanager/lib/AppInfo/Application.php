@@ -19,7 +19,6 @@ use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\IDBConnection;
-use OCP\INavigationManager;
 use OCP\IUserSession;
 
 class Application extends App implements IBootstrap {
@@ -102,7 +101,8 @@ class Application extends App implements IBootstrap {
     }
 
     public function boot(IBootContext $context): void {
-        $context->get(INavigationManager::class)->add(function () {
+        $navigationManager = \OC::$server->getNavigationManager();
+        $navigationManager->add(function () {
             $urlGenerator = \OC::$server->getURLGenerator();
             return [
                 'id' => self::APP_ID,
