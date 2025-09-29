@@ -8,7 +8,7 @@ use OCP\IDBConnection;
 class TagMapper extends QBMapper {
 
     public function __construct(IDBConnection $db) {
-        parent::__construct($db, 'bookmarksmanager_tags', Tag::class);
+        parent::__construct($db, 'bkmr_tags', Tag::class);
     }
 
     public function find(int $id, string $userId): ?Tag {

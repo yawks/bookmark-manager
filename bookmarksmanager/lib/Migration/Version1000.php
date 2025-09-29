@@ -13,8 +13,8 @@ class Version1000 extends SimpleMigrationStep {
         /** @var ISchemaWrapper $schema */
         $schema = $schemaClosure();
 
-        if (!$schema->hasTable('bookmarksmanager_collections')) {
-            $table = $schema->createTable('bookmarksmanager_collections');
+        if (!$schema->hasTable('bkmr_collections')) {
+            $table = $schema->createTable('bkmr_collections');
             $table->addColumn('id', 'integer', [
                 'autoincrement' => true,
                 'notnull' => true,
@@ -35,11 +35,11 @@ class Version1000 extends SimpleMigrationStep {
                 'notnull' => false,
             ]);
             $table->setPrimaryKey(['id']);
-            $table->addIndex(['user_id'], 'bkmgr_collections_user_id_idx');
+            $table->addIndex(['user_id'], 'bkmr_collections_user_id_idx');
         }
 
-        if (!$schema->hasTable('bookmarksmanager_tags')) {
-            $table = $schema->createTable('bookmarksmanager_tags');
+        if (!$schema->hasTable('bkmr_tags')) {
+            $table = $schema->createTable('bkmr_tags');
             $table->addColumn('id', 'integer', [
                 'autoincrement' => true,
                 'notnull' => true,
@@ -53,11 +53,11 @@ class Version1000 extends SimpleMigrationStep {
                 'length' => 255,
             ]);
             $table->setPrimaryKey(['id']);
-            $table->addIndex(['user_id'], 'bkmgr_tags_user_id_idx');
+            $table->addIndex(['user_id'], 'bkmr_tags_user_id_idx');
         }
 
-        if (!$schema->hasTable('bookmarksmanager_bookmarks')) {
-            $table = $schema->createTable('bookmarksmanager_bookmarks');
+        if (!$schema->hasTable('bkmr_bookmarks')) {
+            $table = $schema->createTable('bkmr_bookmarks');
             $table->addColumn('id', 'integer', [
                 'autoincrement' => true,
                 'notnull' => true,
@@ -85,11 +85,11 @@ class Version1000 extends SimpleMigrationStep {
                 'notnull' => false,
             ]);
             $table->setPrimaryKey(['id']);
-            $table->addIndex(['user_id'], 'bkmgr_bookmarks_user_id_idx');
+            $table->addIndex(['user_id'], 'bkmr_bookmarks_user_id_idx');
         }
 
-        if (!$schema->hasTable('bookmarksmanager_bookmarks_tags')) {
-            $table = $schema->createTable('bookmarksmanager_bookmarks_tags');
+        if (!$schema->hasTable('bkmr_bookmarks_tags')) {
+            $table = $schema->createTable('bkmr_bookmarks_tags');
             $table->addColumn('bookmark_id', 'integer', [
                 'notnull' => true,
             ]);
@@ -97,8 +97,8 @@ class Version1000 extends SimpleMigrationStep {
                 'notnull' => true,
             ]);
             $table->setPrimaryKey(['bookmark_id', 'tag_id']);
-            $table->addForeignKeyConstraint($schema->getTable('bookmarksmanager_bookmarks'), ['bookmark_id'], ['id'], ['onDelete' => 'CASCADE'], 'bkmgr_bkm_fk');
-            $table->addForeignKeyConstraint($schema->getTable('bookmarksmanager_tags'), ['tag_id'], ['id'], ['onDelete' => 'CASCADE'], 'bkmgr_tag_fk');
+            $table->addForeignKeyConstraint($schema->getTable('bkmr_bookmarks'), ['bookmark_id'], ['id'], ['onDelete' => 'CASCADE'], 'bkmr_bkm_fk');
+            $table->addForeignKeyConstraint($schema->getTable('bkmr_tags'), ['tag_id'], ['id'], ['onDelete' => 'CASCADE'], 'bkmr_tag_fk');
         }
 
         return $schema;

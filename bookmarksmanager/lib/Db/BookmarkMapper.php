@@ -9,7 +9,7 @@ use OCP\IDBConnection;
 class BookmarkMapper extends QBMapper {
 
     public function __construct(IDBConnection $db) {
-        parent::__construct($db, 'bookmarksmanager_bookmarks', Bookmark::class);
+        parent::__construct($db, 'bkmr_bookmarks', Bookmark::class);
     }
 
     public function find(int $id, string $userId): ?Bookmark {
@@ -53,7 +53,7 @@ class BookmarkMapper extends QBMapper {
     private function findTags(int $bookmarkId): array {
         $qb = $this->db->getQueryBuilder();
         $qb->select('tag_id')
-            ->from('bookmarksmanager_bookmarks_tags')
+            ->from('bkmr_bookmarks_tags')
             ->where($qb->expr()->eq('bookmark_id', $qb->createNamedParameter($bookmarkId, \PDO::PARAM_INT)));
 
         $result = $qb->execute();
@@ -64,7 +64,7 @@ class BookmarkMapper extends QBMapper {
     private function findAllTags(array $bookmarkIds): array {
         $qb = $this->db->getQueryBuilder();
         $qb->select('bookmark_id', 'tag_id')
-           ->from('bookmarksmanager_bookmarks_tags')
+           ->from('bkmr_bookmarks_tags')
            ->where($qb->expr()->in('bookmark_id', $qb->createNamedParameter($bookmarkIds, IQueryBuilder::PARAM_INT_ARRAY)));
 
         $result = $qb->execute();
@@ -77,13 +77,13 @@ class BookmarkMapper extends QBMapper {
 
     public function setTags(int $bookmarkId, array $tagIds): void {
         $qbDelete = $this->db->getQueryBuilder();
-        $qbDelete->delete('bookmarksmanager_bookmarks_tags')
+        $qbDelete->delete('bkmr_bookmarks_tags')
            ->where($qbDelete->expr()->eq('bookmark_id', $qbDelete->createNamedParameter($bookmarkId, \PDO::PARAM_INT)))
            ->execute();
 
         foreach ($tagIds as $tagId) {
             $qbInsert = $this->db->getQueryBuilder();
-            $qbInsert->insert('bookmarksmanager_bookmarks_tags')
+            $qbInsert->insert('bkmr_bookmarks_tags')
                ->values([
                    'bookmark_id' => $qbInsert->createNamedParameter($bookmarkId, \PDO::PARAM_INT),
                    'tag_id' => $qbInsert->createNamedParameter($tagId, \PDO::PARAM_INT)

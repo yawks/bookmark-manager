@@ -8,7 +8,7 @@ use OCP\IDBConnection;
 class CollectionMapper extends QBMapper {
 
     public function __construct(IDBConnection $db) {
-        parent::__construct($db, 'bookmarksmanager_collections', Collection::class);
+        parent::__construct($db, 'bkmr_collections', Collection::class);
     }
 
     public function find(int $id, string $userId): ?Collection {
