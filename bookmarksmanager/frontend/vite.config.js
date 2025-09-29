@@ -3,6 +3,14 @@ import react from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
 
 export default defineConfig({
+  server: {
+    proxy: {
+      '/apps/bookmarksmanager/api': {
+        target: 'https://nextcloud.yawks.net',
+        changeOrigin: true,
+      },
+    },
+  },
   plugins: [
     react(),
   ],
@@ -12,13 +20,13 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: '..',
-    emptyOutDir: false,
+    outDir: 'dist',
+    emptyOutDir: true,
     rollupOptions: {
       input: 'src/main.tsx',
       output: {
-        entryFileNames: 'js/main.js',
-        assetFileNames: 'css/style.css'
+        entryFileNames: 'main.js',
+        assetFileNames: 'style.css'
       }
     }
   }

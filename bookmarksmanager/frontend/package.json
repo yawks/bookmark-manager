@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "postbuild": "mv dist/main.js ../js/main.js && mv dist/style.css ../css/style.css",
     "lint": "eslint .",
     "preview": "vite preview",
     "generate-routes": "tsr generate"
