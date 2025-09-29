@@ -11,7 +11,7 @@ export const Route = createFileRoute('/')({
 
 function Index() {
   const { t } = useTranslation()
-  const { bookmarks } = useRouteContext({ from: '__root__' }) || { bookmarks: [] }
+  const { bookmarks = [] } = useRouteContext({ from: '__root__' }) || {};
 
   return (
     <>

@@ -17,6 +17,6 @@ class PageController extends Controller {
      * @NoCSRFRequired
      */
     public function index(): TemplateResponse {
-        return new TemplateResponse($this->appName, 'main');
+        return new TemplateResponse($this->appName, 'main', [], 'user');
     }
 }
