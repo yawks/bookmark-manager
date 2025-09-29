@@ -9,6 +9,9 @@
     <namespace>BookmarksManager</namespace>
     <category>organization</category>
     <icon>img/app.svg</icon>
+    <autoloader>
+        <psr-4 namespace="OCA\BookmarksManager\" src="lib"/>
+    </autoloader>
     <dependencies>
         <nextcloud min-version="28" max-version="30"/>
     </dependencies>
