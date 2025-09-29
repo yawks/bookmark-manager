@@ -5,7 +5,6 @@ namespace OCA\BookmarksManager\Controller;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IRequest;
-use OCP\Util;
 
 class PageController extends Controller {
 
@@ -18,8 +17,6 @@ class PageController extends Controller {
      * @NoCSRFRequired
      */
     public function index(): TemplateResponse {
-        Util::addScript($this->appName, 'main', '', ['type' => 'module']);
-        Util::addStyle($this->appName, 'style');
         return new TemplateResponse($this->appName, 'main');
     }
 }
