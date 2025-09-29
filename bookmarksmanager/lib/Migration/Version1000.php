@@ -66,9 +66,8 @@ class Version1000 extends SimpleMigrationStep {
                 'notnull' => true,
                 'length' => 64,
             ]);
-            $table->addColumn('url', 'string', [
+            $table->addColumn('url', 'text', [
                 'notnull' => true,
-                'length' => 4096,
             ]);
             $table->addColumn('title', 'string', [
                 'notnull' => true,
