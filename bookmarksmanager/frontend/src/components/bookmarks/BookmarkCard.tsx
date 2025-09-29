@@ -12,11 +12,13 @@ interface BookmarkCardProps {
 
 const BookmarkCard = ({ bookmark, showCollection = false, onClick }: BookmarkCardProps) => {
   const { t } = useTranslation();
-  const { collections, tags: allTags } = useRouteContext({ from: '__root__' });
+  const { collections, tags: allTags } = useRouteContext({ from: '__root__' }) || { collections: [], tags: [] };
+  const allCollections = collections || [];
+  const tags = allTags || [];
   const domain = new URL(bookmark.url).hostname;
 
-  const bookmarkTags = allTags.filter(tag => bookmark.tags.includes(tag.id));
-  const collection = collections.find(c => c.id === bookmark.collectionId);
+  const bookmarkTags = tags.filter(tag => bookmark.tags.includes(tag.id));
+  const collection = allCollections.find(c => c.id === bookmark.collectionId);
 
   return (
     <div onClick={onClick} className="cursor-pointer">
@@ -32,7 +34,7 @@ const BookmarkCard = ({ bookmark, showCollection = false, onClick }: BookmarkCar
       </CardHeader>
       <CardContent className="p-4 flex-grow">
         <CardTitle className="text-lg font-semibold">{bookmark.title}</CardTitle>
-        <p className="text-sm text-muted-foreground mt-1">{bookmark.description}</p>
+        <p className="text-sm text-muted-foreground mt-1">{bookmark.description || ''}</p>
       </CardContent>
       <CardFooter className="p-4 pt-0 flex flex-col items-start gap-2">
         <div className="flex flex-wrap gap-1">

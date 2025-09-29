@@ -40,7 +40,9 @@ interface EditBookmarkFormProps {
 export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmarkFormProps) {
   const { t } = useTranslation();
   const router = useRouter();
-  const { collections, tags: allTags } = useRouteContext({ from: '__root__' });
+  const { collections, tags: allTags } = useRouteContext({ from: '__root__' }) || { collections: [], tags: [] };
+  const availableCollections = collections || [];
+  const availableTags = allTags || [];
 
   const [url, setUrl] = useState('');
   const [title, setTitle] = useState('');
@@ -49,7 +51,7 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
   const [selectedTags, setSelectedTags] = useState<Option[]>([]);
   const [screenshot, setScreenshot] = useState<string | null>(null);
 
-  const tagOptions: Option[] = allTags.map(tag => ({ label: tag.name, value: String(tag.id) }));
+  const tagOptions: Option[] = availableTags.map(tag => ({ label: tag.name, value: String(tag.id) }));
 
   useEffect(() => {
     if (bookmark) {
@@ -59,12 +61,12 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
       setCollectionId(bookmark.collectionId ? String(bookmark.collectionId) : undefined);
       setScreenshot(bookmark.screenshot);
 
-      const currentTags = allTags
+      const currentTags = availableTags
         .filter(tag => bookmark.tags.includes(tag.id))
         .map(tag => ({ label: tag.name, value: String(tag.id) }));
       setSelectedTags(currentTags);
     }
-  }, [bookmark, allTags]);
+  }, [bookmark, availableTags]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -170,7 +172,7 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
                   <SelectValue placeholder={t('bookmark.select_collection')} />
                 </SelectTrigger>
                 <SelectContent>
-                  {collections.map(collection => (
+                  {availableCollections.map(collection => (
                     <SelectItem key={collection.id} value={String(collection.id)}>{collection.name}</SelectItem>
                   ))}
                 </SelectContent>

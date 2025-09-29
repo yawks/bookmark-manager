@@ -8,9 +8,10 @@ interface BookmarkListItemProps {
 }
 
 const BookmarkListItem = ({ bookmark, onClick }: BookmarkListItemProps) => {
-  const { tags: allTags } = useRouteContext({ from: '__root__' });
+  const { tags: allTags } = useRouteContext({ from: '__root__' }) || { tags: [] };
+  const tags = allTags || [];
   const domain = new URL(bookmark.url).hostname;
-  const bookmarkTags = allTags.filter(tag => bookmark.tags.includes(tag.id));
+  const bookmarkTags = tags.filter(tag => bookmark.tags.includes(tag.id));
 
   return (
     <div onClick={onClick} className="flex items-center justify-between p-3 border-b last:border-b-0 hover:bg-accent cursor-pointer">

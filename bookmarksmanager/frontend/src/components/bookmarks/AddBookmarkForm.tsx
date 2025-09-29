@@ -34,7 +34,9 @@ function getRequestToken() {
 export function AddBookmarkForm() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { collections, tags: allTags } = useRouteContext({ from: '__root__' });
+  const { collections, tags: allTags } = useRouteContext({ from: '__root__' }) || { collections: [], tags: [] };
+  const availableCollections = collections || [];
+  const availableTags = allTags || [];
 
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState('');
@@ -45,7 +47,7 @@ export function AddBookmarkForm() {
   const [screenshot, setScreenshot] = useState<string | null>(null);
   const [isFetching, setIsFetching] = useState(false);
 
-  const tagOptions: Option[] = allTags.map(tag => ({ label: tag.name, value: String(tag.id) }));
+  const tagOptions: Option[] = availableTags.map(tag => ({ label: tag.name, value: String(tag.id) }));
 
   const handleUrlBlur = async () => {
     if (!url || !url.startsWith('http')) return;
@@ -154,7 +156,7 @@ export function AddBookmarkForm() {
                   <SelectValue placeholder={t('bookmark.select_collection')} />
                 </SelectTrigger>
                 <SelectContent>
-                  {collections.map(collection => (
+                  {availableCollections.map(collection => (
                     <SelectItem key={collection.id} value={String(collection.id)}>{collection.name}</SelectItem>
                   ))}
                 </SelectContent>

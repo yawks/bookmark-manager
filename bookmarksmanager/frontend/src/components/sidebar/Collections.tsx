@@ -17,7 +17,7 @@ const CollectionItem = ({ collection }: { collection: Collection }) => {
   return (
     <Link
       to="/collections/$collectionId"
-      params={{ collectionId: collection.id }}
+      params={{ collectionId: String(collection.id) }}
       className="flex items-center space-x-2 p-2 hover:bg-accent rounded-md cursor-pointer"
       activeProps={{ className: 'bg-accent' }}
     >
@@ -29,8 +29,9 @@ const CollectionItem = ({ collection }: { collection: Collection }) => {
 
 const Collections = () => {
   const { t } = useTranslation();
-  const { collections } = useRouteContext({ from: '__root__' });
-  const topLevelCollections = collections.filter(c => !c.parentId);
+  const { collections } = useRouteContext({ from: '__root__' }) || { collections: [] };
+  const allCollections = collections || [];
+  const topLevelCollections = allCollections.filter(c => !c.parentId);
 
   return (
     <div className="p-4">
@@ -48,7 +49,7 @@ const Collections = () => {
           <div key={collection.id}>
             <CollectionItem collection={collection} />
             <div className="ml-4 mt-1 space-y-1">
-              {collections.filter(c => c.parentId === collection.id).map(child => (
+              {allCollections.filter(c => c.parentId === collection.id).map(child => (
                 <CollectionItem key={child.id} collection={child} />
               ))}
             </div>

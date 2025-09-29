@@ -4,17 +4,20 @@ import { Link, useRouteContext } from '@tanstack/react-router';
 
 const Tags = () => {
   const { t } = useTranslation();
-  const { tags, bookmarks } = useRouteContext({ from: '__root__' });
+  const { tags, bookmarks } = useRouteContext({ from: '__root__' }) || { tags: [], bookmarks: [] };
+
+  const allTags = tags || [];
+  const allBookmarks = bookmarks || [];
 
   const getTagCount = (tagId: number) => {
-    return bookmarks.filter(bookmark => bookmark.tags.includes(tagId)).length;
+    return allBookmarks.filter(bookmark => bookmark.tags.includes(tagId)).length;
   };
 
   return (
     <div className="p-4">
       <h2 className="text-lg font-semibold mb-4">{t('sidebar.tags')}</h2>
       <div className="space-y-2">
-        {tags.map(tag => (
+        {allTags.map(tag => (
           <Link
             key={tag.id}
             to="/tags/$tagId"

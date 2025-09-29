@@ -24,14 +24,27 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     </ThemeProvider>
   ),
   loader: async () => {
-    const [collectionsRes, tagsRes, bookmarksRes] = await Promise.all([
-      fetch('/apps/bookmarksmanager/api/v1/collections'),
-      fetch('/apps/bookmarksmanager/api/v1/tags'),
-      fetch('/apps/bookmarksmanager/api/v1/bookmarks'),
-    ])
-    const collections = await collectionsRes.json()
-    const tags = await tagsRes.json()
-    const bookmarks = await bookmarksRes.json()
-    return { collections, tags, bookmarks }
+    const fetchData = async (url: string): Promise<any[]> => {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) {
+          console.error(`Failed to fetch ${url}: ${res.statusText}`);
+          return [];
+        }
+        const data = await res.json();
+        return Array.isArray(data) ? data : [];
+      } catch (e) {
+        console.error(`Exception while fetching ${url}:`, e);
+        return [];
+      }
+    };
+
+    const [collections, tags, bookmarks] = await Promise.all([
+      fetchData('/apps/bookmarksmanager/api/v1/collections'),
+      fetchData('/apps/bookmarksmanager/api/v1/tags'),
+      fetchData('/apps/bookmarksmanager/api/v1/bookmarks'),
+    ]);
+
+    return { collections, tags, bookmarks };
   },
 })
