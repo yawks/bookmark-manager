@@ -13,7 +13,7 @@ interface BookmarkListProps {
   showCollection?: boolean;
 }
 
-const BookmarkList = ({ bookmarks, showCollection = false }: BookmarkListProps) => {
+const BookmarkList = ({ bookmarks = [], showCollection = false }: BookmarkListProps) => {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedBookmark, setSelectedBookmark] = useState<Bookmark | null>(null);

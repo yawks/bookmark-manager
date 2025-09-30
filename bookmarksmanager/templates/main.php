@@ -4,5 +4,5 @@ script('bookmarksmanager', 'main', ['type' => 'module']);
 ?>
 
 <div id="app-content">
-    <div id="root"></div>
+    <div id="root" style="width: 100%;"></div>
 </div>
