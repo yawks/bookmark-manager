@@ -9,11 +9,11 @@ import { cn } from '@/lib/utils';
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const { t } = useTranslation();
-  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(true);
 
   return (
-    <div className="flex h-screen bg-background">
-      <aside className="w-64 border-r flex flex-col">
+    <div className="flex h-full bg-background">
+      <aside className="w-64 border-r flex flex-col min-h-0">
         <div className="p-4 border-b">
           <Button
             variant="link"
@@ -26,23 +26,21 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         </div>
         <div
           className={cn(
-            'flex-1 grid transition-[grid-template-rows] duration-500 ease-in-out',
-            isFiltersOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+            'flex-1 grid transition-all duration-300 ease-in-out',
+            isFiltersOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
           )}
         >
-          <div className="overflow-hidden flex flex-col">
-            <div className="flex-1">
-              <Collections />
-            </div>
+          <div className="overflow-y-auto">
+            <Collections />
             <div className="border-t">
               <Tags />
             </div>
           </div>
         </div>
       </aside>
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-h-0">
         <Header />
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto p-6">
           {children}
         </main>
       </div>
