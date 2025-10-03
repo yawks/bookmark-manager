@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { PlusIcon } from '@radix-ui/react-icons';
 import {
   Select,
@@ -57,6 +58,7 @@ export function AddBookmarkForm() {
       if (response.ok) {
         const data = await response.json();
         if (data.title) setTitle(data.title);
+        if (data.description) setDescription(data.description);
         if (data.image) setScreenshot(data.image);
       }
     } catch (error) {
@@ -79,7 +81,10 @@ export function AddBookmarkForm() {
       title,
       description,
       collectionId: collectionId ? parseInt(collectionId, 10) : null,
-      tags: selectedTags.map(tag => parseInt(tag.value, 10)),
+      tags: selectedTags.map(tag => {
+        const id = parseInt(tag.value, 10);
+        return isNaN(id) ? tag.value : id;
+      }),
       screenshot,
     };
 
@@ -141,11 +146,11 @@ export function AddBookmarkForm() {
               </Label>
               <Input id="title" value={title} onChange={e => setTitle(e.target.value)} placeholder={isFetching ? t('bookmark.fetching_title') : t('bookmark.placeholder_title')} className="col-span-3" />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="description" className="text-right">
+            <div className="grid grid-cols-4 items-start gap-4">
+              <Label htmlFor="description" className="text-right pt-2">
                 {t('bookmark.description')}
               </Label>
-              <Input id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder={t('bookmark.placeholder_description')} className="col-span-3" />
+              <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder={t('bookmark.placeholder_description')} className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="collection" className="text-right">
@@ -173,6 +178,8 @@ export function AddBookmarkForm() {
                   options={tagOptions}
                   placeholder={t('bookmark.select_tags')}
                   emptyIndicator="No tags found."
+                  creatable
+                  badgeClassName="bg-primary text-primary-foreground"
                 />
               </div>
             </div>
