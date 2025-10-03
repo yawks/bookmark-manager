@@ -9,10 +9,12 @@ class BookmarkService {
 
     private BookmarkMapper $mapper;
     private IUserSession $userSession;
+    private TagService $tagService;
 
-    public function __construct(BookmarkMapper $mapper, IUserSession $userSession) {
+    public function __construct(BookmarkMapper $mapper, IUserSession $userSession, TagService $tagService) {
         $this->mapper = $mapper;
         $this->userSession = $userSession;
+        $this->tagService = $tagService;
     }
 
     public function findAll(): array {
@@ -27,6 +29,17 @@ class BookmarkService {
 
     public function create(string $url, string $title, ?string $description, ?int $collectionId, array $tags = [], ?string $screenshot = null) {
         $userId = $this->userSession->getUser()->getUID();
+
+        $tagIds = [];
+        foreach ($tags as $tag) {
+            if (is_string($tag)) {
+                $newTag = $this->tagService->create($tag);
+                $tagIds[] = $newTag->getId();
+            } else {
+                $tagIds[] = $tag;
+            }
+        }
+
         $bookmark = new \OCA\BookmarksManager\Db\Bookmark();
         $bookmark->setUserId($userId);
         $bookmark->setUrl($url);
@@ -36,7 +49,7 @@ class BookmarkService {
         $bookmark->setScreenshot($screenshot);
 
         $newBookmark = $this->mapper->insert($bookmark);
-        $this->mapper->setTags($newBookmark->getId(), $tags);
+        $this->mapper->setTags($newBookmark->getId(), $tagIds);
 
         return $this->find($newBookmark->getId());
     }

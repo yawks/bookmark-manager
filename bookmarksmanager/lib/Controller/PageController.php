@@ -5,19 +5,12 @@ namespace OCA\BookmarksManager\Controller;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IRequest;
-use OCP\IScriptManager;
+use OCP\Util;
 
 class PageController extends Controller {
 
-    private IScriptManager $scriptManager;
-
-    public function __construct(string $appName, IRequest $request, IScriptManager $scriptManager) {
+    public function __construct(string $appName, IRequest $request) {
         parent::__construct($appName, $request);
-        $this->scriptManager = $scriptManager;
-    }
-
-    public function registerScripts(): void {
-        $this->scriptManager->addScript($this->appName, 'main', ['type' => 'module']);
     }
 
     /**
@@ -25,6 +18,7 @@ class PageController extends Controller {
      * @NoCSRFRequired
      */
     public function index(): TemplateResponse {
+        Util::addScript($this->appName, 'main', 'module');
         return new TemplateResponse($this->appName, 'main', [], 'user');
     }
 }
