@@ -22,6 +22,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    minify: 'terser',
     rollupOptions: {
       input: 'src/main.tsx',
       output: {
