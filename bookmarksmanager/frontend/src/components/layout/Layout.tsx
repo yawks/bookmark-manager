@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { translate } from '../../lib/l10n';
 import Collections from '../sidebar/Collections';
 import Tags from '../sidebar/Tags';
 import Header from './Header';
@@ -8,7 +8,6 @@ import { ChevronDownIcon, ChevronUpIcon } from '@radix-ui/react-icons';
 import { cn } from '@/lib/utils';
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
-  const { t } = useTranslation();
   const [isFiltersOpen, setIsFiltersOpen] = useState(true);
 
   return (
@@ -20,7 +19,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             onClick={() => setIsFiltersOpen(!isFiltersOpen)}
             className="w-full justify-between p-0 text-foreground hover:no-underline"
           >
-            <span className="text-lg font-semibold">{t('sidebar.filters', 'Filters')}</span>
+            <span className="text-lg font-semibold">{translate('Filters')}</span>
             {isFiltersOpen ? <ChevronUpIcon className="h-5 w-5" /> : <ChevronDownIcon className="h-5 w-5" />}
           </Button>
         </div>

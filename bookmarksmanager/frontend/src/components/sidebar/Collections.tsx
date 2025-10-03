@@ -1,5 +1,5 @@
 import React from 'react';
-import { useTranslation } from 'react-i18next';
+import { translate } from '../../lib/l10n';
 import { Collection } from '../../types';
 import { ArchiveIcon, PersonIcon, DrawingPinIcon, CodeIcon, VercelLogoIcon, DashboardIcon } from '@radix-ui/react-icons';
 import { Link, useRouteContext } from '@tanstack/react-router';
@@ -28,14 +28,13 @@ const CollectionItem = ({ collection }: { collection: Collection }) => {
 };
 
 const Collections = () => {
-  const { t } = useTranslation();
   const { collections } = useRouteContext({ from: '__root__' }) || { collections: [] };
   const allCollections = collections || [];
   const topLevelCollections = allCollections.filter(c => !c.parentId);
 
   return (
     <div className="p-4">
-      <h2 className="text-lg font-semibold mb-4">{t('sidebar.collections')}</h2>
+      <h2 className="text-lg font-semibold mb-4">{translate('Collections')}</h2>
       <div className="space-y-1">
         <Link
           to="/"
@@ -43,7 +42,7 @@ const Collections = () => {
           activeProps={{ className: 'bg-accent' }}
         >
           <DashboardIcon className="h-4 w-4" />
-          <span>{t('app.all')}</span>
+          <span>{translate('All')}</span>
         </Link>
         {topLevelCollections.map(collection => (
           <div key={collection.id}>

@@ -214,14 +214,11 @@ const MultipleSelector = React.forwardRef<MultipleSelectorRef, MultipleSelectorP
     );
 
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node) &&
-        inputRef.current &&
-        !inputRef.current.contains(event.target as Node)
-      ) {
+      const dropdown = dropdownRef.current;
+      const input = inputRef.current;
+      if (dropdown && !dropdown.contains(event.target as Node) && input && !input.contains(event.target as Node)) {
         setOpen(false);
-        inputRef.current.blur();
+        input.blur();
       }
     };
 
