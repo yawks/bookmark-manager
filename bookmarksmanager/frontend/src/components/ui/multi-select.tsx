@@ -190,10 +190,18 @@ const MultipleSelector = React.forwardRef<MultipleSelectorRef, MultipleSelectorP
     ref: React.Ref<MultipleSelectorRef>,
   ) => {
     const inputRef = React.useRef<HTMLInputElement>(null);
+    const mountedRef = React.useRef(false);
     const [open, setOpen] = React.useState(false);
     const [onScrollbar, setOnScrollbar] = React.useState(false);
     const [isLoading, setIsLoading] = React.useState(false);
     const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+    React.useEffect(() => {
+      mountedRef.current = true;
+      return () => {
+        mountedRef.current = false;
+      };
+    }, []);
 
     const [selected, setSelected] = React.useState<Option[]>(value || []);
     const [options, setOptions] = React.useState<GroupOption>(
@@ -214,6 +222,9 @@ const MultipleSelector = React.forwardRef<MultipleSelectorRef, MultipleSelectorP
     );
 
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      if (!mountedRef.current) {
+        return;
+      }
       const dropdown = dropdownRef.current;
       const input = inputRef.current;
       if (dropdown && !dropdown.contains(event.target as Node) && input && !input.contains(event.target as Node)) {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { translate } from '../../lib/l10n';
+import { t } from '../../lib/l10n';
 import Collections from '../sidebar/Collections';
 import Tags from '../sidebar/Tags';
 import Header from './Header';
@@ -19,21 +19,14 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             onClick={() => setIsFiltersOpen(!isFiltersOpen)}
             className="w-full justify-between p-0 text-foreground hover:no-underline"
           >
-            <span className="text-lg font-semibold">{translate('Filters')}</span>
+            <span className="text-lg font-semibold">{t('Filters')}</span>
             {isFiltersOpen ? <ChevronUpIcon className="h-5 w-5" /> : <ChevronDownIcon className="h-5 w-5" />}
           </Button>
         </div>
-        <div
-          className={cn(
-            'flex-1 grid transition-all duration-300 ease-in-out',
-            isFiltersOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
-          )}
-        >
-          <div className="overflow-y-auto">
-            <Collections />
-            <div className="border-t">
-              <Tags />
-            </div>
+        <div className={cn('flex-1 overflow-y-auto', !isFiltersOpen && 'hidden')}>
+          <Collections />
+          <div className="border-t">
+            <Tags />
           </div>
         </div>
       </aside>

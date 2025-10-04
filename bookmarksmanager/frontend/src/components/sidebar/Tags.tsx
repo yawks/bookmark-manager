@@ -1,5 +1,5 @@
 import React from 'react';
-import { translate } from '../../lib/l10n';
+import { t } from '../../lib/l10n';
 import { Link, useRouteContext } from '@tanstack/react-router';
 
 const Tags = () => {
@@ -14,7 +14,7 @@ const Tags = () => {
 
   return (
     <div className="p-4">
-      <h2 className="text-lg font-semibold mb-4">{translate('Tags')}</h2>
+      <h2 className="text-lg font-semibold mb-4">{t('Tags')}</h2>
       <div className="space-y-2">
         {allTags.map(tag => (
           <Link

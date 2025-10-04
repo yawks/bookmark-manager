@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { translate } from '../../lib/l10n';
+import { t } from '../../lib/l10n';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -121,43 +121,43 @@ export function AddBookmarkForm() {
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button>
-          <PlusIcon className="mr-2 h-4 w-4" /> {translate('Add Bookmark')}
+          <PlusIcon className="mr-2 h-4 w-4" /> {t('Add Bookmark')}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>{translate('Add a new bookmark')}</DialogTitle>
+            <DialogTitle>{t('Add a new bookmark')}</DialogTitle>
             <DialogDescription>
-              {translate('Enter the details of the bookmark you want to add.')}
+              {t('Enter the details of the bookmark you want to add.')}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="url" className="text-right">
-                {translate('URL')}
+                {t('URL')}
               </Label>
-              <Input id="url" value={url} onChange={e => setUrl(e.target.value)} onBlur={handleUrlBlur} placeholder={translate('https://example.com')} className="col-span-3" />
+              <Input id="url" value={url} onChange={e => setUrl(e.target.value)} onBlur={handleUrlBlur} placeholder={t('https://example.com')} className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="title" className="text-right">
-                {translate('Title')}
+                {t('Title')}
               </Label>
-              <Input id="title" value={title} onChange={e => setTitle(e.target.value)} placeholder={isFetching ? translate('Fetching title...') : translate('A cool website')} className="col-span-3" />
+              <Input id="title" value={title} onChange={e => setTitle(e.target.value)} placeholder={isFetching ? t('Fetching title...') : t('A cool website')} className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-start gap-4">
               <Label htmlFor="description" className="text-right pt-2">
-                {translate('Description')}
+                {t('Description')}
               </Label>
-              <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder={translate('A short description')} className="col-span-3" />
+              <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder={t('A short description')} className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="collection" className="text-right">
-                {translate('Collection')}
+                {t('Collection')}
               </Label>
               <Select onValueChange={setCollectionId} value={collectionId}>
                 <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder={translate('Select a collection')} />
+                  <SelectValue placeholder={t('Select a collection')} />
                 </SelectTrigger>
                 <SelectContent>
                   {availableCollections.map(collection => (
@@ -168,15 +168,15 @@ export function AddBookmarkForm() {
             </div>
             <div className="grid grid-cols-4 items-start gap-4">
               <Label htmlFor="tags" className="text-right mt-2">
-                {translate('Tags')}
+                {t('Tags')}
               </Label>
               <div className="col-span-3">
                 <MultipleSelector
                   value={selectedTags}
                   onChange={setSelectedTags}
                   options={tagOptions}
-                  placeholder={translate('Select tags...')}
-                  emptyIndicator={translate('No tags found.')}
+                  placeholder={t('Select tags...')}
+                  emptyIndicator={t('No tags found.')}
                   creatable
                   badgeClassName="bg-primary text-primary-foreground"
                 />
@@ -184,7 +184,7 @@ export function AddBookmarkForm() {
             </div>
           </div>
           <DialogFooter>
-            <Button type="submit">{translate('Save bookmark')}</Button>
+            <Button type="submit">{t('Save bookmark')}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

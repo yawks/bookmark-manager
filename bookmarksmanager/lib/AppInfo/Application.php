@@ -19,6 +19,7 @@ use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\IDBConnection;
+use OCP\IL10N;
 use OCP\IUserSession;
 
 class Application extends App implements IBootstrap {
@@ -33,7 +34,8 @@ class Application extends App implements IBootstrap {
         $context->registerService('PageController', function ($c) {
             return new PageController(
                 $c->get('AppName'),
-                $c->get('Request')
+                $c->get('Request'),
+                $c->get(IL10N::class)
             );
         });
 
