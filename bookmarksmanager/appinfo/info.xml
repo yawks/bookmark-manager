@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<info>
+    <id>bookmarksmanager</id>
+    <name>Bookmarks Manager</name>
+    <summary>A simple bookmarking app</summary>
+    <description>This is a simple bookmarking app that allows you to save and organize your favorite websites.</description>
+    <version>1.0.0</version>
+    <author>Jules</author>
+    <namespace>BookmarksManager</namespace>
+    <category>organization</category>
+    <icon>img/app.svg</icon>
+    <autoloader>
+        <psr-4 namespace="OCA\BookmarksManager\" src="lib"/>
+    </autoloader>
+    <dependencies>
+        <nextcloud min-version="28" max-version="30"/>
+    </dependencies>
+</info>

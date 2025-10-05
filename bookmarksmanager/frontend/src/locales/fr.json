@@ -1,0 +1,32 @@
+{
+  "translation": {
+    "app": {
+      "title": "Gestionnaire de favoris",
+      "all_bookmarks": "Tous les favoris",
+      "all": "Tous"
+    },
+    "sidebar": {
+      "collections": "Collections",
+      "tags": "Tags"
+    },
+    "bookmark": {
+      "add": "Ajouter un favori",
+      "add_new": "Ajouter un nouveau favori",
+      "add_description": "Entrez les détails du favori que vous souhaitez ajouter.",
+      "save": "Enregistrer le favori",
+      "url": "URL",
+      "title": "Titre",
+      "description": "Description",
+      "placeholder_url": "https://exemple.com",
+      "placeholder_title": "Un site web sympa",
+      "placeholder_description": "Une courte description",
+      "screenshot": "Capture d'écran",
+      "collection": "Collection",
+      "tags": "Tags",
+      "select_collection": "Sélectionner une collection",
+      "select_tags": "Sélectionner des tags...",
+      "edit_title": "Modifier le favori",
+      "edit_description": "Modifiez votre favori ici. Cliquez sur enregistrer lorsque vous avez terminé."
+    }
+  }
+}
