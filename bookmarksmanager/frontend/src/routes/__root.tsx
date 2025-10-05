@@ -3,7 +3,9 @@ import React from 'react'
 import Layout from '../components/layout/Layout'
 import { Collection, Tag, Bookmark } from '../types'
 
-declare const OC: any;
+declare const OC: {
+  requestToken?: string;
+};
 
 interface RouterContext {
   collections: Collection[]
@@ -18,7 +20,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     </Layout>
   ),
   loader: async () => {
-    const fetchData = async (url: string): Promise<any[]> => {
+    const fetchData = async <T,>(url: string): Promise<T[]> => {
       try {
         const headers: HeadersInit = {};
         if (typeof OC !== 'undefined' && OC.requestToken) {
@@ -29,14 +31,14 @@ export const Route = createRootRouteWithContext<RouterContext>()({
           console.error(`Failed to fetch ${url}: ${res.statusText}`);
           return [];
         }
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          return data;
+        const result = await res.json();
+        if (Array.isArray(result)) {
+          return result as T[];
         }
-        if (data && data.data && Array.isArray(data.data)) {
-          return data.data;
+        if (result && result.data && Array.isArray(result.data)) {
+          return result.data as T[];
         }
-        console.error(`Unexpected data format from ${url}:`, data);
+        console.error(`Unexpected data format from ${url}:`, result);
         return [];
       } catch (e) {
         console.error(`Exception while fetching ${url}:`, e);
@@ -45,9 +47,9 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     };
 
     const [collections, tags, bookmarks] = await Promise.all([
-      fetchData('/apps/bookmarksmanager/api/v1/collections'),
-      fetchData('/apps/bookmarksmanager/api/v1/tags'),
-      fetchData('/apps/bookmarksmanager/api/v1/bookmarks'),
+      fetchData<Collection>('/apps/bookmarksmanager/api/v1/collections'),
+      fetchData<Tag>('/apps/bookmarksmanager/api/v1/tags'),
+      fetchData<Bookmark>('/apps/bookmarksmanager/api/v1/bookmarks'),
     ]);
 
     return { collections, tags, bookmarks };

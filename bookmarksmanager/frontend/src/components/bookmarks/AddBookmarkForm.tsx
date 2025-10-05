@@ -100,7 +100,9 @@ export function AddBookmarkForm() {
       setOpen(false);
       router.invalidate();
     } else {
-      console.error('Failed to create bookmark');
+      const errorData = await response.json();
+      console.error('Failed to create bookmark:', errorData.error);
+      // Here you could add a state to show an error message to the user
     }
   };
 
@@ -151,6 +153,16 @@ export function AddBookmarkForm() {
               </Label>
               <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder={t('A short description')} className="col-span-3" />
             </div>
+            {screenshot && (
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="preview" className="text-right">
+                  {t('Image Preview')}
+                </Label>
+                <div className="col-span-3">
+                  <img src={screenshot} alt="Preview" className="w-full h-auto rounded-lg" />
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="collection" className="text-right">
                 {t('Collection')}

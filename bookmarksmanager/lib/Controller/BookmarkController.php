@@ -28,8 +28,12 @@ class BookmarkController extends Controller {
      * @NoAdminRequired
      */
     public function create(string $url, string $title, ?string $description, ?int $collectionId, array $tags = [], ?string $screenshot = null): DataResponse {
-        $bookmark = $this->service->create($url, $title, $description, $collectionId, $tags, $screenshot);
-        return new DataResponse($bookmark);
+        try {
+            $bookmark = $this->service->create($url, $title, $description, $collectionId, $tags, $screenshot);
+            return new DataResponse($bookmark);
+        } catch (\Exception $e) {
+            return new DataResponse(['error' => 'Failed to create bookmark: ' . $e->getMessage()], 500);
+        }
     }
 
     /**

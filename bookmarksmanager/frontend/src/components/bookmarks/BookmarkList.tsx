@@ -5,6 +5,7 @@ import BookmarkListItem from './BookmarkListItem';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { ViewGridIcon, ViewHorizontalIcon } from '@radix-ui/react-icons';
 import { EditBookmarkForm } from './EditBookmarkForm';
+import EmptyState from '../common/EmptyState';
 
 type ViewMode = 'grid' | 'list';
 
@@ -22,6 +23,10 @@ const BookmarkList = ({ bookmarks = [], showCollection = false }: BookmarkListPr
     setSelectedBookmark(bookmark);
     setIsEditModalOpen(true);
   };
+
+  if (bookmarks.length === 0) {
+    return <EmptyState />;
+  }
 
   return (
     <div>

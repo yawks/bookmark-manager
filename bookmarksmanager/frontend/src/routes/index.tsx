@@ -1,7 +1,6 @@
 import { createFileRoute, useRouteContext } from '@tanstack/react-router'
 import React from 'react'
 import BookmarkList from '../components/bookmarks/BookmarkList'
-import { Bookmark } from '../types'
 
 export const Route = createFileRoute('/')({
   component: Index,

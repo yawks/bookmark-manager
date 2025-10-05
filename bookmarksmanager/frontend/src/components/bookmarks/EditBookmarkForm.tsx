@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import {
@@ -41,8 +41,8 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
   const { t } = useTranslation();
   const router = useRouter();
   const { collections, tags: allTags } = useRouteContext({ from: '__root__' }) || { collections: [], tags: [] };
-  const availableCollections = collections || [];
-  const availableTags = allTags || [];
+  const availableCollections = useMemo(() => collections || [], [collections]);
+  const availableTags = useMemo(() => allTags || [], [allTags]);
 
   const [url, setUrl] = useState('');
   const [title, setTitle] = useState('');

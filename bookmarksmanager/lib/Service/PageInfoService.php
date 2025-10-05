@@ -17,9 +17,25 @@ class PageInfoService {
         @$doc->loadHTML($html);
 
         $title = $this->extractTitle($doc);
+        $description = $this->extractDescription($doc);
         $image = $this->extractImage($doc, $url);
 
-        return ['title' => $title, 'image' => $image];
+        return ['title' => $title, 'description' => $description, 'image' => $image];
+    }
+
+    private function extractDescription(DOMDocument $doc): string {
+        $xpath = new DOMXPath($doc);
+        $metaNodes = $xpath->query('//meta[@property="og:description"]');
+        if ($metaNodes->length > 0) {
+            return $metaNodes->item(0)->getAttribute('content');
+        }
+
+        $metaNodes = $xpath->query('//meta[@name="description"]');
+        if ($metaNodes->length > 0) {
+            return $metaNodes->item(0)->getAttribute('content');
+        }
+
+        return '';
     }
 
     private function extractTitle(DOMDocument $doc): string {
