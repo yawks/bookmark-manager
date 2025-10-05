@@ -1,7 +1,6 @@
 import { createRootRouteWithContext, Outlet } from '@tanstack/react-router'
 import React from 'react'
 import Layout from '../components/layout/Layout'
-import { ThemeProvider } from '../components/layout/ThemeProvider'
 import { Collection, Tag, Bookmark } from '../types'
 
 declare const OC: any;
@@ -14,16 +13,9 @@ interface RouterContext {
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   component: () => (
-    <ThemeProvider
-      attribute="class"
-      defaultTheme="system"
-      enableSystem
-      disableTransitionOnChange
-    >
-      <Layout>
-        <Outlet />
-      </Layout>
-    </ThemeProvider>
+    <Layout>
+      <Outlet />
+    </Layout>
   ),
   loader: async () => {
     const fetchData = async (url: string): Promise<any[]> => {

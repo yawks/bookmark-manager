@@ -1,9 +1,8 @@
 import React from 'react';
-import { useTranslation } from 'react-i18next';
+import { t } from '../../lib/l10n';
 import { Link, useRouteContext } from '@tanstack/react-router';
 
 const Tags = () => {
-  const { t } = useTranslation();
   const { tags, bookmarks } = useRouteContext({ from: '__root__' }) || { tags: [], bookmarks: [] };
 
   const allTags = tags || [];
@@ -15,7 +14,7 @@ const Tags = () => {
 
   return (
     <div className="p-4">
-      <h2 className="text-lg font-semibold mb-4">{t('sidebar.tags')}</h2>
+      <h2 className="text-lg font-semibold mb-4">{t('Tags')}</h2>
       <div className="space-y-2">
         {allTags.map(tag => (
           <Link

@@ -19,6 +19,7 @@ use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\IDBConnection;
+use OCP\IL10N;
 use OCP\IUserSession;
 
 class Application extends App implements IBootstrap {
@@ -34,7 +35,7 @@ class Application extends App implements IBootstrap {
             return new PageController(
                 $c->get('AppName'),
                 $c->get('Request'),
-                $c->get(IScriptManager::class)
+                $c->get(IL10N::class)
             );
         });
 
@@ -78,7 +79,8 @@ class Application extends App implements IBootstrap {
         $context->registerService('BookmarkService', function ($c) {
             return new BookmarkService(
                 $c->get('BookmarkMapper'),
-                $c->get(IUserSession::class)
+                $c->get(IUserSession::class),
+                $c->get('TagService')
             );
         });
         $context->registerService('BookmarkController', function ($c) {
@@ -102,7 +104,6 @@ class Application extends App implements IBootstrap {
     }
 
     public function boot(IBootContext $context): void {
-        $context->getAppContainer()->get(PageController::class)->registerScripts();
         $navigationManager = \OC::$server->getNavigationManager();
         $navigationManager->add(function () {
             $urlGenerator = \OC::$server->getURLGenerator();

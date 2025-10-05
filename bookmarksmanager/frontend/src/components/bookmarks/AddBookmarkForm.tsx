@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { t } from '../../lib/l10n';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { PlusIcon } from '@radix-ui/react-icons';
 import {
   Select,
@@ -32,7 +33,6 @@ function getRequestToken() {
 }
 
 export function AddBookmarkForm() {
-  const { t } = useTranslation();
   const router = useRouter();
   const { collections, tags: allTags } = useRouteContext({ from: '__root__' }) || { collections: [], tags: [] };
   const availableCollections = collections || [];
@@ -57,6 +57,7 @@ export function AddBookmarkForm() {
       if (response.ok) {
         const data = await response.json();
         if (data.title) setTitle(data.title);
+        if (data.description) setDescription(data.description);
         if (data.image) setScreenshot(data.image);
       }
     } catch (error) {
@@ -79,7 +80,10 @@ export function AddBookmarkForm() {
       title,
       description,
       collectionId: collectionId ? parseInt(collectionId, 10) : null,
-      tags: selectedTags.map(tag => parseInt(tag.value, 10)),
+      tags: selectedTags.map(tag => {
+        const id = parseInt(tag.value, 10);
+        return isNaN(id) ? tag.value : id;
+      }),
       screenshot,
     };
 
@@ -117,43 +121,43 @@ export function AddBookmarkForm() {
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button>
-          <PlusIcon className="mr-2 h-4 w-4" /> {t('bookmark.add')}
+          <PlusIcon className="mr-2 h-4 w-4" /> {t('Add Bookmark')}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>{t('bookmark.add_new')}</DialogTitle>
+            <DialogTitle>{t('Add a new bookmark')}</DialogTitle>
             <DialogDescription>
-              {t('bookmark.add_description')}
+              {t('Enter the details of the bookmark you want to add.')}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="url" className="text-right">
-                {t('bookmark.url')}
+                {t('URL')}
               </Label>
-              <Input id="url" value={url} onChange={e => setUrl(e.target.value)} onBlur={handleUrlBlur} placeholder={t('bookmark.placeholder_url')} className="col-span-3" />
+              <Input id="url" value={url} onChange={e => setUrl(e.target.value)} onBlur={handleUrlBlur} placeholder={t('https://example.com')} className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="title" className="text-right">
-                {t('bookmark.title')}
+                {t('Title')}
               </Label>
-              <Input id="title" value={title} onChange={e => setTitle(e.target.value)} placeholder={isFetching ? t('bookmark.fetching_title') : t('bookmark.placeholder_title')} className="col-span-3" />
+              <Input id="title" value={title} onChange={e => setTitle(e.target.value)} placeholder={isFetching ? t('Fetching title...') : t('A cool website')} className="col-span-3" />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="description" className="text-right">
-                {t('bookmark.description')}
+            <div className="grid grid-cols-4 items-start gap-4">
+              <Label htmlFor="description" className="text-right pt-2">
+                {t('Description')}
               </Label>
-              <Input id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder={t('bookmark.placeholder_description')} className="col-span-3" />
+              <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder={t('A short description')} className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="collection" className="text-right">
-                {t('bookmark.collection')}
+                {t('Collection')}
               </Label>
               <Select onValueChange={setCollectionId} value={collectionId}>
                 <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder={t('bookmark.select_collection')} />
+                  <SelectValue placeholder={t('Select a collection')} />
                 </SelectTrigger>
                 <SelectContent>
                   {availableCollections.map(collection => (
@@ -164,21 +168,23 @@ export function AddBookmarkForm() {
             </div>
             <div className="grid grid-cols-4 items-start gap-4">
               <Label htmlFor="tags" className="text-right mt-2">
-                {t('bookmark.tags')}
+                {t('Tags')}
               </Label>
               <div className="col-span-3">
                 <MultipleSelector
                   value={selectedTags}
                   onChange={setSelectedTags}
                   options={tagOptions}
-                  placeholder={t('bookmark.select_tags')}
-                  emptyIndicator="No tags found."
+                  placeholder={t('Select tags...')}
+                  emptyIndicator={t('No tags found.')}
+                  creatable
+                  badgeClassName="bg-primary text-primary-foreground"
                 />
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button type="submit">{t('bookmark.save')}</Button>
+            <Button type="submit">{t('Save bookmark')}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
