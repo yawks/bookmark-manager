@@ -9,7 +9,7 @@ export const Route = createFileRoute('/collections/$collectionId')({
 
 function CollectionComponent() {
   const { collectionId } = Route.useParams()
-  const { collections, bookmarks } = useRouteContext({ from: '__root__' })
+  const { collections, bookmarks } = useRouteContext({ from: '__root__' }) || { collections: [], bookmarks: [] }
 
   const numericCollectionId = parseInt(collectionId, 10)
   const collection = collections.find(c => c.id === numericCollectionId)
