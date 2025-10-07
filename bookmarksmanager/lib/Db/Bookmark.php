@@ -15,5 +15,12 @@ class Bookmark extends Entity {
 
     public function __construct() {
         $this->addType('collection_id', 'integer');
+        $this->userId = '';
+        $this->url = '';
+        $this->title = '';
+        $this->description = null;
+        $this->screenshot = null;
+        $this->collectionId = null;
+        $this->tags = [];
     }
 }

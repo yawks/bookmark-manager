@@ -25,8 +25,11 @@
       "tags": "Tags",
       "select_collection": "Sélectionner une collection",
       "select_tags": "Sélectionner des tags...",
-      "edit_title": "Modifier le favori",
-      "edit_description": "Modifiez votre favori ici. Cliquez sur enregistrer lorsque vous avez terminé."
+  "edit_title": "Modifier le favori",
+  "edit_description": "Modifiez votre favori ici. Cliquez sur enregistrer lorsque vous avez terminé.",
+  "delete": "Supprimer",
+  "confirm_delete": "Voulez-vous vraiment supprimer ce favori ?",
+  "no_tags_found": "Aucun tag trouvé."
     }
   }
 }

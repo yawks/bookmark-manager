@@ -2,16 +2,22 @@
 style('bookmarksmanager', 'style');
 script('bookmarksmanager', 'main');
 ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="requesttoken" content="<?php p($_['requesttoken'] ?? OC\Util::callRegister()); ?>">
+</head>
+<body>
 <script nonce="<?php p(\OC::$server->getContentSecurityPolicyNonceManager()->getNonce()) ?>">
     // Initialize global objects for Nextcloud integration
-    window.bookmarksManagerTranslations = <?php p(json_encode($_['translations'] ?? [])); ?>;
+    window.bookmarksManagerTranslations = <?php echo json_encode($_['translations'] ?? []); ?>;
     window.OCA = window.OCA || {};
     window.OCA.BookmarksManager = window.OCA.BookmarksManager || {};
-    
     // Diagnostic logging
     console.log('BookmarksManager: Template loaded');
     console.log('BookmarksManager: Translations available:', Object.keys(window.bookmarksManagerTranslations || {}).length);
-    
     // Ensure container is ready when script loads
     document.addEventListener('DOMContentLoaded', function() {
         const container = document.getElementById('app-bookmarksmanager');
@@ -25,3 +31,5 @@ script('bookmarksmanager', 'main');
 <div id="app-content">
     <div id="app-bookmarksmanager" style="width: 100%; min-height: 100vh;"></div>
 </div>
+</body>
+</html>

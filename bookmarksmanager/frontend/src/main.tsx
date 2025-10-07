@@ -3,8 +3,8 @@ import './index.css'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 
 import ReactDOM from 'react-dom/client'
+import type { RouterContext } from './lib/context'
 import { StrictMode } from 'react'
-import { defaultContext } from './lib/context'
 // Import the generated route tree
 import { routeTree } from './routeTree.gen'
 
@@ -12,7 +12,7 @@ import { routeTree } from './routeTree.gen'
 const router = createRouter({
   routeTree,
   basepath: '/apps/bookmarksmanager',
-  context: defaultContext,
+  context: {} as RouterContext,
 })
 
 // Register the router instance for type safety

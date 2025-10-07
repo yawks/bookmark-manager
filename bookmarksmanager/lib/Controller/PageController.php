@@ -4,17 +4,18 @@ namespace OCA\BookmarksManager\Controller;
 
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
+use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\IRequest;
 use OCP\IL10N;
 use OCP\Util;
 
 class PageController extends Controller {
-
     private IL10N $l;
 
     public function __construct(string $appName, IRequest $request, IL10N $l) {
         parent::__construct($appName, $request);
         $this->l = $l;
+        $this->appName = $appName;
     }
 
     /**
@@ -47,6 +48,10 @@ class PageController extends Controller {
                 'Save bookmark' => $this->l->t('Save bookmark'),
             ]
         ];
-        return new TemplateResponse($this->appName, 'main', $params, 'user');
+            $response = new TemplateResponse($this->appName, 'main', $params, 'user');
+        $csp = new ContentSecurityPolicy();
+    $csp->addAllowedImageDomain('*'); // Allow all image domains for screenshot preview
+        $response->setContentSecurityPolicy($csp);
+            return $response;
     }
 }

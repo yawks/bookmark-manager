@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { ViewGridIcon, ViewHorizontalIcon } from '@radix-ui/react-icons';
+
 import { Bookmark } from '../../types';
 import BookmarkCard from './BookmarkCard';
 import BookmarkListItem from './BookmarkListItem';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { ViewGridIcon, ViewHorizontalIcon } from '@radix-ui/react-icons';
 import { EditBookmarkForm } from './EditBookmarkForm';
+import { useBookmarks } from '@/lib/BookmarkContext';
 
 type ViewMode = 'grid' | 'list';
 
@@ -17,10 +19,30 @@ const BookmarkList = ({ bookmarks = [], showCollection = false }: BookmarkListPr
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedBookmark, setSelectedBookmark] = useState<Bookmark | null>(null);
+  const { bookmarks: bookmarkList, setBookmarks } = useBookmarks();
 
-  const handleBookmarkClick = (bookmark: Bookmark) => {
+  const handleBookmarkEdit = (bookmark: Bookmark) => {
     setSelectedBookmark(bookmark);
     setIsEditModalOpen(true);
+  };
+
+  // Delete a bookmark and update the context
+  const handleBookmarkDelete = async (bookmark: Bookmark) => {
+    if (!window.confirm('Are you sure you want to delete this bookmark?')) return;
+    const requestToken = (window as any).OC?.requestToken || document.querySelector('head meta[name="requesttoken"]')?.getAttribute('content');
+    if (!requestToken) {
+      alert('CSRF token missing');
+      return;
+    }
+    const response = await fetch(`/apps/bookmarksmanager/api/v1/bookmarks/${bookmark.id}`, {
+      method: 'DELETE',
+      headers: { 'requesttoken': requestToken },
+    });
+    if (response.ok) {
+      setBookmarks(prev => prev.filter(b => b.id !== bookmark.id));
+    } else {
+      alert('Error while deleting');
+    }
   };
 
   return (
@@ -44,22 +66,24 @@ const BookmarkList = ({ bookmarks = [], showCollection = false }: BookmarkListPr
 
       {viewMode === 'grid' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {bookmarks.map(bookmark => (
+          {bookmarkList.map(bookmark => (
             <BookmarkCard
               key={bookmark.id}
               bookmark={bookmark}
               showCollection={showCollection}
-              onClick={() => handleBookmarkClick(bookmark)}
+              onEdit={() => handleBookmarkEdit(bookmark)}
+              onDelete={() => handleBookmarkDelete(bookmark)}
             />
           ))}
         </div>
       ) : (
         <div className="border rounded-md">
-          {bookmarks.map(bookmark => (
+          {bookmarkList.map(bookmark => (
             <BookmarkListItem
               key={bookmark.id}
               bookmark={bookmark}
-              onClick={() => handleBookmarkClick(bookmark)}
+              onEdit={() => handleBookmarkEdit(bookmark)}
+              onDelete={() => handleBookmarkDelete(bookmark)}
             />
           ))}
         </div>

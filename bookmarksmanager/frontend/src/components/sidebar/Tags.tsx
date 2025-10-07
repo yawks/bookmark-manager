@@ -1,13 +1,15 @@
+import { Link, useLoaderData } from '@tanstack/react-router';
+
 import React from 'react';
 import { t } from '../../lib/l10n';
-import { Link, useRouteContext } from '@tanstack/react-router';
+import { useBookmarks } from '@/lib/BookmarkContext';
 
 const Tags = () => {
-  const { tags, bookmarks } = useRouteContext({ from: '__root__' }) || { tags: [], bookmarks: [] };
-
+  const { tags } = useLoaderData({ from: '__root__' }) || { tags: [] };
   const allTags = tags || [];
-  const allBookmarks = bookmarks || [];
+  const { bookmarks: allBookmarks } = useBookmarks();
 
+  // Returns the number of bookmarks for a given tag
   const getTagCount = (tagId: number) => {
     return allBookmarks.filter(bookmark => bookmark.tags.includes(tagId)).length;
   };
@@ -21,7 +23,7 @@ const Tags = () => {
             key={tag.id}
             to="/tags/$tagId"
             params={{ tagId: String(tag.id) }}
-            className="flex justify-between items-center text-sm p-2 hover:bg-accent rounded-md cursor-pointer"
+            className="flex justify-between items-center text-sm p-2 hover:bg-accent rounded-md cursor-pointer text-foreground"
             activeProps={{ className: 'bg-accent' }}
           >
             <span># {tag.name}</span>

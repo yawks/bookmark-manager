@@ -1,12 +1,13 @@
 'use client';
 
-import { Command as CommandPrimitive, useCommandState } from 'cmdk';
-import { X, ChevronDownIcon } from 'lucide-react';
 import * as React from 'react';
+
+import { ChevronDownIcon, X } from 'lucide-react';
+import { Command, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
+import { Command as CommandPrimitive, useCommandState } from 'cmdk';
 import { forwardRef, useEffect } from 'react';
 
 import { Badge } from '@/components/ui/badge';
-import { Command, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 
 export interface Option {
@@ -35,7 +36,8 @@ interface MultipleSelectorProps {
   /** Debounce time for async search. Only work with `onSearch`. */
   delay?: number;
   /**
-   * Only work with `onSearch` prop. Trigger search when `onFocus`.
+      onCreateOption,
+      ...rest
    * For example, when user click on the input, it will trigger the search to get initial options.
    **/
   triggerSearchOnFocus?: boolean;
@@ -48,6 +50,8 @@ interface MultipleSelectorProps {
    **/
   onSearchSync?: (value: string) => Option[];
   onChange?: (options: Option[]) => void;
+  /** Called when a new option is created (creatable mode). Should return a Promise<Option> for async creation. */
+  onCreateOption?: (label: string) => Promise<Option>;
   /** Limit the maximum number of selected options. */
   maxSelected?: number;
   /** When the number of selected options exceeds the limit, the onMaxSelected will be called. */
@@ -100,34 +104,29 @@ export function useDebounce<T>(value: T, delay?: number): T {
   return debouncedValue;
 }
 
-function transToGroupOption(options: Option[], groupBy?: string) {
-  if (options.length === 0) {
-    return {};
+function transToGroupOption(options: Option[], groupBy?: string): GroupOption {
+  if (!options || options.length === 0) {
+    return { Options: [] };
   }
-  if (!groupBy) {
-    return {
-      '': options,
-    };
+  if (groupBy) {
+    return options.reduce((acc: GroupOption, option: Option) => {
+      const group = option[groupBy] as string || 'Options';
+      if (!acc[group]) acc[group] = [];
+      acc[group].push(option);
+      return acc;
+    }, {});
   }
-
-  const groupOption: GroupOption = {};
-  options.forEach((option) => {
-    const key = (option[groupBy] as string) || '';
-    if (!groupOption[key]) {
-      groupOption[key] = [];
-    }
-    groupOption[key].push(option);
-  });
-  return groupOption;
+  return { Options: options };
 }
-
-function removePickedOption(groupOption: GroupOption, picked: Option[]) {
-  const cloneOption = JSON.parse(JSON.stringify(groupOption)) as GroupOption;
-
-  for (const [key, value] of Object.entries(cloneOption)) {
-    cloneOption[key] = value.filter((val) => !picked.find((p) => p.value === val.value));
+// Remove picked options from the available options
+function removePickedOption(groupOption: GroupOption, selected: Option[]): GroupOption {
+  const result: GroupOption = {};
+  for (const [group, options] of Object.entries(groupOption)) {
+    result[group] = options.filter(
+      (option) => !selected.some((s) => s.value === option.value)
+    );
   }
-  return cloneOption;
+  return result;
 }
 
 function isOptionsExist(groupOption: GroupOption, targetOption: Option[]) {
@@ -161,8 +160,8 @@ const CommandEmpty = forwardRef<
 CommandEmpty.displayName = 'CommandEmpty';
 
 const MultipleSelector = React.forwardRef<MultipleSelectorRef, MultipleSelectorProps>(
-  (
-    {
+  (props, ref) => {
+    const {
       value,
       onChange,
       placeholder,
@@ -186,9 +185,10 @@ const MultipleSelector = React.forwardRef<MultipleSelectorRef, MultipleSelectorP
       commandProps,
       inputProps,
       hideClearAllButton = false,
-    }: MultipleSelectorProps,
-    ref: React.Ref<MultipleSelectorRef>,
-  ) => {
+      onCreateOption,
+      ...rest
+    } = props;
+
     const inputRef = React.useRef<HTMLInputElement>(null);
     const mountedRef = React.useRef(false);
     const [open, setOpen] = React.useState(false);
@@ -204,22 +204,23 @@ const MultipleSelector = React.forwardRef<MultipleSelectorRef, MultipleSelectorP
     }, []);
 
     const [selected, setSelected] = React.useState<Option[]>(value || []);
-    const [options, setOptions] = React.useState<GroupOption>(
+    const [groupedOptions, setGroupedOptions] = React.useState<GroupOption>(
       transToGroupOption(arrayDefaultOptions, groupBy),
     );
     const [inputValue, setInputValue] = React.useState('');
     const debouncedSearchTerm = useDebounce(inputValue, delay || 500);
 
-    React.useImperativeHandle(
-      ref,
-      () => ({
-        selectedValue: [...selected],
-        input: inputRef.current as HTMLInputElement,
-        focus: () => inputRef?.current?.focus(),
-        reset: () => setSelected([]),
-      }),
-      [selected],
-    );
+    // Helper to update options
+    const setOptions = (opts: GroupOption) => {
+      setGroupedOptions(opts);
+    };
+
+    React.useImperativeHandle(ref, () => ({
+      selectedValue: [...selected],
+      input: inputRef.current as HTMLInputElement,
+      focus: () => inputRef?.current?.focus(),
+      reset: () => setSelected([]),
+    }), [selected]);
 
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       if (!mountedRef.current) {
@@ -288,10 +289,10 @@ const MultipleSelector = React.forwardRef<MultipleSelectorRef, MultipleSelectorP
         return;
       }
       const newOption = transToGroupOption(arrayOptions || [], groupBy);
-      if (JSON.stringify(newOption) !== JSON.stringify(options)) {
-        setOptions(newOption);
+      if (JSON.stringify(newOption) !== JSON.stringify(groupedOptions)) {
+        setGroupedOptions(newOption);
       }
-    }, [arrayDefaultOptions, arrayOptions, groupBy, onSearch, options]);
+    }, [arrayDefaultOptions, arrayOptions, groupBy, onSearch, groupedOptions]);
 
     useEffect(() => {
       const doSearchSync = () => {
@@ -340,11 +341,31 @@ const MultipleSelector = React.forwardRef<MultipleSelectorRef, MultipleSelectorP
     const CreatableItem = () => {
       if (!creatable) return undefined;
       if (
-        isOptionsExist(options, [{ value: inputValue, label: inputValue }]) ||
+        isOptionsExist(groupedOptions, [{ value: inputValue, label: inputValue }]) ||
         selected.find((s) => s.value === inputValue)
       ) {
         return undefined;
       }
+
+      const handleCreate = async (label: string) => {
+        if (selected.length >= maxSelected) {
+          onMaxSelected?.(selected.length);
+          return;
+        }
+        setInputValue('');
+        if (typeof onCreateOption === 'function') {
+          const created = await onCreateOption(label);
+          if (created) {
+            const newOptions = [...selected, created];
+            setSelected(newOptions);
+            onChange?.(newOptions);
+          }
+        } else {
+          const newOptions = [...selected, { value: label, label }];
+          setSelected(newOptions);
+          onChange?.(newOptions);
+        }
+      };
 
       const Item = (
         <CommandItem
@@ -354,16 +375,7 @@ const MultipleSelector = React.forwardRef<MultipleSelectorRef, MultipleSelectorP
             e.preventDefault();
             e.stopPropagation();
           }}
-          onSelect={(value: string) => {
-            if (selected.length >= maxSelected) {
-              onMaxSelected?.(selected.length);
-              return;
-            }
-            setInputValue('');
-            const newOptions = [...selected, { value, label: value }];
-            setSelected(newOptions);
-            onChange?.(newOptions);
-          }}
+          onSelect={() => handleCreate(inputValue)}
         >
           {`Create "${inputValue}"`}
         </CommandItem>
@@ -383,7 +395,7 @@ const MultipleSelector = React.forwardRef<MultipleSelectorRef, MultipleSelectorP
     const EmptyItem = React.useCallback(() => {
       if (!emptyIndicator) return undefined;
 
-      if (onSearch && !creatable && Object.keys(options).length === 0) {
+  if (onSearch && !creatable && Object.keys(arrayOptions || {}).length === 0) {
         return (
           <CommandItem value="-" disabled>
             {emptyIndicator}
@@ -392,11 +404,11 @@ const MultipleSelector = React.forwardRef<MultipleSelectorRef, MultipleSelectorP
       }
 
       return <CommandEmpty>{emptyIndicator}</CommandEmpty>;
-    }, [creatable, emptyIndicator, onSearch, options]);
+  }, [creatable, emptyIndicator, onSearch, arrayOptions]);
 
     const selectables = React.useMemo<GroupOption>(
-      () => removePickedOption(options, selected),
-      [options, selected],
+      () => removePickedOption(groupedOptions, selected),
+      [groupedOptions, selected],
     );
 
     const commandFilter = React.useCallback(() => {
@@ -441,39 +453,40 @@ const MultipleSelector = React.forwardRef<MultipleSelectorRef, MultipleSelectorP
         >
           <div className="relative flex flex-wrap gap-1">
             {selected.map((option) => {
-              return (
-                <Badge
-                  key={option.value}
-                  className={cn(
-                    'data-[disabled]:bg-muted-foreground data-[disabled]:text-muted data-[disabled]:hover:bg-muted-foreground',
-                    'data-[fixed]:bg-muted-foreground data-[fixed]:text-muted data-[fixed]:hover:bg-muted-foreground',
-                    badgeClassName,
-                  )}
-                  data-fixed={option.fixed}
-                  data-disabled={disabled || undefined}
-                >
-                  {option.label}
-                  <button
-                    type="button"
+                return (
+                  <Badge
+                    key={option.value}
                     className={cn(
-                      'ml-1 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2',
-                      (disabled || option.fixed) && 'hidden',
+                      'tag-badge',
+                      '!rounded !rounded-md px-2 py-0.5',
+                      badgeClassName,
                     )}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        handleUnselect(option);
-                      }
-                    }}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
-                    onClick={() => handleUnselect(option)}
+                    data-fixed={option.fixed}
+                    data-disabled={disabled || undefined}
                   >
-                    <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                  </button>
-                </Badge>
-              );
+                    {option.label}
+                    <button
+                      type="button"
+                      className={cn(
+                        'ml-0.5 rounded outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2 p-0.5 h-4 w-4 flex items-center justify-center',
+                        (disabled || option.fixed) && 'hidden',
+                      )}
+                      style={{ minWidth: 16, minHeight: 16 }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleUnselect(option);
+                        }
+                      }}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      onClick={() => handleUnselect(option)}
+                    >
+                      <X className="h-2.5 w-2.5 text-muted-foreground hover:text-foreground" />
+                    </button>
+                  </Badge>
+                );
             })}
             <CommandPrimitive.Input
               {...inputProps}

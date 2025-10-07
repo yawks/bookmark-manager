@@ -319,7 +319,4254 @@ reactJsxRuntime_production_min.jsxs = q;
   jsxRuntime.exports = reactJsxRuntime_production_min;
 }
 var jsxRuntimeExports = jsxRuntime.exports;
-var client = {};
+const __storeToDerived = /* @__PURE__ */ new WeakMap();
+const __derivedToStore = /* @__PURE__ */ new WeakMap();
+const __depsThatHaveWrittenThisTick = {
+  current: []
+};
+let __isFlushing = false;
+let __batchDepth = 0;
+const __pendingUpdates = /* @__PURE__ */ new Set();
+const __initialBatchValues = /* @__PURE__ */ new Map();
+function __flush_internals(relatedVals) {
+  const sorted = Array.from(relatedVals).sort((a, b) => {
+    if (a instanceof Derived && a.options.deps.includes(b)) return 1;
+    if (b instanceof Derived && b.options.deps.includes(a)) return -1;
+    return 0;
+  });
+  for (const derived of sorted) {
+    if (__depsThatHaveWrittenThisTick.current.includes(derived)) {
+      continue;
+    }
+    __depsThatHaveWrittenThisTick.current.push(derived);
+    derived.recompute();
+    const stores = __derivedToStore.get(derived);
+    if (stores) {
+      for (const store of stores) {
+        const relatedLinkedDerivedVals = __storeToDerived.get(store);
+        if (!relatedLinkedDerivedVals) continue;
+        __flush_internals(relatedLinkedDerivedVals);
+      }
+    }
+  }
+}
+function __notifyListeners(store) {
+  const value = {
+    prevVal: store.prevState,
+    currentVal: store.state
+  };
+  for (const listener of store.listeners) {
+    listener(value);
+  }
+}
+function __notifyDerivedListeners(derived) {
+  const value = {
+    prevVal: derived.prevState,
+    currentVal: derived.state
+  };
+  for (const listener of derived.listeners) {
+    listener(value);
+  }
+}
+function __flush(store) {
+  if (__batchDepth > 0 && !__initialBatchValues.has(store)) {
+    __initialBatchValues.set(store, store.prevState);
+  }
+  __pendingUpdates.add(store);
+  if (__batchDepth > 0) return;
+  if (__isFlushing) return;
+  try {
+    __isFlushing = true;
+    while (__pendingUpdates.size > 0) {
+      const stores = Array.from(__pendingUpdates);
+      __pendingUpdates.clear();
+      for (const store2 of stores) {
+        const prevState = __initialBatchValues.get(store2) ?? store2.prevState;
+        store2.prevState = prevState;
+        __notifyListeners(store2);
+      }
+      for (const store2 of stores) {
+        const derivedVals = __storeToDerived.get(store2);
+        if (!derivedVals) continue;
+        __depsThatHaveWrittenThisTick.current.push(store2);
+        __flush_internals(derivedVals);
+      }
+      for (const store2 of stores) {
+        const derivedVals = __storeToDerived.get(store2);
+        if (!derivedVals) continue;
+        for (const derived of derivedVals) {
+          __notifyDerivedListeners(derived);
+        }
+      }
+    }
+  } finally {
+    __isFlushing = false;
+    __depsThatHaveWrittenThisTick.current = [];
+    __initialBatchValues.clear();
+  }
+}
+function batch(fn) {
+  __batchDepth++;
+  try {
+    fn();
+  } finally {
+    __batchDepth--;
+    if (__batchDepth === 0) {
+      const pendingUpdateToFlush = __pendingUpdates.values().next().value;
+      if (pendingUpdateToFlush) {
+        __flush(pendingUpdateToFlush);
+      }
+    }
+  }
+}
+function isUpdaterFunction(updater) {
+  return typeof updater === "function";
+}
+class Store {
+  constructor(initialState, options) {
+    this.listeners = /* @__PURE__ */ new Set();
+    this.subscribe = (listener) => {
+      var _a, _b;
+      this.listeners.add(listener);
+      const unsub = (_b = (_a = this.options) == null ? void 0 : _a.onSubscribe) == null ? void 0 : _b.call(_a, listener, this);
+      return () => {
+        this.listeners.delete(listener);
+        unsub == null ? void 0 : unsub();
+      };
+    };
+    this.prevState = initialState;
+    this.state = initialState;
+    this.options = options;
+  }
+  setState(updater) {
+    var _a, _b, _c;
+    this.prevState = this.state;
+    if ((_a = this.options) == null ? void 0 : _a.updateFn) {
+      this.state = this.options.updateFn(this.prevState)(updater);
+    } else {
+      if (isUpdaterFunction(updater)) {
+        this.state = updater(this.prevState);
+      } else {
+        this.state = updater;
+      }
+    }
+    (_c = (_b = this.options) == null ? void 0 : _b.onUpdate) == null ? void 0 : _c.call(_b);
+    __flush(this);
+  }
+}
+class Derived {
+  constructor(options) {
+    this.listeners = /* @__PURE__ */ new Set();
+    this._subscriptions = [];
+    this.lastSeenDepValues = [];
+    this.getDepVals = () => {
+      const l2 = this.options.deps.length;
+      const prevDepVals = new Array(l2);
+      const currDepVals = new Array(l2);
+      for (let i = 0; i < l2; i++) {
+        const dep = this.options.deps[i];
+        prevDepVals[i] = dep.prevState;
+        currDepVals[i] = dep.state;
+      }
+      this.lastSeenDepValues = currDepVals;
+      return {
+        prevDepVals,
+        currDepVals,
+        prevVal: this.prevState ?? void 0
+      };
+    };
+    this.recompute = () => {
+      var _a, _b;
+      this.prevState = this.state;
+      const depVals = this.getDepVals();
+      this.state = this.options.fn(depVals);
+      (_b = (_a = this.options).onUpdate) == null ? void 0 : _b.call(_a);
+    };
+    this.checkIfRecalculationNeededDeeply = () => {
+      for (const dep of this.options.deps) {
+        if (dep instanceof Derived) {
+          dep.checkIfRecalculationNeededDeeply();
+        }
+      }
+      let shouldRecompute = false;
+      const lastSeenDepValues = this.lastSeenDepValues;
+      const { currDepVals } = this.getDepVals();
+      for (let i = 0; i < currDepVals.length; i++) {
+        if (currDepVals[i] !== lastSeenDepValues[i]) {
+          shouldRecompute = true;
+          break;
+        }
+      }
+      if (shouldRecompute) {
+        this.recompute();
+      }
+    };
+    this.mount = () => {
+      this.registerOnGraph();
+      this.checkIfRecalculationNeededDeeply();
+      return () => {
+        this.unregisterFromGraph();
+        for (const cleanup of this._subscriptions) {
+          cleanup();
+        }
+      };
+    };
+    this.subscribe = (listener) => {
+      var _a, _b;
+      this.listeners.add(listener);
+      const unsub = (_b = (_a = this.options).onSubscribe) == null ? void 0 : _b.call(_a, listener, this);
+      return () => {
+        this.listeners.delete(listener);
+        unsub == null ? void 0 : unsub();
+      };
+    };
+    this.options = options;
+    this.state = options.fn({
+      prevDepVals: void 0,
+      prevVal: void 0,
+      currDepVals: this.getDepVals().currDepVals
+    });
+  }
+  registerOnGraph(deps = this.options.deps) {
+    for (const dep of deps) {
+      if (dep instanceof Derived) {
+        dep.registerOnGraph();
+        this.registerOnGraph(dep.options.deps);
+      } else if (dep instanceof Store) {
+        let relatedLinkedDerivedVals = __storeToDerived.get(dep);
+        if (!relatedLinkedDerivedVals) {
+          relatedLinkedDerivedVals = /* @__PURE__ */ new Set();
+          __storeToDerived.set(dep, relatedLinkedDerivedVals);
+        }
+        relatedLinkedDerivedVals.add(this);
+        let relatedStores = __derivedToStore.get(this);
+        if (!relatedStores) {
+          relatedStores = /* @__PURE__ */ new Set();
+          __derivedToStore.set(this, relatedStores);
+        }
+        relatedStores.add(dep);
+      }
+    }
+  }
+  unregisterFromGraph(deps = this.options.deps) {
+    for (const dep of deps) {
+      if (dep instanceof Derived) {
+        this.unregisterFromGraph(dep.options.deps);
+      } else if (dep instanceof Store) {
+        const relatedLinkedDerivedVals = __storeToDerived.get(dep);
+        if (relatedLinkedDerivedVals) {
+          relatedLinkedDerivedVals.delete(this);
+        }
+        const relatedStores = __derivedToStore.get(this);
+        if (relatedStores) {
+          relatedStores.delete(dep);
+        }
+      }
+    }
+  }
+}
+const stateIndexKey = "__TSR_index";
+const popStateEvent = "popstate";
+const beforeUnloadEvent = "beforeunload";
+function createHistory(opts) {
+  let location = opts.getLocation();
+  const subscribers = /* @__PURE__ */ new Set();
+  const notify = (action) => {
+    location = opts.getLocation();
+    subscribers.forEach((subscriber) => subscriber({ location, action }));
+  };
+  const handleIndexChange = (action) => {
+    if (opts.notifyOnIndexChange ?? true) notify(action);
+    else location = opts.getLocation();
+  };
+  const tryNavigation = async ({
+    task,
+    navigateOpts,
+    ...actionInfo
+  }) => {
+    var _a, _b;
+    const ignoreBlocker = (navigateOpts == null ? void 0 : navigateOpts.ignoreBlocker) ?? false;
+    if (ignoreBlocker) {
+      task();
+      return;
+    }
+    const blockers = ((_a = opts.getBlockers) == null ? void 0 : _a.call(opts)) ?? [];
+    const isPushOrReplace = actionInfo.type === "PUSH" || actionInfo.type === "REPLACE";
+    if (typeof document !== "undefined" && blockers.length && isPushOrReplace) {
+      for (const blocker of blockers) {
+        const nextLocation = parseHref(actionInfo.path, actionInfo.state);
+        const isBlocked = await blocker.blockerFn({
+          currentLocation: location,
+          nextLocation,
+          action: actionInfo.type
+        });
+        if (isBlocked) {
+          (_b = opts.onBlocked) == null ? void 0 : _b.call(opts);
+          return;
+        }
+      }
+    }
+    task();
+  };
+  return {
+    get location() {
+      return location;
+    },
+    get length() {
+      return opts.getLength();
+    },
+    subscribers,
+    subscribe: (cb2) => {
+      subscribers.add(cb2);
+      return () => {
+        subscribers.delete(cb2);
+      };
+    },
+    push: (path, state, navigateOpts) => {
+      const currentIndex = location.state[stateIndexKey];
+      state = assignKeyAndIndex(currentIndex + 1, state);
+      tryNavigation({
+        task: () => {
+          opts.pushState(path, state);
+          notify({ type: "PUSH" });
+        },
+        navigateOpts,
+        type: "PUSH",
+        path,
+        state
+      });
+    },
+    replace: (path, state, navigateOpts) => {
+      const currentIndex = location.state[stateIndexKey];
+      state = assignKeyAndIndex(currentIndex, state);
+      tryNavigation({
+        task: () => {
+          opts.replaceState(path, state);
+          notify({ type: "REPLACE" });
+        },
+        navigateOpts,
+        type: "REPLACE",
+        path,
+        state
+      });
+    },
+    go: (index2, navigateOpts) => {
+      tryNavigation({
+        task: () => {
+          opts.go(index2);
+          handleIndexChange({ type: "GO", index: index2 });
+        },
+        navigateOpts,
+        type: "GO"
+      });
+    },
+    back: (navigateOpts) => {
+      tryNavigation({
+        task: () => {
+          opts.back((navigateOpts == null ? void 0 : navigateOpts.ignoreBlocker) ?? false);
+          handleIndexChange({ type: "BACK" });
+        },
+        navigateOpts,
+        type: "BACK"
+      });
+    },
+    forward: (navigateOpts) => {
+      tryNavigation({
+        task: () => {
+          opts.forward((navigateOpts == null ? void 0 : navigateOpts.ignoreBlocker) ?? false);
+          handleIndexChange({ type: "FORWARD" });
+        },
+        navigateOpts,
+        type: "FORWARD"
+      });
+    },
+    canGoBack: () => location.state[stateIndexKey] !== 0,
+    createHref: (str) => opts.createHref(str),
+    block: (blocker) => {
+      var _a;
+      if (!opts.setBlockers) return () => {
+      };
+      const blockers = ((_a = opts.getBlockers) == null ? void 0 : _a.call(opts)) ?? [];
+      opts.setBlockers([...blockers, blocker]);
+      return () => {
+        var _a2, _b;
+        const blockers2 = ((_a2 = opts.getBlockers) == null ? void 0 : _a2.call(opts)) ?? [];
+        (_b = opts.setBlockers) == null ? void 0 : _b.call(opts, blockers2.filter((b) => b !== blocker));
+      };
+    },
+    flush: () => {
+      var _a;
+      return (_a = opts.flush) == null ? void 0 : _a.call(opts);
+    },
+    destroy: () => {
+      var _a;
+      return (_a = opts.destroy) == null ? void 0 : _a.call(opts);
+    },
+    notify
+  };
+}
+function assignKeyAndIndex(index2, state) {
+  if (!state) {
+    state = {};
+  }
+  const key = createRandomKey();
+  return {
+    ...state,
+    key,
+    // TODO: Remove in v2 - use __TSR_key instead
+    __TSR_key: key,
+    [stateIndexKey]: index2
+  };
+}
+function createBrowserHistory(opts) {
+  var _a, _b;
+  const win = typeof document !== "undefined" ? window : void 0;
+  const originalPushState = win.history.pushState;
+  const originalReplaceState = win.history.replaceState;
+  let blockers = [];
+  const _getBlockers = () => blockers;
+  const _setBlockers = (newBlockers) => blockers = newBlockers;
+  const createHref = (path) => path;
+  const parseLocation = () => parseHref(
+    `${win.location.pathname}${win.location.search}${win.location.hash}`,
+    win.history.state
+  );
+  if (!((_a = win.history.state) == null ? void 0 : _a.__TSR_key) && !((_b = win.history.state) == null ? void 0 : _b.key)) {
+    const addedKey = createRandomKey();
+    win.history.replaceState(
+      {
+        [stateIndexKey]: 0,
+        key: addedKey,
+        // TODO: Remove in v2 - use __TSR_key instead
+        __TSR_key: addedKey
+      },
+      ""
+    );
+  }
+  let currentLocation = parseLocation();
+  let rollbackLocation;
+  let nextPopIsGo = false;
+  let ignoreNextPop = false;
+  let skipBlockerNextPop = false;
+  let ignoreNextBeforeUnload = false;
+  const getLocation = () => currentLocation;
+  let next;
+  let scheduled;
+  const flush = () => {
+    if (!next) {
+      return;
+    }
+    history._ignoreSubscribers = true;
+    (next.isPush ? win.history.pushState : win.history.replaceState)(
+      next.state,
+      "",
+      next.href
+    );
+    history._ignoreSubscribers = false;
+    next = void 0;
+    scheduled = void 0;
+    rollbackLocation = void 0;
+  };
+  const queueHistoryAction = (type, destHref, state) => {
+    const href = createHref(destHref);
+    if (!scheduled) {
+      rollbackLocation = currentLocation;
+    }
+    currentLocation = parseHref(destHref, state);
+    next = {
+      href,
+      state,
+      isPush: (next == null ? void 0 : next.isPush) || type === "push"
+    };
+    if (!scheduled) {
+      scheduled = Promise.resolve().then(() => flush());
+    }
+  };
+  const onPushPop = (type) => {
+    currentLocation = parseLocation();
+    history.notify({ type });
+  };
+  const onPushPopEvent = async () => {
+    if (ignoreNextPop) {
+      ignoreNextPop = false;
+      return;
+    }
+    const nextLocation = parseLocation();
+    const delta = nextLocation.state[stateIndexKey] - currentLocation.state[stateIndexKey];
+    const isForward = delta === 1;
+    const isBack = delta === -1;
+    const isGo = !isForward && !isBack || nextPopIsGo;
+    nextPopIsGo = false;
+    const action = isGo ? "GO" : isBack ? "BACK" : "FORWARD";
+    const notify = isGo ? {
+      type: "GO",
+      index: delta
+    } : {
+      type: isBack ? "BACK" : "FORWARD"
+    };
+    if (skipBlockerNextPop) {
+      skipBlockerNextPop = false;
+    } else {
+      const blockers2 = _getBlockers();
+      if (typeof document !== "undefined" && blockers2.length) {
+        for (const blocker of blockers2) {
+          const isBlocked = await blocker.blockerFn({
+            currentLocation,
+            nextLocation,
+            action
+          });
+          if (isBlocked) {
+            ignoreNextPop = true;
+            win.history.go(1);
+            history.notify(notify);
+            return;
+          }
+        }
+      }
+    }
+    currentLocation = parseLocation();
+    history.notify(notify);
+  };
+  const onBeforeUnload = (e) => {
+    if (ignoreNextBeforeUnload) {
+      ignoreNextBeforeUnload = false;
+      return;
+    }
+    let shouldBlock = false;
+    const blockers2 = _getBlockers();
+    if (typeof document !== "undefined" && blockers2.length) {
+      for (const blocker of blockers2) {
+        const shouldHaveBeforeUnload = blocker.enableBeforeUnload ?? true;
+        if (shouldHaveBeforeUnload === true) {
+          shouldBlock = true;
+          break;
+        }
+        if (typeof shouldHaveBeforeUnload === "function" && shouldHaveBeforeUnload() === true) {
+          shouldBlock = true;
+          break;
+        }
+      }
+    }
+    if (shouldBlock) {
+      e.preventDefault();
+      return e.returnValue = "";
+    }
+    return;
+  };
+  const history = createHistory({
+    getLocation,
+    getLength: () => win.history.length,
+    pushState: (href, state) => queueHistoryAction("push", href, state),
+    replaceState: (href, state) => queueHistoryAction("replace", href, state),
+    back: (ignoreBlocker) => {
+      if (ignoreBlocker) skipBlockerNextPop = true;
+      ignoreNextBeforeUnload = true;
+      return win.history.back();
+    },
+    forward: (ignoreBlocker) => {
+      if (ignoreBlocker) skipBlockerNextPop = true;
+      ignoreNextBeforeUnload = true;
+      win.history.forward();
+    },
+    go: (n2) => {
+      nextPopIsGo = true;
+      win.history.go(n2);
+    },
+    createHref: (href) => createHref(href),
+    flush,
+    destroy: () => {
+      win.history.pushState = originalPushState;
+      win.history.replaceState = originalReplaceState;
+      win.removeEventListener(beforeUnloadEvent, onBeforeUnload, {
+        capture: true
+      });
+      win.removeEventListener(popStateEvent, onPushPopEvent);
+    },
+    onBlocked: () => {
+      if (rollbackLocation && currentLocation !== rollbackLocation) {
+        currentLocation = rollbackLocation;
+      }
+    },
+    getBlockers: _getBlockers,
+    setBlockers: _setBlockers,
+    notifyOnIndexChange: false
+  });
+  win.addEventListener(beforeUnloadEvent, onBeforeUnload, { capture: true });
+  win.addEventListener(popStateEvent, onPushPopEvent);
+  win.history.pushState = function(...args) {
+    const res = originalPushState.apply(win.history, args);
+    if (!history._ignoreSubscribers) onPushPop("PUSH");
+    return res;
+  };
+  win.history.replaceState = function(...args) {
+    const res = originalReplaceState.apply(win.history, args);
+    if (!history._ignoreSubscribers) onPushPop("REPLACE");
+    return res;
+  };
+  return history;
+}
+function parseHref(href, state) {
+  const hashIndex = href.indexOf("#");
+  const searchIndex = href.indexOf("?");
+  const addedKey = createRandomKey();
+  return {
+    href,
+    pathname: href.substring(
+      0,
+      hashIndex > 0 ? searchIndex > 0 ? Math.min(hashIndex, searchIndex) : hashIndex : searchIndex > 0 ? searchIndex : href.length
+    ),
+    hash: hashIndex > -1 ? href.substring(hashIndex) : "",
+    search: searchIndex > -1 ? href.slice(searchIndex, hashIndex === -1 ? void 0 : hashIndex) : "",
+    state: state || { [stateIndexKey]: 0, key: addedKey, __TSR_key: addedKey }
+  };
+}
+function createRandomKey() {
+  return (Math.random() + 1).toString(36).substring(7);
+}
+function last(arr) {
+  return arr[arr.length - 1];
+}
+function isFunction$1(d) {
+  return typeof d === "function";
+}
+function functionalUpdate(updater, previous) {
+  if (isFunction$1(updater)) {
+    return updater(previous);
+  }
+  return updater;
+}
+const hasOwn = Object.prototype.hasOwnProperty;
+function replaceEqualDeep(prev, _next) {
+  if (prev === _next) {
+    return prev;
+  }
+  const next = _next;
+  const array = isPlainArray(prev) && isPlainArray(next);
+  if (!array && !(isPlainObject(prev) && isPlainObject(next))) return next;
+  const prevItems = array ? prev : getEnumerableOwnKeys(prev);
+  if (!prevItems) return next;
+  const nextItems = array ? next : getEnumerableOwnKeys(next);
+  if (!nextItems) return next;
+  const prevSize = prevItems.length;
+  const nextSize = nextItems.length;
+  const copy = array ? new Array(nextSize) : {};
+  let equalItems = 0;
+  for (let i = 0; i < nextSize; i++) {
+    const key = array ? i : nextItems[i];
+    const p2 = prev[key];
+    const n2 = next[key];
+    if (p2 === n2) {
+      copy[key] = p2;
+      if (array ? i < prevSize : hasOwn.call(prev, key)) equalItems++;
+      continue;
+    }
+    if (p2 === null || n2 === null || typeof p2 !== "object" || typeof n2 !== "object") {
+      copy[key] = n2;
+      continue;
+    }
+    const v2 = replaceEqualDeep(p2, n2);
+    copy[key] = v2;
+    if (v2 === p2) equalItems++;
+  }
+  return prevSize === nextSize && equalItems === prevSize ? prev : copy;
+}
+function getEnumerableOwnKeys(o) {
+  const keys = [];
+  const names = Object.getOwnPropertyNames(o);
+  for (const name of names) {
+    if (!Object.prototype.propertyIsEnumerable.call(o, name)) return false;
+    keys.push(name);
+  }
+  const symbols = Object.getOwnPropertySymbols(o);
+  for (const symbol of symbols) {
+    if (!Object.prototype.propertyIsEnumerable.call(o, symbol)) return false;
+    keys.push(symbol);
+  }
+  return keys;
+}
+function isPlainObject(o) {
+  if (!hasObjectPrototype(o)) {
+    return false;
+  }
+  const ctor = o.constructor;
+  if (typeof ctor === "undefined") {
+    return true;
+  }
+  const prot = ctor.prototype;
+  if (!hasObjectPrototype(prot)) {
+    return false;
+  }
+  if (!prot.hasOwnProperty("isPrototypeOf")) {
+    return false;
+  }
+  return true;
+}
+function hasObjectPrototype(o) {
+  return Object.prototype.toString.call(o) === "[object Object]";
+}
+function isPlainArray(value) {
+  return Array.isArray(value) && value.length === Object.keys(value).length;
+}
+function deepEqual$1(a, b, opts) {
+  if (a === b) {
+    return true;
+  }
+  if (typeof a !== typeof b) {
+    return false;
+  }
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return false;
+    for (let i = 0, l2 = a.length; i < l2; i++) {
+      if (!deepEqual$1(a[i], b[i], opts)) return false;
+    }
+    return true;
+  }
+  if (isPlainObject(a) && isPlainObject(b)) {
+    const ignoreUndefined = (opts == null ? void 0 : opts.ignoreUndefined) ?? true;
+    if (opts == null ? void 0 : opts.partial) {
+      for (const k2 in b) {
+        if (!ignoreUndefined || b[k2] !== void 0) {
+          if (!deepEqual$1(a[k2], b[k2], opts)) return false;
+        }
+      }
+      return true;
+    }
+    let aCount = 0;
+    if (!ignoreUndefined) {
+      aCount = Object.keys(a).length;
+    } else {
+      for (const k2 in a) {
+        if (a[k2] !== void 0) aCount++;
+      }
+    }
+    let bCount = 0;
+    for (const k2 in b) {
+      if (!ignoreUndefined || b[k2] !== void 0) {
+        bCount++;
+        if (bCount > aCount || !deepEqual$1(a[k2], b[k2], opts)) return false;
+      }
+    }
+    return aCount === bCount;
+  }
+  return false;
+}
+function createControlledPromise(onResolve) {
+  let resolveLoadPromise;
+  let rejectLoadPromise;
+  const controlledPromise = new Promise((resolve, reject) => {
+    resolveLoadPromise = resolve;
+    rejectLoadPromise = reject;
+  });
+  controlledPromise.status = "pending";
+  controlledPromise.resolve = (value) => {
+    controlledPromise.status = "resolved";
+    controlledPromise.value = value;
+    resolveLoadPromise(value);
+    onResolve == null ? void 0 : onResolve(value);
+  };
+  controlledPromise.reject = (e) => {
+    controlledPromise.status = "rejected";
+    rejectLoadPromise(e);
+  };
+  return controlledPromise;
+}
+function isPromise(value) {
+  return Boolean(
+    value && typeof value === "object" && typeof value.then === "function"
+  );
+}
+var prefix = "Invariant failed";
+function invariant(condition, message) {
+  if (condition) {
+    return;
+  }
+  {
+    throw new Error(prefix);
+  }
+}
+const rootRouteId = "__root__";
+const SEGMENT_TYPE_PATHNAME = 0;
+const SEGMENT_TYPE_PARAM = 1;
+const SEGMENT_TYPE_WILDCARD = 2;
+const SEGMENT_TYPE_OPTIONAL_PARAM = 3;
+function joinPaths(paths) {
+  return cleanPath(
+    paths.filter((val) => {
+      return val !== void 0;
+    }).join("/")
+  );
+}
+function cleanPath(path) {
+  return path.replace(/\/{2,}/g, "/");
+}
+function trimPathLeft(path) {
+  return path === "/" ? path : path.replace(/^\/{1,}/, "");
+}
+function trimPathRight(path) {
+  return path === "/" ? path : path.replace(/\/{1,}$/, "");
+}
+function trimPath(path) {
+  return trimPathRight(trimPathLeft(path));
+}
+function removeTrailingSlash(value, basepath) {
+  if ((value == null ? void 0 : value.endsWith("/")) && value !== "/" && value !== `${basepath}/`) {
+    return value.slice(0, -1);
+  }
+  return value;
+}
+function exactPathTest(pathName1, pathName2, basepath) {
+  return removeTrailingSlash(pathName1, basepath) === removeTrailingSlash(pathName2, basepath);
+}
+function segmentToString(segment) {
+  const { type, value } = segment;
+  if (type === SEGMENT_TYPE_PATHNAME) {
+    return value;
+  }
+  const { prefixSegment, suffixSegment } = segment;
+  if (type === SEGMENT_TYPE_PARAM) {
+    const param = value.substring(1);
+    if (prefixSegment && suffixSegment) {
+      return `${prefixSegment}{$${param}}${suffixSegment}`;
+    } else if (prefixSegment) {
+      return `${prefixSegment}{$${param}}`;
+    } else if (suffixSegment) {
+      return `{$${param}}${suffixSegment}`;
+    }
+  }
+  if (type === SEGMENT_TYPE_OPTIONAL_PARAM) {
+    const param = value.substring(1);
+    if (prefixSegment && suffixSegment) {
+      return `${prefixSegment}{-$${param}}${suffixSegment}`;
+    } else if (prefixSegment) {
+      return `${prefixSegment}{-$${param}}`;
+    } else if (suffixSegment) {
+      return `{-$${param}}${suffixSegment}`;
+    }
+    return `{-$${param}}`;
+  }
+  if (type === SEGMENT_TYPE_WILDCARD) {
+    if (prefixSegment && suffixSegment) {
+      return `${prefixSegment}{$}${suffixSegment}`;
+    } else if (prefixSegment) {
+      return `${prefixSegment}{$}`;
+    } else if (suffixSegment) {
+      return `{$}${suffixSegment}`;
+    }
+  }
+  return value;
+}
+function resolvePath({
+  base,
+  to,
+  trailingSlash = "never",
+  parseCache
+}) {
+  var _a;
+  let baseSegments = parseBasePathSegments(base, parseCache).slice();
+  const toSegments = parseRoutePathSegments(to, parseCache);
+  if (baseSegments.length > 1 && ((_a = last(baseSegments)) == null ? void 0 : _a.value) === "/") {
+    baseSegments.pop();
+  }
+  for (let index2 = 0, length = toSegments.length; index2 < length; index2++) {
+    const toSegment = toSegments[index2];
+    const value = toSegment.value;
+    if (value === "/") {
+      if (!index2) {
+        baseSegments = [toSegment];
+      } else if (index2 === length - 1) {
+        baseSegments.push(toSegment);
+      } else ;
+    } else if (value === "..") {
+      baseSegments.pop();
+    } else if (value === ".") ;
+    else {
+      baseSegments.push(toSegment);
+    }
+  }
+  if (baseSegments.length > 1) {
+    if (last(baseSegments).value === "/") {
+      if (trailingSlash === "never") {
+        baseSegments.pop();
+      }
+    } else if (trailingSlash === "always") {
+      baseSegments.push({ type: SEGMENT_TYPE_PATHNAME, value: "/" });
+    }
+  }
+  const segmentValues = baseSegments.map(segmentToString);
+  const joined = joinPaths(segmentValues);
+  return joined;
+}
+const parseBasePathSegments = (pathname, cache) => parsePathname(pathname, cache, true);
+const parseRoutePathSegments = (pathname, cache) => parsePathname(pathname, cache, false);
+const parsePathname = (pathname, cache, basePathValues) => {
+  if (!pathname) return [];
+  const cached = cache == null ? void 0 : cache.get(pathname);
+  if (cached) return cached;
+  const parsed = baseParsePathname(pathname, basePathValues);
+  cache == null ? void 0 : cache.set(pathname, parsed);
+  return parsed;
+};
+const PARAM_RE = /^\$.{1,}$/;
+const PARAM_W_CURLY_BRACES_RE = /^(.*?)\{(\$[a-zA-Z_$][a-zA-Z0-9_$]*)\}(.*)$/;
+const OPTIONAL_PARAM_W_CURLY_BRACES_RE = /^(.*?)\{-(\$[a-zA-Z_$][a-zA-Z0-9_$]*)\}(.*)$/;
+const WILDCARD_RE = /^\$$/;
+const WILDCARD_W_CURLY_BRACES_RE = /^(.*?)\{\$\}(.*)$/;
+function baseParsePathname(pathname, basePathValues) {
+  pathname = cleanPath(pathname);
+  const segments = [];
+  if (pathname.slice(0, 1) === "/") {
+    pathname = pathname.substring(1);
+    segments.push({
+      type: SEGMENT_TYPE_PATHNAME,
+      value: "/"
+    });
+  }
+  if (!pathname) {
+    return segments;
+  }
+  const split = pathname.split("/").filter(Boolean);
+  segments.push(
+    ...split.map((part) => {
+      const partToMatch = !basePathValues && part !== rootRouteId && part.slice(-1) === "_" ? part.slice(0, -1) : part;
+      const wildcardBracesMatch = partToMatch.match(WILDCARD_W_CURLY_BRACES_RE);
+      if (wildcardBracesMatch) {
+        const prefix2 = wildcardBracesMatch[1];
+        const suffix = wildcardBracesMatch[2];
+        return {
+          type: SEGMENT_TYPE_WILDCARD,
+          value: "$",
+          prefixSegment: prefix2 || void 0,
+          suffixSegment: suffix || void 0
+        };
+      }
+      const optionalParamBracesMatch = partToMatch.match(
+        OPTIONAL_PARAM_W_CURLY_BRACES_RE
+      );
+      if (optionalParamBracesMatch) {
+        const prefix2 = optionalParamBracesMatch[1];
+        const paramName = optionalParamBracesMatch[2];
+        const suffix = optionalParamBracesMatch[3];
+        return {
+          type: SEGMENT_TYPE_OPTIONAL_PARAM,
+          value: paramName,
+          // Now just $paramName (no prefix)
+          prefixSegment: prefix2 || void 0,
+          suffixSegment: suffix || void 0
+        };
+      }
+      const paramBracesMatch = partToMatch.match(PARAM_W_CURLY_BRACES_RE);
+      if (paramBracesMatch) {
+        const prefix2 = paramBracesMatch[1];
+        const paramName = paramBracesMatch[2];
+        const suffix = paramBracesMatch[3];
+        return {
+          type: SEGMENT_TYPE_PARAM,
+          value: "" + paramName,
+          prefixSegment: prefix2 || void 0,
+          suffixSegment: suffix || void 0
+        };
+      }
+      if (PARAM_RE.test(partToMatch)) {
+        const paramName = partToMatch.substring(1);
+        return {
+          type: SEGMENT_TYPE_PARAM,
+          value: "$" + paramName,
+          prefixSegment: void 0,
+          suffixSegment: void 0
+        };
+      }
+      if (WILDCARD_RE.test(partToMatch)) {
+        return {
+          type: SEGMENT_TYPE_WILDCARD,
+          value: "$",
+          prefixSegment: void 0,
+          suffixSegment: void 0
+        };
+      }
+      return {
+        type: SEGMENT_TYPE_PATHNAME,
+        value: partToMatch.includes("%25") ? partToMatch.split("%25").map((segment) => decodeURI(segment)).join("%25") : decodeURI(partToMatch)
+      };
+    })
+  );
+  if (pathname.slice(-1) === "/") {
+    pathname = pathname.substring(1);
+    segments.push({
+      type: SEGMENT_TYPE_PATHNAME,
+      value: "/"
+    });
+  }
+  return segments;
+}
+function interpolatePath({
+  path,
+  params,
+  leaveWildcards,
+  leaveParams,
+  decodeCharMap,
+  parseCache
+}) {
+  const interpolatedPathSegments = parseRoutePathSegments(path, parseCache);
+  function encodeParam(key) {
+    const value = params[key];
+    const isValueString = typeof value === "string";
+    if (key === "*" || key === "_splat") {
+      return isValueString ? encodeURI(value) : value;
+    } else {
+      return isValueString ? encodePathParam(value, decodeCharMap) : value;
+    }
+  }
+  let isMissingParams = false;
+  const usedParams = {};
+  const interpolatedPath = joinPaths(
+    interpolatedPathSegments.map((segment) => {
+      if (segment.type === SEGMENT_TYPE_PATHNAME) {
+        return segment.value;
+      }
+      if (segment.type === SEGMENT_TYPE_WILDCARD) {
+        usedParams._splat = params._splat;
+        usedParams["*"] = params._splat;
+        const segmentPrefix = segment.prefixSegment || "";
+        const segmentSuffix = segment.suffixSegment || "";
+        if (!("_splat" in params)) {
+          isMissingParams = true;
+          if (leaveWildcards) {
+            return `${segmentPrefix}${segment.value}${segmentSuffix}`;
+          }
+          if (segmentPrefix || segmentSuffix) {
+            return `${segmentPrefix}${segmentSuffix}`;
+          }
+          return void 0;
+        }
+        const value = encodeParam("_splat");
+        if (leaveWildcards) {
+          return `${segmentPrefix}${segment.value}${value ?? ""}${segmentSuffix}`;
+        }
+        return `${segmentPrefix}${value}${segmentSuffix}`;
+      }
+      if (segment.type === SEGMENT_TYPE_PARAM) {
+        const key = segment.value.substring(1);
+        if (!isMissingParams && !(key in params)) {
+          isMissingParams = true;
+        }
+        usedParams[key] = params[key];
+        const segmentPrefix = segment.prefixSegment || "";
+        const segmentSuffix = segment.suffixSegment || "";
+        if (leaveParams) {
+          const value = encodeParam(segment.value);
+          return `${segmentPrefix}${segment.value}${value ?? ""}${segmentSuffix}`;
+        }
+        return `${segmentPrefix}${encodeParam(key) ?? "undefined"}${segmentSuffix}`;
+      }
+      if (segment.type === SEGMENT_TYPE_OPTIONAL_PARAM) {
+        const key = segment.value.substring(1);
+        const segmentPrefix = segment.prefixSegment || "";
+        const segmentSuffix = segment.suffixSegment || "";
+        if (!(key in params) || params[key] == null) {
+          if (leaveWildcards) {
+            return `${segmentPrefix}${key}${segmentSuffix}`;
+          }
+          if (segmentPrefix || segmentSuffix) {
+            return `${segmentPrefix}${segmentSuffix}`;
+          }
+          return void 0;
+        }
+        usedParams[key] = params[key];
+        if (leaveParams) {
+          const value = encodeParam(segment.value);
+          return `${segmentPrefix}${segment.value}${value ?? ""}${segmentSuffix}`;
+        }
+        if (leaveWildcards) {
+          return `${segmentPrefix}${key}${encodeParam(key) ?? ""}${segmentSuffix}`;
+        }
+        return `${segmentPrefix}${encodeParam(key) ?? ""}${segmentSuffix}`;
+      }
+      return segment.value;
+    })
+  );
+  return { usedParams, interpolatedPath, isMissingParams };
+}
+function encodePathParam(value, decodeCharMap) {
+  let encoded = encodeURIComponent(value);
+  if (decodeCharMap) {
+    for (const [encodedChar, char] of decodeCharMap) {
+      encoded = encoded.replaceAll(encodedChar, char);
+    }
+  }
+  return encoded;
+}
+function matchPathname(currentPathname, matchLocation, parseCache) {
+  const pathParams = matchByPath(currentPathname, matchLocation, parseCache);
+  if (matchLocation.to && !pathParams) {
+    return;
+  }
+  return pathParams ?? {};
+}
+function matchByPath(from, {
+  to,
+  fuzzy,
+  caseSensitive
+}, parseCache) {
+  const stringTo = to;
+  const baseSegments = parseBasePathSegments(
+    from.startsWith("/") ? from : `/${from}`,
+    parseCache
+  );
+  const routeSegments = parseRoutePathSegments(
+    stringTo.startsWith("/") ? stringTo : `/${stringTo}`,
+    parseCache
+  );
+  const params = {};
+  const result = isMatch(
+    baseSegments,
+    routeSegments,
+    params,
+    fuzzy,
+    caseSensitive
+  );
+  return result ? params : void 0;
+}
+function isMatch(baseSegments, routeSegments, params, fuzzy, caseSensitive) {
+  var _a, _b, _c;
+  let baseIndex = 0;
+  let routeIndex = 0;
+  while (baseIndex < baseSegments.length || routeIndex < routeSegments.length) {
+    const baseSegment = baseSegments[baseIndex];
+    const routeSegment = routeSegments[routeIndex];
+    if (routeSegment) {
+      if (routeSegment.type === SEGMENT_TYPE_WILDCARD) {
+        const remainingBaseSegments = baseSegments.slice(baseIndex);
+        let _splat;
+        if (routeSegment.prefixSegment || routeSegment.suffixSegment) {
+          if (!baseSegment) return false;
+          const prefix2 = routeSegment.prefixSegment || "";
+          const suffix = routeSegment.suffixSegment || "";
+          const baseValue = baseSegment.value;
+          if ("prefixSegment" in routeSegment) {
+            if (!baseValue.startsWith(prefix2)) {
+              return false;
+            }
+          }
+          if ("suffixSegment" in routeSegment) {
+            if (!((_a = baseSegments[baseSegments.length - 1]) == null ? void 0 : _a.value.endsWith(suffix))) {
+              return false;
+            }
+          }
+          let rejoinedSplat = decodeURI(
+            joinPaths(remainingBaseSegments.map((d) => d.value))
+          );
+          if (prefix2 && rejoinedSplat.startsWith(prefix2)) {
+            rejoinedSplat = rejoinedSplat.slice(prefix2.length);
+          }
+          if (suffix && rejoinedSplat.endsWith(suffix)) {
+            rejoinedSplat = rejoinedSplat.slice(
+              0,
+              rejoinedSplat.length - suffix.length
+            );
+          }
+          _splat = rejoinedSplat;
+        } else {
+          _splat = decodeURI(
+            joinPaths(remainingBaseSegments.map((d) => d.value))
+          );
+        }
+        params["*"] = _splat;
+        params["_splat"] = _splat;
+        return true;
+      }
+      if (routeSegment.type === SEGMENT_TYPE_PATHNAME) {
+        if (routeSegment.value === "/" && !(baseSegment == null ? void 0 : baseSegment.value)) {
+          routeIndex++;
+          continue;
+        }
+        if (baseSegment) {
+          if (caseSensitive) {
+            if (routeSegment.value !== baseSegment.value) {
+              return false;
+            }
+          } else if (routeSegment.value.toLowerCase() !== baseSegment.value.toLowerCase()) {
+            return false;
+          }
+          baseIndex++;
+          routeIndex++;
+          continue;
+        } else {
+          return false;
+        }
+      }
+      if (routeSegment.type === SEGMENT_TYPE_PARAM) {
+        if (!baseSegment) {
+          return false;
+        }
+        if (baseSegment.value === "/") {
+          return false;
+        }
+        let _paramValue = "";
+        let matched = false;
+        if (routeSegment.prefixSegment || routeSegment.suffixSegment) {
+          const prefix2 = routeSegment.prefixSegment || "";
+          const suffix = routeSegment.suffixSegment || "";
+          const baseValue = baseSegment.value;
+          if (prefix2 && !baseValue.startsWith(prefix2)) {
+            return false;
+          }
+          if (suffix && !baseValue.endsWith(suffix)) {
+            return false;
+          }
+          let paramValue = baseValue;
+          if (prefix2 && paramValue.startsWith(prefix2)) {
+            paramValue = paramValue.slice(prefix2.length);
+          }
+          if (suffix && paramValue.endsWith(suffix)) {
+            paramValue = paramValue.slice(0, paramValue.length - suffix.length);
+          }
+          _paramValue = decodeURIComponent(paramValue);
+          matched = true;
+        } else {
+          _paramValue = decodeURIComponent(baseSegment.value);
+          matched = true;
+        }
+        if (matched) {
+          params[routeSegment.value.substring(1)] = _paramValue;
+          baseIndex++;
+        }
+        routeIndex++;
+        continue;
+      }
+      if (routeSegment.type === SEGMENT_TYPE_OPTIONAL_PARAM) {
+        if (!baseSegment) {
+          routeIndex++;
+          continue;
+        }
+        if (baseSegment.value === "/") {
+          routeIndex++;
+          continue;
+        }
+        let _paramValue = "";
+        let matched = false;
+        if (routeSegment.prefixSegment || routeSegment.suffixSegment) {
+          const prefix2 = routeSegment.prefixSegment || "";
+          const suffix = routeSegment.suffixSegment || "";
+          const baseValue = baseSegment.value;
+          if ((!prefix2 || baseValue.startsWith(prefix2)) && (!suffix || baseValue.endsWith(suffix))) {
+            let paramValue = baseValue;
+            if (prefix2 && paramValue.startsWith(prefix2)) {
+              paramValue = paramValue.slice(prefix2.length);
+            }
+            if (suffix && paramValue.endsWith(suffix)) {
+              paramValue = paramValue.slice(
+                0,
+                paramValue.length - suffix.length
+              );
+            }
+            _paramValue = decodeURIComponent(paramValue);
+            matched = true;
+          }
+        } else {
+          let shouldMatchOptional = true;
+          for (let lookAhead = routeIndex + 1; lookAhead < routeSegments.length; lookAhead++) {
+            const futureRouteSegment = routeSegments[lookAhead];
+            if ((futureRouteSegment == null ? void 0 : futureRouteSegment.type) === SEGMENT_TYPE_PATHNAME && futureRouteSegment.value === baseSegment.value) {
+              shouldMatchOptional = false;
+              break;
+            }
+            if ((futureRouteSegment == null ? void 0 : futureRouteSegment.type) === SEGMENT_TYPE_PARAM || (futureRouteSegment == null ? void 0 : futureRouteSegment.type) === SEGMENT_TYPE_WILDCARD) {
+              if (baseSegments.length < routeSegments.length) {
+                shouldMatchOptional = false;
+              }
+              break;
+            }
+          }
+          if (shouldMatchOptional) {
+            _paramValue = decodeURIComponent(baseSegment.value);
+            matched = true;
+          }
+        }
+        if (matched) {
+          params[routeSegment.value.substring(1)] = _paramValue;
+          baseIndex++;
+        }
+        routeIndex++;
+        continue;
+      }
+    }
+    if (baseIndex < baseSegments.length && routeIndex >= routeSegments.length) {
+      params["**"] = joinPaths(
+        baseSegments.slice(baseIndex).map((d) => d.value)
+      );
+      return !!fuzzy && ((_b = routeSegments[routeSegments.length - 1]) == null ? void 0 : _b.value) !== "/";
+    }
+    if (routeIndex < routeSegments.length && baseIndex >= baseSegments.length) {
+      for (let i = routeIndex; i < routeSegments.length; i++) {
+        if (((_c = routeSegments[i]) == null ? void 0 : _c.type) !== SEGMENT_TYPE_OPTIONAL_PARAM) {
+          return false;
+        }
+      }
+      break;
+    }
+    break;
+  }
+  return true;
+}
+const SLASH_SCORE = 0.75;
+const STATIC_SEGMENT_SCORE = 1;
+const REQUIRED_PARAM_BASE_SCORE = 0.5;
+const OPTIONAL_PARAM_BASE_SCORE = 0.4;
+const WILDCARD_PARAM_BASE_SCORE = 0.25;
+const STATIC_AFTER_DYNAMIC_BONUS_SCORE = 0.2;
+const BOTH_PRESENCE_BASE_SCORE = 0.05;
+const PREFIX_PRESENCE_BASE_SCORE = 0.02;
+const SUFFIX_PRESENCE_BASE_SCORE = 0.01;
+const PREFIX_LENGTH_SCORE_MULTIPLIER = 2e-4;
+const SUFFIX_LENGTH_SCORE_MULTIPLIER = 1e-4;
+function handleParam(segment, baseScore) {
+  if (segment.prefixSegment && segment.suffixSegment) {
+    return baseScore + BOTH_PRESENCE_BASE_SCORE + PREFIX_LENGTH_SCORE_MULTIPLIER * segment.prefixSegment.length + SUFFIX_LENGTH_SCORE_MULTIPLIER * segment.suffixSegment.length;
+  }
+  if (segment.prefixSegment) {
+    return baseScore + PREFIX_PRESENCE_BASE_SCORE + PREFIX_LENGTH_SCORE_MULTIPLIER * segment.prefixSegment.length;
+  }
+  if (segment.suffixSegment) {
+    return baseScore + SUFFIX_PRESENCE_BASE_SCORE + SUFFIX_LENGTH_SCORE_MULTIPLIER * segment.suffixSegment.length;
+  }
+  return baseScore;
+}
+function sortRoutes(routes) {
+  const scoredRoutes = [];
+  routes.forEach((d, i) => {
+    var _a;
+    if (d.isRoot || !d.path) {
+      return;
+    }
+    const trimmed = trimPathLeft(d.fullPath);
+    let parsed = parseRoutePathSegments(trimmed);
+    let skip = 0;
+    while (parsed.length > skip + 1 && ((_a = parsed[skip]) == null ? void 0 : _a.value) === "/") {
+      skip++;
+    }
+    if (skip > 0) parsed = parsed.slice(skip);
+    let optionalParamCount = 0;
+    let hasStaticAfter = false;
+    const scores = parsed.map((segment, index2) => {
+      if (segment.value === "/") {
+        return SLASH_SCORE;
+      }
+      if (segment.type === SEGMENT_TYPE_PATHNAME) {
+        return STATIC_SEGMENT_SCORE;
+      }
+      let baseScore = void 0;
+      if (segment.type === SEGMENT_TYPE_PARAM) {
+        baseScore = REQUIRED_PARAM_BASE_SCORE;
+      } else if (segment.type === SEGMENT_TYPE_OPTIONAL_PARAM) {
+        baseScore = OPTIONAL_PARAM_BASE_SCORE;
+        optionalParamCount++;
+      } else {
+        baseScore = WILDCARD_PARAM_BASE_SCORE;
+      }
+      for (let i2 = index2 + 1; i2 < parsed.length; i2++) {
+        const nextSegment = parsed[i2];
+        if (nextSegment.type === SEGMENT_TYPE_PATHNAME && nextSegment.value !== "/") {
+          hasStaticAfter = true;
+          return handleParam(
+            segment,
+            baseScore + STATIC_AFTER_DYNAMIC_BONUS_SCORE
+          );
+        }
+      }
+      return handleParam(segment, baseScore);
+    });
+    scoredRoutes.push({
+      child: d,
+      trimmed,
+      parsed,
+      index: i,
+      scores,
+      optionalParamCount,
+      hasStaticAfter
+    });
+  });
+  const flatRoutes = scoredRoutes.sort((a, b) => {
+    const minLength = Math.min(a.scores.length, b.scores.length);
+    for (let i = 0; i < minLength; i++) {
+      if (a.scores[i] !== b.scores[i]) {
+        return b.scores[i] - a.scores[i];
+      }
+    }
+    if (a.scores.length !== b.scores.length) {
+      if (a.optionalParamCount !== b.optionalParamCount) {
+        if (a.hasStaticAfter === b.hasStaticAfter) {
+          return a.optionalParamCount - b.optionalParamCount;
+        } else if (a.hasStaticAfter && !b.hasStaticAfter) {
+          return -1;
+        } else if (!a.hasStaticAfter && b.hasStaticAfter) {
+          return 1;
+        }
+      }
+      return b.scores.length - a.scores.length;
+    }
+    for (let i = 0; i < minLength; i++) {
+      if (a.parsed[i].value !== b.parsed[i].value) {
+        return a.parsed[i].value > b.parsed[i].value ? 1 : -1;
+      }
+    }
+    return a.index - b.index;
+  }).map((d, i) => {
+    d.child.rank = i;
+    return d.child;
+  });
+  return flatRoutes;
+}
+function processRouteTree({
+  routeTree: routeTree2,
+  initRoute
+}) {
+  const routesById = {};
+  const routesByPath = {};
+  const recurseRoutes = (childRoutes) => {
+    childRoutes.forEach((childRoute, i) => {
+      initRoute == null ? void 0 : initRoute(childRoute, i);
+      const existingRoute = routesById[childRoute.id];
+      invariant(
+        !existingRoute,
+        `Duplicate routes found with id: ${String(childRoute.id)}`
+      );
+      routesById[childRoute.id] = childRoute;
+      if (!childRoute.isRoot && childRoute.path) {
+        const trimmedFullPath = trimPathRight(childRoute.fullPath);
+        if (!routesByPath[trimmedFullPath] || childRoute.fullPath.endsWith("/")) {
+          routesByPath[trimmedFullPath] = childRoute;
+        }
+      }
+      const children = childRoute.children;
+      if (children == null ? void 0 : children.length) {
+        recurseRoutes(children);
+      }
+    });
+  };
+  recurseRoutes([routeTree2]);
+  const flatRoutes = sortRoutes(Object.values(routesById));
+  return { routesById, routesByPath, flatRoutes };
+}
+function isNotFound(obj) {
+  return !!(obj == null ? void 0 : obj.isNotFound);
+}
+function getSafeSessionStorage() {
+  try {
+    if (typeof window !== "undefined" && typeof window.sessionStorage === "object") {
+      return window.sessionStorage;
+    }
+  } catch {
+  }
+  return void 0;
+}
+const storageKey = "tsr-scroll-restoration-v1_3";
+const throttle = (fn, wait) => {
+  let timeout;
+  return (...args) => {
+    if (!timeout) {
+      timeout = setTimeout(() => {
+        fn(...args);
+        timeout = null;
+      }, wait);
+    }
+  };
+};
+function createScrollRestorationCache() {
+  const safeSessionStorage = getSafeSessionStorage();
+  if (!safeSessionStorage) {
+    return null;
+  }
+  const persistedState = safeSessionStorage.getItem(storageKey);
+  let state = persistedState ? JSON.parse(persistedState) : {};
+  return {
+    state,
+    // This setter is simply to make sure that we set the sessionStorage right
+    // after the state is updated. It doesn't necessarily need to be a functional
+    // update.
+    set: (updater) => (state = functionalUpdate(updater, state) || state, safeSessionStorage.setItem(storageKey, JSON.stringify(state)))
+  };
+}
+const scrollRestorationCache = createScrollRestorationCache();
+const defaultGetScrollRestorationKey = (location) => {
+  return location.state.__TSR_key || location.href;
+};
+function getCssSelector(el2) {
+  const path = [];
+  let parent;
+  while (parent = el2.parentNode) {
+    path.push(
+      `${el2.tagName}:nth-child(${Array.prototype.indexOf.call(parent.children, el2) + 1})`
+    );
+    el2 = parent;
+  }
+  return `${path.reverse().join(" > ")}`.toLowerCase();
+}
+let ignoreScroll = false;
+function restoreScroll({
+  storageKey: storageKey2,
+  key,
+  behavior,
+  shouldScrollRestoration,
+  scrollToTopSelectors,
+  location
+}) {
+  var _a, _b;
+  let byKey;
+  try {
+    byKey = JSON.parse(sessionStorage.getItem(storageKey2) || "{}");
+  } catch (error) {
+    console.error(error);
+    return;
+  }
+  const resolvedKey = key || ((_a = window.history.state) == null ? void 0 : _a.__TSR_key);
+  const elementEntries = byKey[resolvedKey];
+  ignoreScroll = true;
+  scroll: {
+    if (shouldScrollRestoration && elementEntries && Object.keys(elementEntries).length > 0) {
+      for (const elementSelector in elementEntries) {
+        const entry = elementEntries[elementSelector];
+        if (elementSelector === "window") {
+          window.scrollTo({
+            top: entry.scrollY,
+            left: entry.scrollX,
+            behavior
+          });
+        } else if (elementSelector) {
+          const element = document.querySelector(elementSelector);
+          if (element) {
+            element.scrollLeft = entry.scrollX;
+            element.scrollTop = entry.scrollY;
+          }
+        }
+      }
+      break scroll;
+    }
+    const hash = (location ?? window.location).hash.split("#", 2)[1];
+    if (hash) {
+      const hashScrollIntoViewOptions = ((_b = window.history.state) == null ? void 0 : _b.__hashScrollIntoViewOptions) ?? true;
+      if (hashScrollIntoViewOptions) {
+        const el2 = document.getElementById(hash);
+        if (el2) {
+          el2.scrollIntoView(hashScrollIntoViewOptions);
+        }
+      }
+      break scroll;
+    }
+    const scrollOptions = { top: 0, left: 0, behavior };
+    window.scrollTo(scrollOptions);
+    if (scrollToTopSelectors) {
+      for (const selector of scrollToTopSelectors) {
+        if (selector === "window") continue;
+        const element = typeof selector === "function" ? selector() : document.querySelector(selector);
+        if (element) element.scrollTo(scrollOptions);
+      }
+    }
+  }
+  ignoreScroll = false;
+}
+function setupScrollRestoration(router2, force) {
+  if (!scrollRestorationCache && !router2.isServer) {
+    return;
+  }
+  const shouldScrollRestoration = router2.options.scrollRestoration ?? false;
+  if (shouldScrollRestoration) {
+    router2.isScrollRestoring = true;
+  }
+  if (router2.isServer || router2.isScrollRestorationSetup || !scrollRestorationCache) {
+    return;
+  }
+  router2.isScrollRestorationSetup = true;
+  ignoreScroll = false;
+  const getKey = router2.options.getScrollRestorationKey || defaultGetScrollRestorationKey;
+  window.history.scrollRestoration = "manual";
+  const onScroll = (event) => {
+    if (ignoreScroll || !router2.isScrollRestoring) {
+      return;
+    }
+    let elementSelector = "";
+    if (event.target === document || event.target === window) {
+      elementSelector = "window";
+    } else {
+      const attrId = event.target.getAttribute(
+        "data-scroll-restoration-id"
+      );
+      if (attrId) {
+        elementSelector = `[data-scroll-restoration-id="${attrId}"]`;
+      } else {
+        elementSelector = getCssSelector(event.target);
+      }
+    }
+    const restoreKey = getKey(router2.state.location);
+    scrollRestorationCache.set((state) => {
+      const keyEntry = state[restoreKey] || (state[restoreKey] = {});
+      const elementEntry = keyEntry[elementSelector] || (keyEntry[elementSelector] = {});
+      if (elementSelector === "window") {
+        elementEntry.scrollX = window.scrollX || 0;
+        elementEntry.scrollY = window.scrollY || 0;
+      } else if (elementSelector) {
+        const element = document.querySelector(elementSelector);
+        if (element) {
+          elementEntry.scrollX = element.scrollLeft || 0;
+          elementEntry.scrollY = element.scrollTop || 0;
+        }
+      }
+      return state;
+    });
+  };
+  if (typeof document !== "undefined") {
+    document.addEventListener("scroll", throttle(onScroll, 100), true);
+  }
+  router2.subscribe("onRendered", (event) => {
+    const cacheKey = getKey(event.toLocation);
+    if (!router2.resetNextScroll) {
+      router2.resetNextScroll = true;
+      return;
+    }
+    if (typeof router2.options.scrollRestoration === "function") {
+      const shouldRestore = router2.options.scrollRestoration({
+        location: router2.latestLocation
+      });
+      if (!shouldRestore) {
+        return;
+      }
+    }
+    restoreScroll({
+      storageKey,
+      key: cacheKey,
+      behavior: router2.options.scrollRestorationBehavior,
+      shouldScrollRestoration: router2.isScrollRestoring,
+      scrollToTopSelectors: router2.options.scrollToTopSelectors,
+      location: router2.history.location
+    });
+    if (router2.isScrollRestoring) {
+      scrollRestorationCache.set((state) => {
+        state[cacheKey] || (state[cacheKey] = {});
+        return state;
+      });
+    }
+  });
+}
+function handleHashScroll(router2) {
+  if (typeof document !== "undefined" && document.querySelector) {
+    const hashScrollIntoViewOptions = router2.state.location.state.__hashScrollIntoViewOptions ?? true;
+    if (hashScrollIntoViewOptions && router2.state.location.hash !== "") {
+      const el2 = document.getElementById(router2.state.location.hash);
+      if (el2) {
+        el2.scrollIntoView(hashScrollIntoViewOptions);
+      }
+    }
+  }
+}
+function encode(obj, stringify = String) {
+  const result = new URLSearchParams();
+  for (const key in obj) {
+    const val = obj[key];
+    if (val !== void 0) {
+      result.set(key, stringify(val));
+    }
+  }
+  return result.toString();
+}
+function toValue$1(str) {
+  if (!str) return "";
+  if (str === "false") return false;
+  if (str === "true") return true;
+  return +str * 0 === 0 && +str + "" === str ? +str : str;
+}
+function decode(str) {
+  const searchParams = new URLSearchParams(str);
+  const result = {};
+  for (const [key, value] of searchParams.entries()) {
+    const previousValue = result[key];
+    if (previousValue == null) {
+      result[key] = toValue$1(value);
+    } else if (Array.isArray(previousValue)) {
+      previousValue.push(toValue$1(value));
+    } else {
+      result[key] = [previousValue, toValue$1(value)];
+    }
+  }
+  return result;
+}
+const defaultParseSearch = parseSearchWith(JSON.parse);
+const defaultStringifySearch = stringifySearchWith(
+  JSON.stringify,
+  JSON.parse
+);
+function parseSearchWith(parser) {
+  return (searchStr) => {
+    if (searchStr[0] === "?") {
+      searchStr = searchStr.substring(1);
+    }
+    const query = decode(searchStr);
+    for (const key in query) {
+      const value = query[key];
+      if (typeof value === "string") {
+        try {
+          query[key] = parser(value);
+        } catch (_err) {
+        }
+      }
+    }
+    return query;
+  };
+}
+function stringifySearchWith(stringify, parser) {
+  const hasParser = typeof parser === "function";
+  function stringifyValue(val) {
+    if (typeof val === "object" && val !== null) {
+      try {
+        return stringify(val);
+      } catch (_err) {
+      }
+    } else if (hasParser && typeof val === "string") {
+      try {
+        parser(val);
+        return stringify(val);
+      } catch (_err) {
+      }
+    }
+    return val;
+  }
+  return (search) => {
+    const searchStr = encode(search, stringifyValue);
+    return searchStr ? `?${searchStr}` : "";
+  };
+}
+function redirect(opts) {
+  opts.statusCode = opts.statusCode || opts.code || 307;
+  if (!opts.reloadDocument && typeof opts.href === "string") {
+    try {
+      new URL(opts.href);
+      opts.reloadDocument = true;
+    } catch {
+    }
+  }
+  const headers = new Headers(opts.headers);
+  if (opts.href && headers.get("Location") === null) {
+    headers.set("Location", opts.href);
+  }
+  const response = new Response(null, {
+    status: opts.statusCode,
+    headers
+  });
+  response.options = opts;
+  if (opts.throw) {
+    throw response;
+  }
+  return response;
+}
+function isRedirect(obj) {
+  return obj instanceof Response && !!obj.options;
+}
+function createLRUCache(max2) {
+  const cache = /* @__PURE__ */ new Map();
+  let oldest;
+  let newest;
+  const touch = (entry) => {
+    if (!entry.next) return;
+    if (!entry.prev) {
+      entry.next.prev = void 0;
+      oldest = entry.next;
+      entry.next = void 0;
+      if (newest) {
+        entry.prev = newest;
+        newest.next = entry;
+      }
+    } else {
+      entry.prev.next = entry.next;
+      entry.next.prev = entry.prev;
+      entry.next = void 0;
+      if (newest) {
+        newest.next = entry;
+        entry.prev = newest;
+      }
+    }
+    newest = entry;
+  };
+  return {
+    get(key) {
+      const entry = cache.get(key);
+      if (!entry) return void 0;
+      touch(entry);
+      return entry.value;
+    },
+    set(key, value) {
+      if (cache.size >= max2 && oldest) {
+        const toDelete = oldest;
+        cache.delete(toDelete.key);
+        if (toDelete.next) {
+          oldest = toDelete.next;
+          toDelete.next.prev = void 0;
+        }
+        if (toDelete === newest) {
+          newest = void 0;
+        }
+      }
+      const existing = cache.get(key);
+      if (existing) {
+        existing.value = value;
+        touch(existing);
+      } else {
+        const entry = { key, value, prev: newest };
+        if (newest) newest.next = entry;
+        newest = entry;
+        if (!oldest) oldest = entry;
+        cache.set(key, entry);
+      }
+    }
+  };
+}
+const triggerOnReady = (inner) => {
+  var _a;
+  if (!inner.rendered) {
+    inner.rendered = true;
+    return (_a = inner.onReady) == null ? void 0 : _a.call(inner);
+  }
+};
+const resolvePreload = (inner, matchId) => {
+  return !!(inner.preload && !inner.router.state.matches.some((d) => d.id === matchId));
+};
+const _handleNotFound = (inner, err) => {
+  var _a;
+  const routeCursor = inner.router.routesById[err.routeId ?? ""] ?? inner.router.routeTree;
+  if (!routeCursor.options.notFoundComponent && ((_a = inner.router.options) == null ? void 0 : _a.defaultNotFoundComponent)) {
+    routeCursor.options.notFoundComponent = inner.router.options.defaultNotFoundComponent;
+  }
+  invariant(
+    routeCursor.options.notFoundComponent
+  );
+  const matchForRoute = inner.matches.find((m2) => m2.routeId === routeCursor.id);
+  invariant(matchForRoute, "Could not find match for route: " + routeCursor.id);
+  inner.updateMatch(matchForRoute.id, (prev) => ({
+    ...prev,
+    status: "notFound",
+    error: err,
+    isFetching: false
+  }));
+  if (err.routerCode === "BEFORE_LOAD" && routeCursor.parentRoute) {
+    err.routeId = routeCursor.parentRoute.id;
+    _handleNotFound(inner, err);
+  }
+};
+const handleRedirectAndNotFound = (inner, match, err) => {
+  var _a, _b, _c;
+  if (!isRedirect(err) && !isNotFound(err)) return;
+  if (isRedirect(err) && err.redirectHandled && !err.options.reloadDocument) {
+    throw err;
+  }
+  if (match) {
+    (_a = match._nonReactive.beforeLoadPromise) == null ? void 0 : _a.resolve();
+    (_b = match._nonReactive.loaderPromise) == null ? void 0 : _b.resolve();
+    match._nonReactive.beforeLoadPromise = void 0;
+    match._nonReactive.loaderPromise = void 0;
+    const status = isRedirect(err) ? "redirected" : "notFound";
+    inner.updateMatch(match.id, (prev) => ({
+      ...prev,
+      status,
+      isFetching: false,
+      error: err
+    }));
+    if (isNotFound(err) && !err.routeId) {
+      err.routeId = match.routeId;
+    }
+    (_c = match._nonReactive.loadPromise) == null ? void 0 : _c.resolve();
+  }
+  if (isRedirect(err)) {
+    inner.rendered = true;
+    err.options._fromLocation = inner.location;
+    err.redirectHandled = true;
+    err = inner.router.resolveRedirect(err);
+    throw err;
+  } else {
+    _handleNotFound(inner, err);
+    throw err;
+  }
+};
+const shouldSkipLoader = (inner, matchId) => {
+  const match = inner.router.getMatch(matchId);
+  if (!inner.router.isServer && match._nonReactive.dehydrated) {
+    return true;
+  }
+  if (inner.router.isServer && match.ssr === false) {
+    return true;
+  }
+  return false;
+};
+const handleSerialError = (inner, index2, err, routerCode) => {
+  var _a, _b;
+  const { id: matchId, routeId } = inner.matches[index2];
+  const route = inner.router.looseRoutesById[routeId];
+  if (err instanceof Promise) {
+    throw err;
+  }
+  err.routerCode = routerCode;
+  inner.firstBadMatchIndex ?? (inner.firstBadMatchIndex = index2);
+  handleRedirectAndNotFound(inner, inner.router.getMatch(matchId), err);
+  try {
+    (_b = (_a = route.options).onError) == null ? void 0 : _b.call(_a, err);
+  } catch (errorHandlerErr) {
+    err = errorHandlerErr;
+    handleRedirectAndNotFound(inner, inner.router.getMatch(matchId), err);
+  }
+  inner.updateMatch(matchId, (prev) => {
+    var _a2, _b2;
+    (_a2 = prev._nonReactive.beforeLoadPromise) == null ? void 0 : _a2.resolve();
+    prev._nonReactive.beforeLoadPromise = void 0;
+    (_b2 = prev._nonReactive.loadPromise) == null ? void 0 : _b2.resolve();
+    return {
+      ...prev,
+      error: err,
+      status: "error",
+      isFetching: false,
+      updatedAt: Date.now(),
+      abortController: new AbortController()
+    };
+  });
+};
+const isBeforeLoadSsr = (inner, matchId, index2, route) => {
+  var _a;
+  const existingMatch = inner.router.getMatch(matchId);
+  const parentMatchId = (_a = inner.matches[index2 - 1]) == null ? void 0 : _a.id;
+  const parentMatch = parentMatchId ? inner.router.getMatch(parentMatchId) : void 0;
+  if (inner.router.isShell()) {
+    existingMatch.ssr = matchId === rootRouteId;
+    return;
+  }
+  if ((parentMatch == null ? void 0 : parentMatch.ssr) === false) {
+    existingMatch.ssr = false;
+    return;
+  }
+  const parentOverride = (tempSsr2) => {
+    if (tempSsr2 === true && (parentMatch == null ? void 0 : parentMatch.ssr) === "data-only") {
+      return "data-only";
+    }
+    return tempSsr2;
+  };
+  const defaultSsr = inner.router.options.defaultSsr ?? true;
+  if (route.options.ssr === void 0) {
+    existingMatch.ssr = parentOverride(defaultSsr);
+    return;
+  }
+  if (typeof route.options.ssr !== "function") {
+    existingMatch.ssr = parentOverride(route.options.ssr);
+    return;
+  }
+  const { search, params } = existingMatch;
+  const ssrFnContext = {
+    search: makeMaybe(search, existingMatch.searchError),
+    params: makeMaybe(params, existingMatch.paramsError),
+    location: inner.location,
+    matches: inner.matches.map((match) => ({
+      index: match.index,
+      pathname: match.pathname,
+      fullPath: match.fullPath,
+      staticData: match.staticData,
+      id: match.id,
+      routeId: match.routeId,
+      search: makeMaybe(match.search, match.searchError),
+      params: makeMaybe(match.params, match.paramsError),
+      ssr: match.ssr
+    }))
+  };
+  const tempSsr = route.options.ssr(ssrFnContext);
+  if (isPromise(tempSsr)) {
+    return tempSsr.then((ssr) => {
+      existingMatch.ssr = parentOverride(ssr ?? defaultSsr);
+    });
+  }
+  existingMatch.ssr = parentOverride(tempSsr ?? defaultSsr);
+  return;
+};
+const setupPendingTimeout = (inner, matchId, route, match) => {
+  var _a;
+  if (match._nonReactive.pendingTimeout !== void 0) return;
+  const pendingMs = route.options.pendingMs ?? inner.router.options.defaultPendingMs;
+  const shouldPending = !!(inner.onReady && !inner.router.isServer && !resolvePreload(inner, matchId) && (route.options.loader || route.options.beforeLoad || routeNeedsPreload(route)) && typeof pendingMs === "number" && pendingMs !== Infinity && (route.options.pendingComponent ?? ((_a = inner.router.options) == null ? void 0 : _a.defaultPendingComponent)));
+  if (shouldPending) {
+    const pendingTimeout = setTimeout(() => {
+      triggerOnReady(inner);
+    }, pendingMs);
+    match._nonReactive.pendingTimeout = pendingTimeout;
+  }
+};
+const preBeforeLoadSetup = (inner, matchId, route) => {
+  const existingMatch = inner.router.getMatch(matchId);
+  if (!existingMatch._nonReactive.beforeLoadPromise && !existingMatch._nonReactive.loaderPromise)
+    return;
+  setupPendingTimeout(inner, matchId, route, existingMatch);
+  const then = () => {
+    const match = inner.router.getMatch(matchId);
+    if (match.preload && (match.status === "redirected" || match.status === "notFound")) {
+      handleRedirectAndNotFound(inner, match, match.error);
+    }
+  };
+  return existingMatch._nonReactive.beforeLoadPromise ? existingMatch._nonReactive.beforeLoadPromise.then(then) : then();
+};
+const executeBeforeLoad = (inner, matchId, index2, route) => {
+  var _a;
+  const match = inner.router.getMatch(matchId);
+  const prevLoadPromise = match._nonReactive.loadPromise;
+  match._nonReactive.loadPromise = createControlledPromise(() => {
+    prevLoadPromise == null ? void 0 : prevLoadPromise.resolve();
+  });
+  const { paramsError, searchError } = match;
+  if (paramsError) {
+    handleSerialError(inner, index2, paramsError, "PARSE_PARAMS");
+  }
+  if (searchError) {
+    handleSerialError(inner, index2, searchError, "VALIDATE_SEARCH");
+  }
+  setupPendingTimeout(inner, matchId, route, match);
+  const abortController = new AbortController();
+  const parentMatchId = (_a = inner.matches[index2 - 1]) == null ? void 0 : _a.id;
+  const parentMatch = parentMatchId ? inner.router.getMatch(parentMatchId) : void 0;
+  const parentMatchContext = (parentMatch == null ? void 0 : parentMatch.context) ?? inner.router.options.context ?? void 0;
+  const context = { ...parentMatchContext, ...match.__routeContext };
+  let isPending = false;
+  const pending = () => {
+    if (isPending) return;
+    isPending = true;
+    inner.updateMatch(matchId, (prev) => ({
+      ...prev,
+      isFetching: "beforeLoad",
+      fetchCount: prev.fetchCount + 1,
+      abortController,
+      context
+    }));
+  };
+  const resolve = () => {
+    var _a2;
+    (_a2 = match._nonReactive.beforeLoadPromise) == null ? void 0 : _a2.resolve();
+    match._nonReactive.beforeLoadPromise = void 0;
+    inner.updateMatch(matchId, (prev) => ({
+      ...prev,
+      isFetching: false
+    }));
+  };
+  if (!route.options.beforeLoad) {
+    batch(() => {
+      pending();
+      resolve();
+    });
+    return;
+  }
+  match._nonReactive.beforeLoadPromise = createControlledPromise();
+  const { search, params, cause } = match;
+  const preload = resolvePreload(inner, matchId);
+  const beforeLoadFnContext = {
+    search,
+    abortController,
+    params,
+    preload,
+    context,
+    location: inner.location,
+    navigate: (opts) => inner.router.navigate({
+      ...opts,
+      _fromLocation: inner.location
+    }),
+    buildLocation: inner.router.buildLocation,
+    cause: preload ? "preload" : cause,
+    matches: inner.matches,
+    ...inner.router.options.additionalContext
+  };
+  const updateContext = (beforeLoadContext2) => {
+    if (beforeLoadContext2 === void 0) {
+      batch(() => {
+        pending();
+        resolve();
+      });
+      return;
+    }
+    if (isRedirect(beforeLoadContext2) || isNotFound(beforeLoadContext2)) {
+      pending();
+      handleSerialError(inner, index2, beforeLoadContext2, "BEFORE_LOAD");
+    }
+    batch(() => {
+      pending();
+      inner.updateMatch(matchId, (prev) => ({
+        ...prev,
+        __beforeLoadContext: beforeLoadContext2,
+        context: {
+          ...prev.context,
+          ...beforeLoadContext2
+        }
+      }));
+      resolve();
+    });
+  };
+  let beforeLoadContext;
+  try {
+    beforeLoadContext = route.options.beforeLoad(beforeLoadFnContext);
+    if (isPromise(beforeLoadContext)) {
+      pending();
+      return beforeLoadContext.catch((err) => {
+        handleSerialError(inner, index2, err, "BEFORE_LOAD");
+      }).then(updateContext);
+    }
+  } catch (err) {
+    pending();
+    handleSerialError(inner, index2, err, "BEFORE_LOAD");
+  }
+  updateContext(beforeLoadContext);
+  return;
+};
+const handleBeforeLoad = (inner, index2) => {
+  const { id: matchId, routeId } = inner.matches[index2];
+  const route = inner.router.looseRoutesById[routeId];
+  const serverSsr = () => {
+    if (inner.router.isServer) {
+      const maybePromise = isBeforeLoadSsr(inner, matchId, index2, route);
+      if (isPromise(maybePromise)) return maybePromise.then(queueExecution);
+    }
+    return queueExecution();
+  };
+  const execute = () => executeBeforeLoad(inner, matchId, index2, route);
+  const queueExecution = () => {
+    if (shouldSkipLoader(inner, matchId)) return;
+    const result = preBeforeLoadSetup(inner, matchId, route);
+    return isPromise(result) ? result.then(execute) : execute();
+  };
+  return serverSsr();
+};
+const executeHead = (inner, matchId, route) => {
+  var _a, _b, _c, _d, _e2, _f;
+  const match = inner.router.getMatch(matchId);
+  if (!match) {
+    return;
+  }
+  if (!route.options.head && !route.options.scripts && !route.options.headers) {
+    return;
+  }
+  const assetContext = {
+    matches: inner.matches,
+    match,
+    params: match.params,
+    loaderData: match.loaderData
+  };
+  return Promise.all([
+    (_b = (_a = route.options).head) == null ? void 0 : _b.call(_a, assetContext),
+    (_d = (_c = route.options).scripts) == null ? void 0 : _d.call(_c, assetContext),
+    (_f = (_e2 = route.options).headers) == null ? void 0 : _f.call(_e2, assetContext)
+  ]).then(([headFnContent, scripts, headers]) => {
+    const meta = headFnContent == null ? void 0 : headFnContent.meta;
+    const links = headFnContent == null ? void 0 : headFnContent.links;
+    const headScripts = headFnContent == null ? void 0 : headFnContent.scripts;
+    const styles = headFnContent == null ? void 0 : headFnContent.styles;
+    return {
+      meta,
+      links,
+      headScripts,
+      headers,
+      scripts,
+      styles
+    };
+  });
+};
+const getLoaderContext = (inner, matchId, index2, route) => {
+  const parentMatchPromise = inner.matchPromises[index2 - 1];
+  const { params, loaderDeps, abortController, context, cause } = inner.router.getMatch(matchId);
+  const preload = resolvePreload(inner, matchId);
+  return {
+    params,
+    deps: loaderDeps,
+    preload: !!preload,
+    parentMatchPromise,
+    abortController,
+    context,
+    location: inner.location,
+    navigate: (opts) => inner.router.navigate({
+      ...opts,
+      _fromLocation: inner.location
+    }),
+    cause: preload ? "preload" : cause,
+    route,
+    ...inner.router.options.additionalContext
+  };
+};
+const runLoader = async (inner, matchId, index2, route) => {
+  var _a, _b, _c, _d;
+  try {
+    const match = inner.router.getMatch(matchId);
+    try {
+      if (!inner.router.isServer || match.ssr === true) {
+        loadRouteChunk(route);
+      }
+      const loaderResult = (_b = (_a = route.options).loader) == null ? void 0 : _b.call(
+        _a,
+        getLoaderContext(inner, matchId, index2, route)
+      );
+      const loaderResultIsPromise = route.options.loader && isPromise(loaderResult);
+      const willLoadSomething = !!(loaderResultIsPromise || route._lazyPromise || route._componentsPromise || route.options.head || route.options.scripts || route.options.headers || match._nonReactive.minPendingPromise);
+      if (willLoadSomething) {
+        inner.updateMatch(matchId, (prev) => ({
+          ...prev,
+          isFetching: "loader"
+        }));
+      }
+      if (route.options.loader) {
+        const loaderData = loaderResultIsPromise ? await loaderResult : loaderResult;
+        handleRedirectAndNotFound(
+          inner,
+          inner.router.getMatch(matchId),
+          loaderData
+        );
+        if (loaderData !== void 0) {
+          inner.updateMatch(matchId, (prev) => ({
+            ...prev,
+            loaderData
+          }));
+        }
+      }
+      if (route._lazyPromise) await route._lazyPromise;
+      const headResult = executeHead(inner, matchId, route);
+      const head = headResult ? await headResult : void 0;
+      const pendingPromise = match._nonReactive.minPendingPromise;
+      if (pendingPromise) await pendingPromise;
+      if (route._componentsPromise) await route._componentsPromise;
+      inner.updateMatch(matchId, (prev) => ({
+        ...prev,
+        error: void 0,
+        status: "success",
+        isFetching: false,
+        updatedAt: Date.now(),
+        ...head
+      }));
+    } catch (e) {
+      let error = e;
+      const pendingPromise = match._nonReactive.minPendingPromise;
+      if (pendingPromise) await pendingPromise;
+      handleRedirectAndNotFound(inner, inner.router.getMatch(matchId), e);
+      try {
+        (_d = (_c = route.options).onError) == null ? void 0 : _d.call(_c, e);
+      } catch (onErrorError) {
+        error = onErrorError;
+        handleRedirectAndNotFound(
+          inner,
+          inner.router.getMatch(matchId),
+          onErrorError
+        );
+      }
+      const headResult = executeHead(inner, matchId, route);
+      const head = headResult ? await headResult : void 0;
+      inner.updateMatch(matchId, (prev) => ({
+        ...prev,
+        error,
+        status: "error",
+        isFetching: false,
+        ...head
+      }));
+    }
+  } catch (err) {
+    const match = inner.router.getMatch(matchId);
+    if (match) {
+      const headResult = executeHead(inner, matchId, route);
+      if (headResult) {
+        const head = await headResult;
+        inner.updateMatch(matchId, (prev) => ({
+          ...prev,
+          ...head
+        }));
+      }
+      match._nonReactive.loaderPromise = void 0;
+    }
+    handleRedirectAndNotFound(inner, match, err);
+  }
+};
+const loadRouteMatch = async (inner, index2) => {
+  var _a, _b;
+  const { id: matchId, routeId } = inner.matches[index2];
+  let loaderShouldRunAsync = false;
+  let loaderIsRunningAsync = false;
+  const route = inner.router.looseRoutesById[routeId];
+  if (shouldSkipLoader(inner, matchId)) {
+    if (inner.router.isServer) {
+      const headResult = executeHead(inner, matchId, route);
+      if (headResult) {
+        const head = await headResult;
+        inner.updateMatch(matchId, (prev) => ({
+          ...prev,
+          ...head
+        }));
+      }
+      return inner.router.getMatch(matchId);
+    }
+  } else {
+    const prevMatch = inner.router.getMatch(matchId);
+    if (prevMatch._nonReactive.loaderPromise) {
+      if (prevMatch.status === "success" && !inner.sync && !prevMatch.preload) {
+        return prevMatch;
+      }
+      await prevMatch._nonReactive.loaderPromise;
+      const match2 = inner.router.getMatch(matchId);
+      if (match2.error) {
+        handleRedirectAndNotFound(inner, match2, match2.error);
+      }
+    } else {
+      const age = Date.now() - prevMatch.updatedAt;
+      const preload = resolvePreload(inner, matchId);
+      const staleAge = preload ? route.options.preloadStaleTime ?? inner.router.options.defaultPreloadStaleTime ?? 3e4 : route.options.staleTime ?? inner.router.options.defaultStaleTime ?? 0;
+      const shouldReloadOption = route.options.shouldReload;
+      const shouldReload = typeof shouldReloadOption === "function" ? shouldReloadOption(getLoaderContext(inner, matchId, index2, route)) : shouldReloadOption;
+      const nextPreload = !!preload && !inner.router.state.matches.some((d) => d.id === matchId);
+      const match2 = inner.router.getMatch(matchId);
+      match2._nonReactive.loaderPromise = createControlledPromise();
+      if (nextPreload !== match2.preload) {
+        inner.updateMatch(matchId, (prev) => ({
+          ...prev,
+          preload: nextPreload
+        }));
+      }
+      const { status, invalid } = match2;
+      loaderShouldRunAsync = status === "success" && (invalid || (shouldReload ?? age > staleAge));
+      if (preload && route.options.preload === false) ;
+      else if (loaderShouldRunAsync && !inner.sync) {
+        loaderIsRunningAsync = true;
+        (async () => {
+          var _a2, _b2;
+          try {
+            await runLoader(inner, matchId, index2, route);
+            const match3 = inner.router.getMatch(matchId);
+            (_a2 = match3._nonReactive.loaderPromise) == null ? void 0 : _a2.resolve();
+            (_b2 = match3._nonReactive.loadPromise) == null ? void 0 : _b2.resolve();
+            match3._nonReactive.loaderPromise = void 0;
+          } catch (err) {
+            if (isRedirect(err)) {
+              await inner.router.navigate(err.options);
+            }
+          }
+        })();
+      } else if (status !== "success" || loaderShouldRunAsync && inner.sync) {
+        await runLoader(inner, matchId, index2, route);
+      } else {
+        const headResult = executeHead(inner, matchId, route);
+        if (headResult) {
+          const head = await headResult;
+          inner.updateMatch(matchId, (prev) => ({
+            ...prev,
+            ...head
+          }));
+        }
+      }
+    }
+  }
+  const match = inner.router.getMatch(matchId);
+  if (!loaderIsRunningAsync) {
+    (_a = match._nonReactive.loaderPromise) == null ? void 0 : _a.resolve();
+    (_b = match._nonReactive.loadPromise) == null ? void 0 : _b.resolve();
+  }
+  clearTimeout(match._nonReactive.pendingTimeout);
+  match._nonReactive.pendingTimeout = void 0;
+  if (!loaderIsRunningAsync) match._nonReactive.loaderPromise = void 0;
+  match._nonReactive.dehydrated = void 0;
+  const nextIsFetching = loaderIsRunningAsync ? match.isFetching : false;
+  if (nextIsFetching !== match.isFetching || match.invalid !== false) {
+    inner.updateMatch(matchId, (prev) => ({
+      ...prev,
+      isFetching: nextIsFetching,
+      invalid: false
+    }));
+    return inner.router.getMatch(matchId);
+  } else {
+    return match;
+  }
+};
+async function loadMatches(arg) {
+  const inner = Object.assign(arg, {
+    matchPromises: []
+  });
+  if (!inner.router.isServer && inner.router.state.matches.some((d) => d._forcePending)) {
+    triggerOnReady(inner);
+  }
+  try {
+    for (let i = 0; i < inner.matches.length; i++) {
+      const beforeLoad = handleBeforeLoad(inner, i);
+      if (isPromise(beforeLoad)) await beforeLoad;
+    }
+    const max2 = inner.firstBadMatchIndex ?? inner.matches.length;
+    for (let i = 0; i < max2; i++) {
+      inner.matchPromises.push(loadRouteMatch(inner, i));
+    }
+    await Promise.all(inner.matchPromises);
+    const readyPromise = triggerOnReady(inner);
+    if (isPromise(readyPromise)) await readyPromise;
+  } catch (err) {
+    if (isNotFound(err) && !inner.preload) {
+      const readyPromise = triggerOnReady(inner);
+      if (isPromise(readyPromise)) await readyPromise;
+      throw err;
+    }
+    if (isRedirect(err)) {
+      throw err;
+    }
+  }
+  return inner.matches;
+}
+async function loadRouteChunk(route) {
+  if (!route._lazyLoaded && route._lazyPromise === void 0) {
+    if (route.lazyFn) {
+      route._lazyPromise = route.lazyFn().then((lazyRoute) => {
+        const { id: _id, ...options } = lazyRoute.options;
+        Object.assign(route.options, options);
+        route._lazyLoaded = true;
+        route._lazyPromise = void 0;
+      });
+    } else {
+      route._lazyLoaded = true;
+    }
+  }
+  if (!route._componentsLoaded && route._componentsPromise === void 0) {
+    const loadComponents = () => {
+      var _a;
+      const preloads = [];
+      for (const type of componentTypes) {
+        const preload = (_a = route.options[type]) == null ? void 0 : _a.preload;
+        if (preload) preloads.push(preload());
+      }
+      if (preloads.length)
+        return Promise.all(preloads).then(() => {
+          route._componentsLoaded = true;
+          route._componentsPromise = void 0;
+        });
+      route._componentsLoaded = true;
+      route._componentsPromise = void 0;
+      return;
+    };
+    route._componentsPromise = route._lazyPromise ? route._lazyPromise.then(loadComponents) : loadComponents();
+  }
+  return route._componentsPromise;
+}
+function makeMaybe(value, error) {
+  if (error) {
+    return { status: "error", error };
+  }
+  return { status: "success", value };
+}
+function routeNeedsPreload(route) {
+  var _a;
+  for (const componentType of componentTypes) {
+    if ((_a = route.options[componentType]) == null ? void 0 : _a.preload) {
+      return true;
+    }
+  }
+  return false;
+}
+const componentTypes = [
+  "component",
+  "errorComponent",
+  "pendingComponent",
+  "notFoundComponent"
+];
+function composeRewrites(rewrites) {
+  return {
+    input: ({ url }) => {
+      for (const rewrite of rewrites) {
+        url = executeRewriteInput(rewrite, url);
+      }
+      return url;
+    },
+    output: ({ url }) => {
+      for (let i = rewrites.length - 1; i >= 0; i--) {
+        url = executeRewriteOutput(rewrites[i], url);
+      }
+      return url;
+    }
+  };
+}
+function rewriteBasepath(opts) {
+  const trimmedBasepath = trimPath(opts.basepath);
+  const regex = new RegExp(
+    `^/${trimmedBasepath}/`,
+    opts.caseSensitive ? "" : "i"
+  );
+  return {
+    input: ({ url }) => {
+      url.pathname = url.pathname.replace(regex, "/");
+      return url;
+    },
+    output: ({ url }) => {
+      url.pathname = joinPaths(["/", trimmedBasepath, url.pathname]);
+      return url;
+    }
+  };
+}
+function executeRewriteInput(rewrite, url) {
+  var _a;
+  const res = (_a = rewrite == null ? void 0 : rewrite.input) == null ? void 0 : _a.call(rewrite, { url });
+  if (res) {
+    if (typeof res === "string") {
+      return new URL(res);
+    } else if (res instanceof URL) {
+      return res;
+    }
+  }
+  return url;
+}
+function executeRewriteOutput(rewrite, url) {
+  var _a;
+  const res = (_a = rewrite == null ? void 0 : rewrite.output) == null ? void 0 : _a.call(rewrite, { url });
+  if (res) {
+    if (typeof res === "string") {
+      return new URL(res);
+    } else if (res instanceof URL) {
+      return res;
+    }
+  }
+  return url;
+}
+function getLocationChangeInfo(routerState) {
+  const fromLocation = routerState.resolvedLocation;
+  const toLocation = routerState.location;
+  const pathChanged = (fromLocation == null ? void 0 : fromLocation.pathname) !== toLocation.pathname;
+  const hrefChanged = (fromLocation == null ? void 0 : fromLocation.href) !== toLocation.href;
+  const hashChanged = (fromLocation == null ? void 0 : fromLocation.hash) !== toLocation.hash;
+  return { fromLocation, toLocation, pathChanged, hrefChanged, hashChanged };
+}
+class RouterCore {
+  /**
+   * @deprecated Use the `createRouter` function instead
+   */
+  constructor(options) {
+    this.tempLocationKey = `${Math.round(
+      Math.random() * 1e7
+    )}`;
+    this.resetNextScroll = true;
+    this.shouldViewTransition = void 0;
+    this.isViewTransitionTypesSupported = void 0;
+    this.subscribers = /* @__PURE__ */ new Set();
+    this.isScrollRestoring = false;
+    this.isScrollRestorationSetup = false;
+    this.startTransition = (fn) => fn();
+    this.update = (newOptions) => {
+      var _a;
+      if (newOptions.notFoundRoute) {
+        console.warn(
+          "The notFoundRoute API is deprecated and will be removed in the next major version. See https://tanstack.com/router/v1/docs/framework/react/guide/not-found-errors#migrating-from-notfoundroute for more info."
+        );
+      }
+      this.options = {
+        ...this.options,
+        ...newOptions
+      };
+      this.isServer = this.options.isServer ?? typeof document === "undefined";
+      this.pathParamsDecodeCharMap = this.options.pathParamsAllowedCharacters ? new Map(
+        this.options.pathParamsAllowedCharacters.map((char) => [
+          encodeURIComponent(char),
+          char
+        ])
+      ) : void 0;
+      if (!this.history || this.options.history && this.options.history !== this.history) {
+        if (!this.options.history) {
+          if (!this.isServer) {
+            this.history = createBrowserHistory();
+          }
+        } else {
+          this.history = this.options.history;
+        }
+      }
+      if (this.options.basepath) {
+        const basepathRewrite = rewriteBasepath({
+          basepath: this.options.basepath
+        });
+        if (this.options.rewrite) {
+          this.rewrite = composeRewrites([basepathRewrite, this.options.rewrite]);
+        } else {
+          this.rewrite = basepathRewrite;
+        }
+      } else {
+        this.rewrite = this.options.rewrite;
+      }
+      this.origin = this.options.origin;
+      if (!this.origin) {
+        if (!this.isServer) {
+          this.origin = window.origin;
+        } else {
+          this.origin = "http://localhost";
+        }
+      }
+      if (this.history) {
+        this.updateLatestLocation();
+      }
+      if (this.options.routeTree !== this.routeTree) {
+        this.routeTree = this.options.routeTree;
+        this.buildRouteTree();
+      }
+      if (!this.__store && this.latestLocation) {
+        this.__store = new Store(getInitialRouterState(this.latestLocation), {
+          onUpdate: () => {
+            this.__store.state = {
+              ...this.state,
+              cachedMatches: this.state.cachedMatches.filter(
+                (d) => !["redirected"].includes(d.status)
+              )
+            };
+          }
+        });
+        setupScrollRestoration(this);
+      }
+      if (typeof window !== "undefined" && "CSS" in window && typeof ((_a = window.CSS) == null ? void 0 : _a.supports) === "function") {
+        this.isViewTransitionTypesSupported = window.CSS.supports(
+          "selector(:active-view-transition-type(a)"
+        );
+      }
+    };
+    this.updateLatestLocation = () => {
+      this.latestLocation = this.parseLocation(
+        this.history.location,
+        this.latestLocation
+      );
+    };
+    this.buildRouteTree = () => {
+      const { routesById, routesByPath, flatRoutes } = processRouteTree({
+        routeTree: this.routeTree,
+        initRoute: (route, i) => {
+          route.init({
+            originalIndex: i
+          });
+        }
+      });
+      this.routesById = routesById;
+      this.routesByPath = routesByPath;
+      this.flatRoutes = flatRoutes;
+      const notFoundRoute = this.options.notFoundRoute;
+      if (notFoundRoute) {
+        notFoundRoute.init({
+          originalIndex: 99999999999
+        });
+        this.routesById[notFoundRoute.id] = notFoundRoute;
+      }
+    };
+    this.subscribe = (eventType, fn) => {
+      const listener = {
+        eventType,
+        fn
+      };
+      this.subscribers.add(listener);
+      return () => {
+        this.subscribers.delete(listener);
+      };
+    };
+    this.emit = (routerEvent) => {
+      this.subscribers.forEach((listener) => {
+        if (listener.eventType === routerEvent.type) {
+          listener.fn(routerEvent);
+        }
+      });
+    };
+    this.parseLocation = (locationToParse, previousLocation) => {
+      const parse2 = ({
+        href,
+        state
+      }) => {
+        const fullUrl = new URL(href, this.origin);
+        const url = executeRewriteInput(this.rewrite, fullUrl);
+        const parsedSearch = this.options.parseSearch(url.search);
+        const searchStr = this.options.stringifySearch(parsedSearch);
+        url.search = searchStr;
+        const fullPath = url.href.replace(url.origin, "");
+        const { pathname, hash } = url;
+        return {
+          href: fullPath,
+          publicHref: href,
+          url: url.href,
+          pathname,
+          searchStr,
+          search: replaceEqualDeep(previousLocation == null ? void 0 : previousLocation.search, parsedSearch),
+          hash: hash.split("#").reverse()[0] ?? "",
+          state: replaceEqualDeep(previousLocation == null ? void 0 : previousLocation.state, state)
+        };
+      };
+      const location = parse2(locationToParse);
+      const { __tempLocation, __tempKey } = location.state;
+      if (__tempLocation && (!__tempKey || __tempKey === this.tempLocationKey)) {
+        const parsedTempLocation = parse2(__tempLocation);
+        parsedTempLocation.state.key = location.state.key;
+        parsedTempLocation.state.__TSR_key = location.state.__TSR_key;
+        delete parsedTempLocation.state.__tempLocation;
+        return {
+          ...parsedTempLocation,
+          maskedLocation: location
+        };
+      }
+      return location;
+    };
+    this.resolvePathWithBase = (from, path) => {
+      const resolvedPath = resolvePath({
+        base: from,
+        to: cleanPath(path),
+        trailingSlash: this.options.trailingSlash,
+        parseCache: this.parsePathnameCache
+      });
+      return resolvedPath;
+    };
+    this.matchRoutes = (pathnameOrNext, locationSearchOrOpts, opts) => {
+      if (typeof pathnameOrNext === "string") {
+        return this.matchRoutesInternal(
+          {
+            pathname: pathnameOrNext,
+            search: locationSearchOrOpts
+          },
+          opts
+        );
+      }
+      return this.matchRoutesInternal(pathnameOrNext, locationSearchOrOpts);
+    };
+    this.parsePathnameCache = createLRUCache(1e3);
+    this.getMatchedRoutes = (pathname, routePathname) => {
+      return getMatchedRoutes({
+        pathname,
+        routePathname,
+        caseSensitive: this.options.caseSensitive,
+        routesByPath: this.routesByPath,
+        routesById: this.routesById,
+        flatRoutes: this.flatRoutes,
+        parseCache: this.parsePathnameCache
+      });
+    };
+    this.cancelMatch = (id2) => {
+      const match = this.getMatch(id2);
+      if (!match) return;
+      match.abortController.abort();
+      clearTimeout(match._nonReactive.pendingTimeout);
+      match._nonReactive.pendingTimeout = void 0;
+    };
+    this.cancelMatches = () => {
+      var _a;
+      (_a = this.state.pendingMatches) == null ? void 0 : _a.forEach((match) => {
+        this.cancelMatch(match.id);
+      });
+    };
+    this.buildLocation = (opts) => {
+      const build = (dest = {}) => {
+        var _a, _b;
+        const currentLocation = dest._fromLocation || this.latestLocation;
+        const allCurrentLocationMatches = this.matchRoutes(currentLocation, {
+          _buildLocation: true
+        });
+        const lastMatch = last(allCurrentLocationMatches);
+        if (dest.from && false) ;
+        const defaultedFromPath = dest.unsafeRelative === "path" ? currentLocation.pathname : dest.from ?? lastMatch.fullPath;
+        const fromPath = this.resolvePathWithBase(defaultedFromPath, ".");
+        const fromSearch = lastMatch.search;
+        const fromParams = { ...lastMatch.params };
+        const nextTo = dest.to ? this.resolvePathWithBase(fromPath, `${dest.to}`) : this.resolvePathWithBase(fromPath, ".");
+        const nextParams = dest.params === false || dest.params === null ? {} : (dest.params ?? true) === true ? fromParams : Object.assign(
+          fromParams,
+          functionalUpdate(dest.params, fromParams)
+        );
+        const interpolatedNextTo = interpolatePath({
+          path: nextTo,
+          params: nextParams,
+          parseCache: this.parsePathnameCache
+        }).interpolatedPath;
+        const destRoutes = this.matchRoutes(interpolatedNextTo, void 0, {
+          _buildLocation: true
+        }).map((d) => this.looseRoutesById[d.routeId]);
+        if (Object.keys(nextParams).length > 0) {
+          for (const route of destRoutes) {
+            const fn = ((_a = route.options.params) == null ? void 0 : _a.stringify) ?? route.options.stringifyParams;
+            if (fn) {
+              Object.assign(nextParams, fn(nextParams));
+            }
+          }
+        }
+        const nextPathname = interpolatePath({
+          // Use the original template path for interpolation
+          // This preserves the original parameter syntax including optional parameters
+          path: nextTo,
+          params: nextParams,
+          leaveWildcards: false,
+          leaveParams: opts.leaveParams,
+          decodeCharMap: this.pathParamsDecodeCharMap,
+          parseCache: this.parsePathnameCache
+        }).interpolatedPath;
+        let nextSearch = fromSearch;
+        if (opts._includeValidateSearch && ((_b = this.options.search) == null ? void 0 : _b.strict)) {
+          const validatedSearch = {};
+          destRoutes.forEach((route) => {
+            if (route.options.validateSearch) {
+              try {
+                Object.assign(
+                  validatedSearch,
+                  validateSearch(route.options.validateSearch, {
+                    ...validatedSearch,
+                    ...nextSearch
+                  })
+                );
+              } catch {
+              }
+            }
+          });
+          nextSearch = validatedSearch;
+        }
+        nextSearch = applySearchMiddleware({
+          search: nextSearch,
+          dest,
+          destRoutes,
+          _includeValidateSearch: opts._includeValidateSearch
+        });
+        nextSearch = replaceEqualDeep(fromSearch, nextSearch);
+        const searchStr = this.options.stringifySearch(nextSearch);
+        const hash = dest.hash === true ? currentLocation.hash : dest.hash ? functionalUpdate(dest.hash, currentLocation.hash) : void 0;
+        const hashStr = hash ? `#${hash}` : "";
+        let nextState = dest.state === true ? currentLocation.state : dest.state ? functionalUpdate(dest.state, currentLocation.state) : {};
+        nextState = replaceEqualDeep(currentLocation.state, nextState);
+        const fullPath = `${nextPathname}${searchStr}${hashStr}`;
+        const url = new URL(fullPath, this.origin);
+        const rewrittenUrl = executeRewriteOutput(this.rewrite, url);
+        return {
+          publicHref: rewrittenUrl.pathname + rewrittenUrl.search + rewrittenUrl.hash,
+          href: fullPath,
+          url: rewrittenUrl.href,
+          pathname: nextPathname,
+          search: nextSearch,
+          searchStr,
+          state: nextState,
+          hash: hash ?? "",
+          unmaskOnReload: dest.unmaskOnReload
+        };
+      };
+      const buildWithMatches = (dest = {}, maskedDest) => {
+        var _a;
+        const next = build(dest);
+        let maskedNext = maskedDest ? build(maskedDest) : void 0;
+        if (!maskedNext) {
+          let params = {};
+          const foundMask = (_a = this.options.routeMasks) == null ? void 0 : _a.find((d) => {
+            const match = matchPathname(
+              next.pathname,
+              {
+                to: d.from,
+                caseSensitive: false,
+                fuzzy: false
+              },
+              this.parsePathnameCache
+            );
+            if (match) {
+              params = match;
+              return true;
+            }
+            return false;
+          });
+          if (foundMask) {
+            const { from: _from, ...maskProps } = foundMask;
+            maskedDest = {
+              from: opts.from,
+              ...maskProps,
+              params
+            };
+            maskedNext = build(maskedDest);
+          }
+        }
+        if (maskedNext) {
+          next.maskedLocation = maskedNext;
+        }
+        return next;
+      };
+      if (opts.mask) {
+        return buildWithMatches(opts, {
+          from: opts.from,
+          ...opts.mask
+        });
+      }
+      return buildWithMatches(opts);
+    };
+    this.commitLocation = ({
+      viewTransition,
+      ignoreBlocker,
+      ...next
+    }) => {
+      const isSameState = () => {
+        const ignoredProps = [
+          "key",
+          // TODO: Remove in v2 - use __TSR_key instead
+          "__TSR_key",
+          "__TSR_index",
+          "__hashScrollIntoViewOptions"
+        ];
+        ignoredProps.forEach((prop) => {
+          next.state[prop] = this.latestLocation.state[prop];
+        });
+        const isEqual = deepEqual$1(next.state, this.latestLocation.state);
+        ignoredProps.forEach((prop) => {
+          delete next.state[prop];
+        });
+        return isEqual;
+      };
+      const isSameUrl = trimPathRight(this.latestLocation.href) === trimPathRight(next.href);
+      const previousCommitPromise = this.commitLocationPromise;
+      this.commitLocationPromise = createControlledPromise(() => {
+        previousCommitPromise == null ? void 0 : previousCommitPromise.resolve();
+      });
+      if (isSameUrl && isSameState()) {
+        this.load();
+      } else {
+        let { maskedLocation, hashScrollIntoView, ...nextHistory } = next;
+        if (maskedLocation) {
+          nextHistory = {
+            ...maskedLocation,
+            state: {
+              ...maskedLocation.state,
+              __tempKey: void 0,
+              __tempLocation: {
+                ...nextHistory,
+                search: nextHistory.searchStr,
+                state: {
+                  ...nextHistory.state,
+                  __tempKey: void 0,
+                  __tempLocation: void 0,
+                  __TSR_key: void 0,
+                  key: void 0
+                  // TODO: Remove in v2 - use __TSR_key instead
+                }
+              }
+            }
+          };
+          if (nextHistory.unmaskOnReload ?? this.options.unmaskOnReload ?? false) {
+            nextHistory.state.__tempKey = this.tempLocationKey;
+          }
+        }
+        nextHistory.state.__hashScrollIntoViewOptions = hashScrollIntoView ?? this.options.defaultHashScrollIntoView ?? true;
+        this.shouldViewTransition = viewTransition;
+        this.history[next.replace ? "replace" : "push"](
+          nextHistory.publicHref,
+          nextHistory.state,
+          { ignoreBlocker }
+        );
+      }
+      this.resetNextScroll = next.resetScroll ?? true;
+      if (!this.history.subscribers.size) {
+        this.load();
+      }
+      return this.commitLocationPromise;
+    };
+    this.buildAndCommitLocation = ({
+      replace,
+      resetScroll,
+      hashScrollIntoView,
+      viewTransition,
+      ignoreBlocker,
+      href,
+      ...rest
+    } = {}) => {
+      if (href) {
+        const currentIndex = this.history.location.state.__TSR_index;
+        const parsed = parseHref(href, {
+          __TSR_index: replace ? currentIndex : currentIndex + 1
+        });
+        rest.to = parsed.pathname;
+        rest.search = this.options.parseSearch(parsed.search);
+        rest.hash = parsed.hash.slice(1);
+      }
+      const location = this.buildLocation({
+        ...rest,
+        _includeValidateSearch: true
+      });
+      return this.commitLocation({
+        ...location,
+        viewTransition,
+        replace,
+        resetScroll,
+        hashScrollIntoView,
+        ignoreBlocker
+      });
+    };
+    this.navigate = ({ to, reloadDocument, href, ...rest }) => {
+      if (!reloadDocument && href) {
+        try {
+          new URL(`${href}`);
+          reloadDocument = true;
+        } catch {
+        }
+      }
+      if (reloadDocument) {
+        if (!href) {
+          const location = this.buildLocation({ to, ...rest });
+          href = location.href;
+        }
+        if (rest.replace) {
+          window.location.replace(href);
+        } else {
+          window.location.href = href;
+        }
+        return Promise.resolve();
+      }
+      return this.buildAndCommitLocation({
+        ...rest,
+        href,
+        to,
+        _isNavigate: true
+      });
+    };
+    this.beforeLoad = () => {
+      this.cancelMatches();
+      this.updateLatestLocation();
+      if (this.isServer) {
+        const nextLocation = this.buildLocation({
+          to: this.latestLocation.pathname,
+          search: true,
+          params: true,
+          hash: true,
+          state: true,
+          _includeValidateSearch: true
+        });
+        const normalizeUrl = (url) => {
+          try {
+            return encodeURI(decodeURI(url));
+          } catch {
+            return url;
+          }
+        };
+        if (trimPath(normalizeUrl(this.latestLocation.href)) !== trimPath(normalizeUrl(nextLocation.href))) {
+          throw redirect({ href: nextLocation.href });
+        }
+      }
+      const pendingMatches = this.matchRoutes(this.latestLocation);
+      this.__store.setState((s) => ({
+        ...s,
+        status: "pending",
+        statusCode: 200,
+        isLoading: true,
+        location: this.latestLocation,
+        pendingMatches,
+        // If a cached moved to pendingMatches, remove it from cachedMatches
+        cachedMatches: s.cachedMatches.filter(
+          (d) => !pendingMatches.some((e) => e.id === d.id)
+        )
+      }));
+    };
+    this.load = async (opts) => {
+      let redirect2;
+      let notFound;
+      let loadPromise;
+      loadPromise = new Promise((resolve) => {
+        this.startTransition(async () => {
+          var _a;
+          try {
+            this.beforeLoad();
+            const next = this.latestLocation;
+            const prevLocation = this.state.resolvedLocation;
+            if (!this.state.redirect) {
+              this.emit({
+                type: "onBeforeNavigate",
+                ...getLocationChangeInfo({
+                  resolvedLocation: prevLocation,
+                  location: next
+                })
+              });
+            }
+            this.emit({
+              type: "onBeforeLoad",
+              ...getLocationChangeInfo({
+                resolvedLocation: prevLocation,
+                location: next
+              })
+            });
+            await loadMatches({
+              router: this,
+              sync: opts == null ? void 0 : opts.sync,
+              matches: this.state.pendingMatches,
+              location: next,
+              updateMatch: this.updateMatch,
+              // eslint-disable-next-line @typescript-eslint/require-await
+              onReady: async () => {
+                this.startViewTransition(async () => {
+                  let exitingMatches;
+                  let enteringMatches;
+                  let stayingMatches;
+                  batch(() => {
+                    this.__store.setState((s) => {
+                      const previousMatches = s.matches;
+                      const newMatches = s.pendingMatches || s.matches;
+                      exitingMatches = previousMatches.filter(
+                        (match) => !newMatches.some((d) => d.id === match.id)
+                      );
+                      enteringMatches = newMatches.filter(
+                        (match) => !previousMatches.some((d) => d.id === match.id)
+                      );
+                      stayingMatches = previousMatches.filter(
+                        (match) => newMatches.some((d) => d.id === match.id)
+                      );
+                      return {
+                        ...s,
+                        isLoading: false,
+                        loadedAt: Date.now(),
+                        matches: newMatches,
+                        pendingMatches: void 0,
+                        cachedMatches: [
+                          ...s.cachedMatches,
+                          ...exitingMatches.filter((d) => d.status !== "error")
+                        ]
+                      };
+                    });
+                    this.clearExpiredCache();
+                  });
+                  [
+                    [exitingMatches, "onLeave"],
+                    [enteringMatches, "onEnter"],
+                    [stayingMatches, "onStay"]
+                  ].forEach(([matches, hook]) => {
+                    matches.forEach((match) => {
+                      var _a2, _b;
+                      (_b = (_a2 = this.looseRoutesById[match.routeId].options)[hook]) == null ? void 0 : _b.call(_a2, match);
+                    });
+                  });
+                });
+              }
+            });
+          } catch (err) {
+            if (isRedirect(err)) {
+              redirect2 = err;
+              if (!this.isServer) {
+                this.navigate({
+                  ...redirect2.options,
+                  replace: true,
+                  ignoreBlocker: true
+                });
+              }
+            } else if (isNotFound(err)) {
+              notFound = err;
+            }
+            this.__store.setState((s) => ({
+              ...s,
+              statusCode: redirect2 ? redirect2.status : notFound ? 404 : s.matches.some((d) => d.status === "error") ? 500 : 200,
+              redirect: redirect2
+            }));
+          }
+          if (this.latestLoadPromise === loadPromise) {
+            (_a = this.commitLocationPromise) == null ? void 0 : _a.resolve();
+            this.latestLoadPromise = void 0;
+            this.commitLocationPromise = void 0;
+          }
+          resolve();
+        });
+      });
+      this.latestLoadPromise = loadPromise;
+      await loadPromise;
+      while (this.latestLoadPromise && loadPromise !== this.latestLoadPromise) {
+        await this.latestLoadPromise;
+      }
+      if (this.hasNotFoundMatch()) {
+        this.__store.setState((s) => ({
+          ...s,
+          statusCode: 404
+        }));
+      }
+    };
+    this.startViewTransition = (fn) => {
+      const shouldViewTransition = this.shouldViewTransition ?? this.options.defaultViewTransition;
+      delete this.shouldViewTransition;
+      if (shouldViewTransition && typeof document !== "undefined" && "startViewTransition" in document && typeof document.startViewTransition === "function") {
+        let startViewTransitionParams;
+        if (typeof shouldViewTransition === "object" && this.isViewTransitionTypesSupported) {
+          const next = this.latestLocation;
+          const prevLocation = this.state.resolvedLocation;
+          const resolvedViewTransitionTypes = typeof shouldViewTransition.types === "function" ? shouldViewTransition.types(
+            getLocationChangeInfo({
+              resolvedLocation: prevLocation,
+              location: next
+            })
+          ) : shouldViewTransition.types;
+          startViewTransitionParams = {
+            update: fn,
+            types: resolvedViewTransitionTypes
+          };
+        } else {
+          startViewTransitionParams = fn;
+        }
+        document.startViewTransition(startViewTransitionParams);
+      } else {
+        fn();
+      }
+    };
+    this.updateMatch = (id2, updater) => {
+      var _a;
+      const matchesKey = ((_a = this.state.pendingMatches) == null ? void 0 : _a.some((d) => d.id === id2)) ? "pendingMatches" : this.state.matches.some((d) => d.id === id2) ? "matches" : this.state.cachedMatches.some((d) => d.id === id2) ? "cachedMatches" : "";
+      if (matchesKey) {
+        this.__store.setState((s) => {
+          var _a2;
+          return {
+            ...s,
+            [matchesKey]: (_a2 = s[matchesKey]) == null ? void 0 : _a2.map((d) => d.id === id2 ? updater(d) : d)
+          };
+        });
+      }
+    };
+    this.getMatch = (matchId) => {
+      var _a;
+      const findFn = (d) => d.id === matchId;
+      return this.state.cachedMatches.find(findFn) ?? ((_a = this.state.pendingMatches) == null ? void 0 : _a.find(findFn)) ?? this.state.matches.find(findFn);
+    };
+    this.invalidate = (opts) => {
+      const invalidate = (d) => {
+        var _a;
+        if (((_a = opts == null ? void 0 : opts.filter) == null ? void 0 : _a.call(opts, d)) ?? true) {
+          return {
+            ...d,
+            invalid: true,
+            ...(opts == null ? void 0 : opts.forcePending) || d.status === "error" ? { status: "pending", error: void 0 } : void 0
+          };
+        }
+        return d;
+      };
+      this.__store.setState((s) => {
+        var _a;
+        return {
+          ...s,
+          matches: s.matches.map(invalidate),
+          cachedMatches: s.cachedMatches.map(invalidate),
+          pendingMatches: (_a = s.pendingMatches) == null ? void 0 : _a.map(invalidate)
+        };
+      });
+      this.shouldViewTransition = false;
+      return this.load({ sync: opts == null ? void 0 : opts.sync });
+    };
+    this.resolveRedirect = (redirect2) => {
+      if (!redirect2.options.href) {
+        redirect2.options.href = this.buildLocation(redirect2.options).href;
+        redirect2.headers.set("Location", redirect2.options.href);
+      }
+      if (!redirect2.headers.get("Location")) {
+        redirect2.headers.set("Location", redirect2.options.href);
+      }
+      return redirect2;
+    };
+    this.clearCache = (opts) => {
+      const filter = opts == null ? void 0 : opts.filter;
+      if (filter !== void 0) {
+        this.__store.setState((s) => {
+          return {
+            ...s,
+            cachedMatches: s.cachedMatches.filter(
+              (m2) => !filter(m2)
+            )
+          };
+        });
+      } else {
+        this.__store.setState((s) => {
+          return {
+            ...s,
+            cachedMatches: []
+          };
+        });
+      }
+    };
+    this.clearExpiredCache = () => {
+      const filter = (d) => {
+        const route = this.looseRoutesById[d.routeId];
+        if (!route.options.loader) {
+          return true;
+        }
+        const gcTime = (d.preload ? route.options.preloadGcTime ?? this.options.defaultPreloadGcTime : route.options.gcTime ?? this.options.defaultGcTime) ?? 5 * 60 * 1e3;
+        const isError = d.status === "error";
+        if (isError) return true;
+        const gcEligible = Date.now() - d.updatedAt >= gcTime;
+        return gcEligible;
+      };
+      this.clearCache({ filter });
+    };
+    this.loadRouteChunk = loadRouteChunk;
+    this.preloadRoute = async (opts) => {
+      const next = this.buildLocation(opts);
+      let matches = this.matchRoutes(next, {
+        throwOnError: true,
+        preload: true,
+        dest: opts
+      });
+      const activeMatchIds = new Set(
+        [...this.state.matches, ...this.state.pendingMatches ?? []].map(
+          (d) => d.id
+        )
+      );
+      const loadedMatchIds = /* @__PURE__ */ new Set([
+        ...activeMatchIds,
+        ...this.state.cachedMatches.map((d) => d.id)
+      ]);
+      batch(() => {
+        matches.forEach((match) => {
+          if (!loadedMatchIds.has(match.id)) {
+            this.__store.setState((s) => ({
+              ...s,
+              cachedMatches: [...s.cachedMatches, match]
+            }));
+          }
+        });
+      });
+      try {
+        matches = await loadMatches({
+          router: this,
+          matches,
+          location: next,
+          preload: true,
+          updateMatch: (id2, updater) => {
+            if (activeMatchIds.has(id2)) {
+              matches = matches.map((d) => d.id === id2 ? updater(d) : d);
+            } else {
+              this.updateMatch(id2, updater);
+            }
+          }
+        });
+        return matches;
+      } catch (err) {
+        if (isRedirect(err)) {
+          if (err.options.reloadDocument) {
+            return void 0;
+          }
+          return await this.preloadRoute({
+            ...err.options,
+            _fromLocation: next
+          });
+        }
+        if (!isNotFound(err)) {
+          console.error(err);
+        }
+        return void 0;
+      }
+    };
+    this.matchRoute = (location, opts) => {
+      const matchLocation = {
+        ...location,
+        to: location.to ? this.resolvePathWithBase(
+          location.from || "",
+          location.to
+        ) : void 0,
+        params: location.params || {},
+        leaveParams: true
+      };
+      const next = this.buildLocation(matchLocation);
+      if ((opts == null ? void 0 : opts.pending) && this.state.status !== "pending") {
+        return false;
+      }
+      const pending = (opts == null ? void 0 : opts.pending) === void 0 ? !this.state.isLoading : opts.pending;
+      const baseLocation = pending ? this.latestLocation : this.state.resolvedLocation || this.state.location;
+      const match = matchPathname(
+        baseLocation.pathname,
+        {
+          ...opts,
+          to: next.pathname
+        },
+        this.parsePathnameCache
+      );
+      if (!match) {
+        return false;
+      }
+      if (location.params) {
+        if (!deepEqual$1(match, location.params, { partial: true })) {
+          return false;
+        }
+      }
+      if (match && ((opts == null ? void 0 : opts.includeSearch) ?? true)) {
+        return deepEqual$1(baseLocation.search, next.search, { partial: true }) ? match : false;
+      }
+      return match;
+    };
+    this.hasNotFoundMatch = () => {
+      return this.__store.state.matches.some(
+        (d) => d.status === "notFound" || d.globalNotFound
+      );
+    };
+    this.update({
+      defaultPreloadDelay: 50,
+      defaultPendingMs: 1e3,
+      defaultPendingMinMs: 500,
+      context: void 0,
+      ...options,
+      caseSensitive: options.caseSensitive ?? false,
+      notFoundMode: options.notFoundMode ?? "fuzzy",
+      stringifySearch: options.stringifySearch ?? defaultStringifySearch,
+      parseSearch: options.parseSearch ?? defaultParseSearch
+    });
+    if (typeof document !== "undefined") {
+      self.__TSR_ROUTER__ = this;
+    }
+  }
+  isShell() {
+    return !!this.options.isShell;
+  }
+  isPrerendering() {
+    return !!this.options.isPrerendering;
+  }
+  get state() {
+    return this.__store.state;
+  }
+  get looseRoutesById() {
+    return this.routesById;
+  }
+  matchRoutesInternal(next, opts) {
+    var _a;
+    const { foundRoute, matchedRoutes, routeParams } = this.getMatchedRoutes(
+      next.pathname,
+      (_a = opts == null ? void 0 : opts.dest) == null ? void 0 : _a.to
+    );
+    let isGlobalNotFound = false;
+    if (
+      // If we found a route, and it's not an index route and we have left over path
+      foundRoute ? foundRoute.path !== "/" && routeParams["**"] : (
+        // Or if we didn't find a route and we have left over path
+        trimPathRight(next.pathname)
+      )
+    ) {
+      if (this.options.notFoundRoute) {
+        matchedRoutes.push(this.options.notFoundRoute);
+      } else {
+        isGlobalNotFound = true;
+      }
+    }
+    const globalNotFoundRouteId = (() => {
+      if (!isGlobalNotFound) {
+        return void 0;
+      }
+      if (this.options.notFoundMode !== "root") {
+        for (let i = matchedRoutes.length - 1; i >= 0; i--) {
+          const route = matchedRoutes[i];
+          if (route.children) {
+            return route.id;
+          }
+        }
+      }
+      return rootRouteId;
+    })();
+    const matches = [];
+    const getParentContext = (parentMatch) => {
+      const parentMatchId = parentMatch == null ? void 0 : parentMatch.id;
+      const parentContext = !parentMatchId ? this.options.context ?? void 0 : parentMatch.context ?? this.options.context ?? void 0;
+      return parentContext;
+    };
+    matchedRoutes.forEach((route, index2) => {
+      var _a2, _b, _c;
+      const parentMatch = matches[index2 - 1];
+      const [preMatchSearch, strictMatchSearch, searchError] = (() => {
+        const parentSearch = (parentMatch == null ? void 0 : parentMatch.search) ?? next.search;
+        const parentStrictSearch = (parentMatch == null ? void 0 : parentMatch._strictSearch) ?? void 0;
+        try {
+          const strictSearch = validateSearch(route.options.validateSearch, { ...parentSearch }) ?? void 0;
+          return [
+            {
+              ...parentSearch,
+              ...strictSearch
+            },
+            { ...parentStrictSearch, ...strictSearch },
+            void 0
+          ];
+        } catch (err) {
+          let searchParamError = err;
+          if (!(err instanceof SearchParamError)) {
+            searchParamError = new SearchParamError(err.message, {
+              cause: err
+            });
+          }
+          if (opts == null ? void 0 : opts.throwOnError) {
+            throw searchParamError;
+          }
+          return [parentSearch, {}, searchParamError];
+        }
+      })();
+      const loaderDeps = ((_b = (_a2 = route.options).loaderDeps) == null ? void 0 : _b.call(_a2, {
+        search: preMatchSearch
+      })) ?? "";
+      const loaderDepsHash = loaderDeps ? JSON.stringify(loaderDeps) : "";
+      const { interpolatedPath, usedParams } = interpolatePath({
+        path: route.fullPath,
+        params: routeParams,
+        decodeCharMap: this.pathParamsDecodeCharMap
+      });
+      const matchId = interpolatePath({
+        path: route.id,
+        params: routeParams,
+        leaveWildcards: true,
+        decodeCharMap: this.pathParamsDecodeCharMap,
+        parseCache: this.parsePathnameCache
+      }).interpolatedPath + loaderDepsHash;
+      const existingMatch = this.getMatch(matchId);
+      const previousMatch = this.state.matches.find(
+        (d) => d.routeId === route.id
+      );
+      const strictParams = (existingMatch == null ? void 0 : existingMatch._strictParams) ?? usedParams;
+      let paramsError = void 0;
+      if (!existingMatch) {
+        const strictParseParams = ((_c = route.options.params) == null ? void 0 : _c.parse) ?? route.options.parseParams;
+        if (strictParseParams) {
+          try {
+            Object.assign(
+              strictParams,
+              strictParseParams(strictParams)
+            );
+          } catch (err) {
+            paramsError = new PathParamError(err.message, {
+              cause: err
+            });
+            if (opts == null ? void 0 : opts.throwOnError) {
+              throw paramsError;
+            }
+          }
+        }
+      }
+      Object.assign(routeParams, strictParams);
+      const cause = previousMatch ? "stay" : "enter";
+      let match;
+      if (existingMatch) {
+        match = {
+          ...existingMatch,
+          cause,
+          params: previousMatch ? replaceEqualDeep(previousMatch.params, routeParams) : routeParams,
+          _strictParams: strictParams,
+          search: previousMatch ? replaceEqualDeep(previousMatch.search, preMatchSearch) : replaceEqualDeep(existingMatch.search, preMatchSearch),
+          _strictSearch: strictMatchSearch
+        };
+      } else {
+        const status = route.options.loader || route.options.beforeLoad || route.lazyFn || routeNeedsPreload(route) ? "pending" : "success";
+        match = {
+          id: matchId,
+          index: index2,
+          routeId: route.id,
+          params: previousMatch ? replaceEqualDeep(previousMatch.params, routeParams) : routeParams,
+          _strictParams: strictParams,
+          pathname: interpolatedPath,
+          updatedAt: Date.now(),
+          search: previousMatch ? replaceEqualDeep(previousMatch.search, preMatchSearch) : preMatchSearch,
+          _strictSearch: strictMatchSearch,
+          searchError: void 0,
+          status,
+          isFetching: false,
+          error: void 0,
+          paramsError,
+          __routeContext: void 0,
+          _nonReactive: {
+            loadPromise: createControlledPromise()
+          },
+          __beforeLoadContext: void 0,
+          context: {},
+          abortController: new AbortController(),
+          fetchCount: 0,
+          cause,
+          loaderDeps: previousMatch ? replaceEqualDeep(previousMatch.loaderDeps, loaderDeps) : loaderDeps,
+          invalid: false,
+          preload: false,
+          links: void 0,
+          scripts: void 0,
+          headScripts: void 0,
+          meta: void 0,
+          staticData: route.options.staticData || {},
+          fullPath: route.fullPath
+        };
+      }
+      if (!(opts == null ? void 0 : opts.preload)) {
+        match.globalNotFound = globalNotFoundRouteId === route.id;
+      }
+      match.searchError = searchError;
+      const parentContext = getParentContext(parentMatch);
+      match.context = {
+        ...parentContext,
+        ...match.__routeContext,
+        ...match.__beforeLoadContext
+      };
+      matches.push(match);
+    });
+    matches.forEach((match, index2) => {
+      const route = this.looseRoutesById[match.routeId];
+      const existingMatch = this.getMatch(match.id);
+      if (!existingMatch && (opts == null ? void 0 : opts._buildLocation) !== true) {
+        const parentMatch = matches[index2 - 1];
+        const parentContext = getParentContext(parentMatch);
+        if (route.options.context) {
+          const contextFnContext = {
+            deps: match.loaderDeps,
+            params: match.params,
+            context: parentContext ?? {},
+            location: next,
+            navigate: (opts2) => this.navigate({ ...opts2, _fromLocation: next }),
+            buildLocation: this.buildLocation,
+            cause: match.cause,
+            abortController: match.abortController,
+            preload: !!match.preload,
+            matches
+          };
+          match.__routeContext = route.options.context(contextFnContext) ?? void 0;
+        }
+        match.context = {
+          ...parentContext,
+          ...match.__routeContext,
+          ...match.__beforeLoadContext
+        };
+      }
+    });
+    return matches;
+  }
+}
+class SearchParamError extends Error {
+}
+class PathParamError extends Error {
+}
+function getInitialRouterState(location) {
+  return {
+    loadedAt: 0,
+    isLoading: false,
+    isTransitioning: false,
+    status: "idle",
+    resolvedLocation: void 0,
+    location,
+    matches: [],
+    pendingMatches: [],
+    cachedMatches: [],
+    statusCode: 200
+  };
+}
+function validateSearch(validateSearch2, input) {
+  if (validateSearch2 == null) return {};
+  if ("~standard" in validateSearch2) {
+    const result = validateSearch2["~standard"].validate(input);
+    if (result instanceof Promise)
+      throw new SearchParamError("Async validation not supported");
+    if (result.issues)
+      throw new SearchParamError(JSON.stringify(result.issues, void 0, 2), {
+        cause: result
+      });
+    return result.value;
+  }
+  if ("parse" in validateSearch2) {
+    return validateSearch2.parse(input);
+  }
+  if (typeof validateSearch2 === "function") {
+    return validateSearch2(input);
+  }
+  return {};
+}
+function getMatchedRoutes({
+  pathname,
+  routePathname,
+  caseSensitive,
+  routesByPath,
+  routesById,
+  flatRoutes,
+  parseCache
+}) {
+  let routeParams = {};
+  const trimmedPath = trimPathRight(pathname);
+  const getMatchedParams = (route) => {
+    var _a;
+    const result = matchPathname(
+      trimmedPath,
+      {
+        to: route.fullPath,
+        caseSensitive: ((_a = route.options) == null ? void 0 : _a.caseSensitive) ?? caseSensitive,
+        // we need fuzzy matching for `notFoundMode: 'fuzzy'`
+        fuzzy: true
+      },
+      parseCache
+    );
+    return result;
+  };
+  let foundRoute = routePathname !== void 0 ? routesByPath[routePathname] : void 0;
+  if (foundRoute) {
+    routeParams = getMatchedParams(foundRoute);
+  } else {
+    let fuzzyMatch = void 0;
+    for (const route of flatRoutes) {
+      const matchedParams = getMatchedParams(route);
+      if (matchedParams) {
+        if (route.path !== "/" && matchedParams["**"]) {
+          if (!fuzzyMatch) {
+            fuzzyMatch = { foundRoute: route, routeParams: matchedParams };
+          }
+        } else {
+          foundRoute = route;
+          routeParams = matchedParams;
+          break;
+        }
+      }
+    }
+    if (!foundRoute && fuzzyMatch) {
+      foundRoute = fuzzyMatch.foundRoute;
+      routeParams = fuzzyMatch.routeParams;
+    }
+  }
+  let routeCursor = foundRoute || routesById[rootRouteId];
+  const matchedRoutes = [routeCursor];
+  while (routeCursor.parentRoute) {
+    routeCursor = routeCursor.parentRoute;
+    matchedRoutes.push(routeCursor);
+  }
+  matchedRoutes.reverse();
+  return { matchedRoutes, routeParams, foundRoute };
+}
+function applySearchMiddleware({
+  search,
+  dest,
+  destRoutes,
+  _includeValidateSearch
+}) {
+  const allMiddlewares = destRoutes.reduce(
+    (acc, route) => {
+      var _a;
+      const middlewares = [];
+      if ("search" in route.options) {
+        if ((_a = route.options.search) == null ? void 0 : _a.middlewares) {
+          middlewares.push(...route.options.search.middlewares);
+        }
+      } else if (route.options.preSearchFilters || route.options.postSearchFilters) {
+        const legacyMiddleware = ({
+          search: search2,
+          next
+        }) => {
+          let nextSearch = search2;
+          if ("preSearchFilters" in route.options && route.options.preSearchFilters) {
+            nextSearch = route.options.preSearchFilters.reduce(
+              (prev, next2) => next2(prev),
+              search2
+            );
+          }
+          const result = next(nextSearch);
+          if ("postSearchFilters" in route.options && route.options.postSearchFilters) {
+            return route.options.postSearchFilters.reduce(
+              (prev, next2) => next2(prev),
+              result
+            );
+          }
+          return result;
+        };
+        middlewares.push(legacyMiddleware);
+      }
+      if (_includeValidateSearch && route.options.validateSearch) {
+        const validate = ({ search: search2, next }) => {
+          const result = next(search2);
+          try {
+            const validatedSearch = {
+              ...result,
+              ...validateSearch(route.options.validateSearch, result) ?? void 0
+            };
+            return validatedSearch;
+          } catch {
+            return result;
+          }
+        };
+        middlewares.push(validate);
+      }
+      return acc.concat(middlewares);
+    },
+    []
+  ) ?? [];
+  const final = ({ search: search2 }) => {
+    if (!dest.search) {
+      return {};
+    }
+    if (dest.search === true) {
+      return search2;
+    }
+    return functionalUpdate(dest.search, search2);
+  };
+  allMiddlewares.push(final);
+  const applyNext = (index2, currentSearch) => {
+    if (index2 >= allMiddlewares.length) {
+      return currentSearch;
+    }
+    const middleware = allMiddlewares[index2];
+    const next = (newSearch) => {
+      return applyNext(index2 + 1, newSearch);
+    };
+    return middleware({ search: currentSearch, next });
+  };
+  return applyNext(0, search);
+}
+const preloadWarning = "Error preloading route! ☝️";
+class BaseRoute {
+  constructor(options) {
+    this.init = (opts) => {
+      var _a, _b;
+      this.originalIndex = opts.originalIndex;
+      const options2 = this.options;
+      const isRoot = !(options2 == null ? void 0 : options2.path) && !(options2 == null ? void 0 : options2.id);
+      this.parentRoute = (_b = (_a = this.options).getParentRoute) == null ? void 0 : _b.call(_a);
+      if (isRoot) {
+        this._path = rootRouteId;
+      } else if (!this.parentRoute) {
+        invariant(
+          false
+        );
+      }
+      let path = isRoot ? rootRouteId : options2 == null ? void 0 : options2.path;
+      if (path && path !== "/") {
+        path = trimPathLeft(path);
+      }
+      const customId = (options2 == null ? void 0 : options2.id) || path;
+      let id2 = isRoot ? rootRouteId : joinPaths([
+        this.parentRoute.id === rootRouteId ? "" : this.parentRoute.id,
+        customId
+      ]);
+      if (path === rootRouteId) {
+        path = "/";
+      }
+      if (id2 !== rootRouteId) {
+        id2 = joinPaths(["/", id2]);
+      }
+      const fullPath = id2 === rootRouteId ? "/" : joinPaths([this.parentRoute.fullPath, path]);
+      this._path = path;
+      this._id = id2;
+      this._fullPath = fullPath;
+      this._to = fullPath;
+    };
+    this.clone = (other) => {
+      this._path = other._path;
+      this._id = other._id;
+      this._fullPath = other._fullPath;
+      this._to = other._to;
+      this.options.getParentRoute = other.options.getParentRoute;
+      this.children = other.children;
+    };
+    this.addChildren = (children) => {
+      return this._addFileChildren(children);
+    };
+    this._addFileChildren = (children) => {
+      if (Array.isArray(children)) {
+        this.children = children;
+      }
+      if (typeof children === "object" && children !== null) {
+        this.children = Object.values(children);
+      }
+      return this;
+    };
+    this._addFileTypes = () => {
+      return this;
+    };
+    this.updateLoader = (options2) => {
+      Object.assign(this.options, options2);
+      return this;
+    };
+    this.update = (options2) => {
+      Object.assign(this.options, options2);
+      return this;
+    };
+    this.lazy = (lazyFn) => {
+      this.lazyFn = lazyFn;
+      return this;
+    };
+    this.options = options || {};
+    this.isRoot = !(options == null ? void 0 : options.getParentRoute);
+    if ((options == null ? void 0 : options.id) && (options == null ? void 0 : options.path)) {
+      throw new Error(`Route cannot have both an 'id' and a 'path' option.`);
+    }
+  }
+  get to() {
+    return this._to;
+  }
+  get id() {
+    return this._id;
+  }
+  get path() {
+    return this._path;
+  }
+  get fullPath() {
+    return this._fullPath;
+  }
+}
+class BaseRootRoute extends BaseRoute {
+  constructor(options) {
+    super(options);
+  }
+}
+function CatchBoundary(props) {
+  const errorComponent = props.errorComponent ?? ErrorComponent;
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    CatchBoundaryImpl,
+    {
+      getResetKey: props.getResetKey,
+      onCatch: props.onCatch,
+      children: ({ error, reset }) => {
+        if (error) {
+          return reactExports.createElement(errorComponent, {
+            error,
+            reset
+          });
+        }
+        return props.children;
+      }
+    }
+  );
+}
+class CatchBoundaryImpl extends reactExports.Component {
+  constructor() {
+    super(...arguments);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromProps(props) {
+    return { resetKey: props.getResetKey() };
+  }
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  reset() {
+    this.setState({ error: null });
+  }
+  componentDidUpdate(prevProps, prevState) {
+    if (prevState.error && prevState.resetKey !== this.state.resetKey) {
+      this.reset();
+    }
+  }
+  componentDidCatch(error, errorInfo) {
+    if (this.props.onCatch) {
+      this.props.onCatch(error, errorInfo);
+    }
+  }
+  render() {
+    return this.props.children({
+      error: this.state.resetKey !== this.props.getResetKey() ? null : this.state.error,
+      reset: () => {
+        this.reset();
+      }
+    });
+  }
+}
+function ErrorComponent({ error }) {
+  const [show, setShow] = reactExports.useState(false);
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: ".5rem", maxWidth: "100%" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: ".5rem" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { style: { fontSize: "1rem" }, children: "Something went wrong!" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
+        {
+          style: {
+            appearance: "none",
+            fontSize: ".6em",
+            border: "1px solid currentColor",
+            padding: ".1rem .2rem",
+            fontWeight: "bold",
+            borderRadius: ".25rem"
+          },
+          onClick: () => setShow((d) => !d),
+          children: show ? "Hide Error" : "Show Error"
+        }
+      )
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { height: ".25rem" } }),
+    show ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "pre",
+      {
+        style: {
+          fontSize: ".7em",
+          border: "1px solid red",
+          borderRadius: ".25rem",
+          padding: ".3rem",
+          color: "red",
+          overflow: "auto"
+        },
+        children: error.message ? /* @__PURE__ */ jsxRuntimeExports.jsx("code", { children: error.message }) : null
+      }
+    ) }) : null
+  ] });
+}
+function ClientOnly({ children, fallback = null }) {
+  return useHydrated() ? /* @__PURE__ */ jsxRuntimeExports.jsx(React$2.Fragment, { children }) : /* @__PURE__ */ jsxRuntimeExports.jsx(React$2.Fragment, { children: fallback });
+}
+function useHydrated() {
+  return React$2.useSyncExternalStore(
+    subscribe,
+    () => true,
+    () => false
+  );
+}
+function subscribe() {
+  return () => {
+  };
+}
+function warning(condition, message) {
+}
+var withSelector = { exports: {} };
+var withSelector_production = {};
+var shim$2 = { exports: {} };
+var useSyncExternalStoreShim_production = {};
+/**
+ * @license React
+ * use-sync-external-store-shim.production.js
+ *
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+var React$1 = reactExports;
+function is$1(x2, y2) {
+  return x2 === y2 && (0 !== x2 || 1 / x2 === 1 / y2) || x2 !== x2 && y2 !== y2;
+}
+var objectIs$1 = "function" === typeof Object.is ? Object.is : is$1, useState = React$1.useState, useEffect$1 = React$1.useEffect, useLayoutEffect$1 = React$1.useLayoutEffect, useDebugValue$1 = React$1.useDebugValue;
+function useSyncExternalStore$2(subscribe2, getSnapshot) {
+  var value = getSnapshot(), _useState = useState({ inst: { value, getSnapshot } }), inst = _useState[0].inst, forceUpdate = _useState[1];
+  useLayoutEffect$1(
+    function() {
+      inst.value = value;
+      inst.getSnapshot = getSnapshot;
+      checkIfSnapshotChanged(inst) && forceUpdate({ inst });
+    },
+    [subscribe2, value, getSnapshot]
+  );
+  useEffect$1(
+    function() {
+      checkIfSnapshotChanged(inst) && forceUpdate({ inst });
+      return subscribe2(function() {
+        checkIfSnapshotChanged(inst) && forceUpdate({ inst });
+      });
+    },
+    [subscribe2]
+  );
+  useDebugValue$1(value);
+  return value;
+}
+function checkIfSnapshotChanged(inst) {
+  var latestGetSnapshot = inst.getSnapshot;
+  inst = inst.value;
+  try {
+    var nextValue = latestGetSnapshot();
+    return !objectIs$1(inst, nextValue);
+  } catch (error) {
+    return true;
+  }
+}
+function useSyncExternalStore$1(subscribe2, getSnapshot) {
+  return getSnapshot();
+}
+var shim$1 = "undefined" === typeof window || "undefined" === typeof window.document || "undefined" === typeof window.document.createElement ? useSyncExternalStore$1 : useSyncExternalStore$2;
+useSyncExternalStoreShim_production.useSyncExternalStore = void 0 !== React$1.useSyncExternalStore ? React$1.useSyncExternalStore : shim$1;
+{
+  shim$2.exports = useSyncExternalStoreShim_production;
+}
+var shimExports = shim$2.exports;
+/**
+ * @license React
+ * use-sync-external-store-shim/with-selector.production.js
+ *
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+var React = reactExports, shim = shimExports;
+function is(x2, y2) {
+  return x2 === y2 && (0 !== x2 || 1 / x2 === 1 / y2) || x2 !== x2 && y2 !== y2;
+}
+var objectIs = "function" === typeof Object.is ? Object.is : is, useSyncExternalStore = shim.useSyncExternalStore, useRef = React.useRef, useEffect = React.useEffect, useMemo = React.useMemo, useDebugValue = React.useDebugValue;
+withSelector_production.useSyncExternalStoreWithSelector = function(subscribe2, getSnapshot, getServerSnapshot, selector, isEqual) {
+  var instRef = useRef(null);
+  if (null === instRef.current) {
+    var inst = { hasValue: false, value: null };
+    instRef.current = inst;
+  } else inst = instRef.current;
+  instRef = useMemo(
+    function() {
+      function memoizedSelector(nextSnapshot) {
+        if (!hasMemo) {
+          hasMemo = true;
+          memoizedSnapshot = nextSnapshot;
+          nextSnapshot = selector(nextSnapshot);
+          if (void 0 !== isEqual && inst.hasValue) {
+            var currentSelection = inst.value;
+            if (isEqual(currentSelection, nextSnapshot))
+              return memoizedSelection = currentSelection;
+          }
+          return memoizedSelection = nextSnapshot;
+        }
+        currentSelection = memoizedSelection;
+        if (objectIs(memoizedSnapshot, nextSnapshot)) return currentSelection;
+        var nextSelection = selector(nextSnapshot);
+        if (void 0 !== isEqual && isEqual(currentSelection, nextSelection))
+          return memoizedSnapshot = nextSnapshot, currentSelection;
+        memoizedSnapshot = nextSnapshot;
+        return memoizedSelection = nextSelection;
+      }
+      var hasMemo = false, memoizedSnapshot, memoizedSelection, maybeGetServerSnapshot = void 0 === getServerSnapshot ? null : getServerSnapshot;
+      return [
+        function() {
+          return memoizedSelector(getSnapshot());
+        },
+        null === maybeGetServerSnapshot ? void 0 : function() {
+          return memoizedSelector(maybeGetServerSnapshot());
+        }
+      ];
+    },
+    [getSnapshot, getServerSnapshot, selector, isEqual]
+  );
+  var value = useSyncExternalStore(subscribe2, instRef[0], instRef[1]);
+  useEffect(
+    function() {
+      inst.hasValue = true;
+      inst.value = value;
+    },
+    [value]
+  );
+  useDebugValue(value);
+  return value;
+};
+{
+  withSelector.exports = withSelector_production;
+}
+var withSelectorExports = withSelector.exports;
+function useStore(store, selector = (d) => d) {
+  const slice = withSelectorExports.useSyncExternalStoreWithSelector(
+    store.subscribe,
+    () => store.state,
+    () => store.state,
+    selector,
+    shallow
+  );
+  return slice;
+}
+function shallow(objA, objB) {
+  if (Object.is(objA, objB)) {
+    return true;
+  }
+  if (typeof objA !== "object" || objA === null || typeof objB !== "object" || objB === null) {
+    return false;
+  }
+  if (objA instanceof Map && objB instanceof Map) {
+    if (objA.size !== objB.size) return false;
+    for (const [k2, v2] of objA) {
+      if (!objB.has(k2) || !Object.is(v2, objB.get(k2))) return false;
+    }
+    return true;
+  }
+  if (objA instanceof Set && objB instanceof Set) {
+    if (objA.size !== objB.size) return false;
+    for (const v2 of objA) {
+      if (!objB.has(v2)) return false;
+    }
+    return true;
+  }
+  if (objA instanceof Date && objB instanceof Date) {
+    if (objA.getTime() !== objB.getTime()) return false;
+    return true;
+  }
+  const keysA = getOwnKeys(objA);
+  if (keysA.length !== getOwnKeys(objB).length) {
+    return false;
+  }
+  for (let i = 0; i < keysA.length; i++) {
+    if (!Object.prototype.hasOwnProperty.call(objB, keysA[i]) || !Object.is(objA[keysA[i]], objB[keysA[i]])) {
+      return false;
+    }
+  }
+  return true;
+}
+function getOwnKeys(obj) {
+  return Object.keys(obj).concat(
+    Object.getOwnPropertySymbols(obj)
+  );
+}
+const routerContext = reactExports.createContext(null);
+function getRouterContext() {
+  if (typeof document === "undefined") {
+    return routerContext;
+  }
+  if (window.__TSR_ROUTER_CONTEXT__) {
+    return window.__TSR_ROUTER_CONTEXT__;
+  }
+  window.__TSR_ROUTER_CONTEXT__ = routerContext;
+  return routerContext;
+}
+function useRouter(opts) {
+  const value = reactExports.useContext(getRouterContext());
+  warning(
+    !(((opts == null ? void 0 : opts.warn) ?? true) && !value)
+  );
+  return value;
+}
+function useRouterState(opts) {
+  const contextRouter = useRouter({
+    warn: (opts == null ? void 0 : opts.router) === void 0
+  });
+  const router2 = (opts == null ? void 0 : opts.router) || contextRouter;
+  const previousResult = reactExports.useRef(void 0);
+  return useStore(router2.__store, (state) => {
+    if (opts == null ? void 0 : opts.select) {
+      if (opts.structuralSharing ?? router2.options.defaultStructuralSharing) {
+        const newSlice = replaceEqualDeep(
+          previousResult.current,
+          opts.select(state)
+        );
+        previousResult.current = newSlice;
+        return newSlice;
+      }
+      return opts.select(state);
+    }
+    return state;
+  });
+}
+const matchContext = reactExports.createContext(void 0);
+const dummyMatchContext = reactExports.createContext(
+  void 0
+);
+function useMatch(opts) {
+  const nearestMatchId = reactExports.useContext(
+    opts.from ? dummyMatchContext : matchContext
+  );
+  const matchSelection = useRouterState({
+    select: (state) => {
+      const match = state.matches.find(
+        (d) => opts.from ? opts.from === d.routeId : d.id === nearestMatchId
+      );
+      invariant(
+        !((opts.shouldThrow ?? true) && !match),
+        `Could not find ${opts.from ? `an active match from "${opts.from}"` : "a nearest match!"}`
+      );
+      if (match === void 0) {
+        return void 0;
+      }
+      return opts.select ? opts.select(match) : match;
+    },
+    structuralSharing: opts.structuralSharing
+  });
+  return matchSelection;
+}
+function useLoaderData(opts) {
+  return useMatch({
+    from: opts.from,
+    strict: opts.strict,
+    structuralSharing: opts.structuralSharing,
+    select: (s) => {
+      return opts.select ? opts.select(s.loaderData) : s.loaderData;
+    }
+  });
+}
+function useLoaderDeps(opts) {
+  const { select, ...rest } = opts;
+  return useMatch({
+    ...rest,
+    select: (s) => {
+      return select ? select(s.loaderDeps) : s.loaderDeps;
+    }
+  });
+}
+function useParams(opts) {
+  return useMatch({
+    from: opts.from,
+    shouldThrow: opts.shouldThrow,
+    structuralSharing: opts.structuralSharing,
+    strict: opts.strict,
+    select: (match) => {
+      const params = opts.strict === false ? match.params : match._strictParams;
+      return opts.select ? opts.select(params) : params;
+    }
+  });
+}
+function useSearch(opts) {
+  return useMatch({
+    from: opts.from,
+    strict: opts.strict,
+    shouldThrow: opts.shouldThrow,
+    structuralSharing: opts.structuralSharing,
+    select: (match) => {
+      return opts.select ? opts.select(match.search) : match.search;
+    }
+  });
+}
+function useNavigate(_defaultOpts) {
+  const router2 = useRouter();
+  return reactExports.useCallback(
+    (options) => {
+      return router2.navigate({
+        ...options,
+        from: options.from ?? (_defaultOpts == null ? void 0 : _defaultOpts.from)
+      });
+    },
+    [_defaultOpts == null ? void 0 : _defaultOpts.from, router2]
+  );
+}
 var reactDom = { exports: {} };
 var reactDom_production_min = {};
 var scheduler = { exports: {} };
@@ -6988,4259 +11235,6 @@ function checkDCE() {
 }
 var reactDomExports = reactDom.exports;
 const ReactDOM = /* @__PURE__ */ getDefaultExportFromCjs(reactDomExports);
-var m$1 = reactDomExports;
-{
-  client.createRoot = m$1.createRoot;
-  client.hydrateRoot = m$1.hydrateRoot;
-}
-const __storeToDerived = /* @__PURE__ */ new WeakMap();
-const __derivedToStore = /* @__PURE__ */ new WeakMap();
-const __depsThatHaveWrittenThisTick = {
-  current: []
-};
-let __isFlushing = false;
-let __batchDepth = 0;
-const __pendingUpdates = /* @__PURE__ */ new Set();
-const __initialBatchValues = /* @__PURE__ */ new Map();
-function __flush_internals(relatedVals) {
-  const sorted = Array.from(relatedVals).sort((a, b) => {
-    if (a instanceof Derived && a.options.deps.includes(b)) return 1;
-    if (b instanceof Derived && b.options.deps.includes(a)) return -1;
-    return 0;
-  });
-  for (const derived of sorted) {
-    if (__depsThatHaveWrittenThisTick.current.includes(derived)) {
-      continue;
-    }
-    __depsThatHaveWrittenThisTick.current.push(derived);
-    derived.recompute();
-    const stores = __derivedToStore.get(derived);
-    if (stores) {
-      for (const store of stores) {
-        const relatedLinkedDerivedVals = __storeToDerived.get(store);
-        if (!relatedLinkedDerivedVals) continue;
-        __flush_internals(relatedLinkedDerivedVals);
-      }
-    }
-  }
-}
-function __notifyListeners(store) {
-  const value = {
-    prevVal: store.prevState,
-    currentVal: store.state
-  };
-  for (const listener of store.listeners) {
-    listener(value);
-  }
-}
-function __notifyDerivedListeners(derived) {
-  const value = {
-    prevVal: derived.prevState,
-    currentVal: derived.state
-  };
-  for (const listener of derived.listeners) {
-    listener(value);
-  }
-}
-function __flush(store) {
-  if (__batchDepth > 0 && !__initialBatchValues.has(store)) {
-    __initialBatchValues.set(store, store.prevState);
-  }
-  __pendingUpdates.add(store);
-  if (__batchDepth > 0) return;
-  if (__isFlushing) return;
-  try {
-    __isFlushing = true;
-    while (__pendingUpdates.size > 0) {
-      const stores = Array.from(__pendingUpdates);
-      __pendingUpdates.clear();
-      for (const store2 of stores) {
-        const prevState = __initialBatchValues.get(store2) ?? store2.prevState;
-        store2.prevState = prevState;
-        __notifyListeners(store2);
-      }
-      for (const store2 of stores) {
-        const derivedVals = __storeToDerived.get(store2);
-        if (!derivedVals) continue;
-        __depsThatHaveWrittenThisTick.current.push(store2);
-        __flush_internals(derivedVals);
-      }
-      for (const store2 of stores) {
-        const derivedVals = __storeToDerived.get(store2);
-        if (!derivedVals) continue;
-        for (const derived of derivedVals) {
-          __notifyDerivedListeners(derived);
-        }
-      }
-    }
-  } finally {
-    __isFlushing = false;
-    __depsThatHaveWrittenThisTick.current = [];
-    __initialBatchValues.clear();
-  }
-}
-function batch(fn) {
-  __batchDepth++;
-  try {
-    fn();
-  } finally {
-    __batchDepth--;
-    if (__batchDepth === 0) {
-      const pendingUpdateToFlush = __pendingUpdates.values().next().value;
-      if (pendingUpdateToFlush) {
-        __flush(pendingUpdateToFlush);
-      }
-    }
-  }
-}
-function isUpdaterFunction(updater) {
-  return typeof updater === "function";
-}
-class Store {
-  constructor(initialState, options) {
-    this.listeners = /* @__PURE__ */ new Set();
-    this.subscribe = (listener) => {
-      var _a, _b;
-      this.listeners.add(listener);
-      const unsub = (_b = (_a = this.options) == null ? void 0 : _a.onSubscribe) == null ? void 0 : _b.call(_a, listener, this);
-      return () => {
-        this.listeners.delete(listener);
-        unsub == null ? void 0 : unsub();
-      };
-    };
-    this.prevState = initialState;
-    this.state = initialState;
-    this.options = options;
-  }
-  setState(updater) {
-    var _a, _b, _c;
-    this.prevState = this.state;
-    if ((_a = this.options) == null ? void 0 : _a.updateFn) {
-      this.state = this.options.updateFn(this.prevState)(updater);
-    } else {
-      if (isUpdaterFunction(updater)) {
-        this.state = updater(this.prevState);
-      } else {
-        this.state = updater;
-      }
-    }
-    (_c = (_b = this.options) == null ? void 0 : _b.onUpdate) == null ? void 0 : _c.call(_b);
-    __flush(this);
-  }
-}
-class Derived {
-  constructor(options) {
-    this.listeners = /* @__PURE__ */ new Set();
-    this._subscriptions = [];
-    this.lastSeenDepValues = [];
-    this.getDepVals = () => {
-      const l2 = this.options.deps.length;
-      const prevDepVals = new Array(l2);
-      const currDepVals = new Array(l2);
-      for (let i = 0; i < l2; i++) {
-        const dep = this.options.deps[i];
-        prevDepVals[i] = dep.prevState;
-        currDepVals[i] = dep.state;
-      }
-      this.lastSeenDepValues = currDepVals;
-      return {
-        prevDepVals,
-        currDepVals,
-        prevVal: this.prevState ?? void 0
-      };
-    };
-    this.recompute = () => {
-      var _a, _b;
-      this.prevState = this.state;
-      const depVals = this.getDepVals();
-      this.state = this.options.fn(depVals);
-      (_b = (_a = this.options).onUpdate) == null ? void 0 : _b.call(_a);
-    };
-    this.checkIfRecalculationNeededDeeply = () => {
-      for (const dep of this.options.deps) {
-        if (dep instanceof Derived) {
-          dep.checkIfRecalculationNeededDeeply();
-        }
-      }
-      let shouldRecompute = false;
-      const lastSeenDepValues = this.lastSeenDepValues;
-      const { currDepVals } = this.getDepVals();
-      for (let i = 0; i < currDepVals.length; i++) {
-        if (currDepVals[i] !== lastSeenDepValues[i]) {
-          shouldRecompute = true;
-          break;
-        }
-      }
-      if (shouldRecompute) {
-        this.recompute();
-      }
-    };
-    this.mount = () => {
-      this.registerOnGraph();
-      this.checkIfRecalculationNeededDeeply();
-      return () => {
-        this.unregisterFromGraph();
-        for (const cleanup of this._subscriptions) {
-          cleanup();
-        }
-      };
-    };
-    this.subscribe = (listener) => {
-      var _a, _b;
-      this.listeners.add(listener);
-      const unsub = (_b = (_a = this.options).onSubscribe) == null ? void 0 : _b.call(_a, listener, this);
-      return () => {
-        this.listeners.delete(listener);
-        unsub == null ? void 0 : unsub();
-      };
-    };
-    this.options = options;
-    this.state = options.fn({
-      prevDepVals: void 0,
-      prevVal: void 0,
-      currDepVals: this.getDepVals().currDepVals
-    });
-  }
-  registerOnGraph(deps = this.options.deps) {
-    for (const dep of deps) {
-      if (dep instanceof Derived) {
-        dep.registerOnGraph();
-        this.registerOnGraph(dep.options.deps);
-      } else if (dep instanceof Store) {
-        let relatedLinkedDerivedVals = __storeToDerived.get(dep);
-        if (!relatedLinkedDerivedVals) {
-          relatedLinkedDerivedVals = /* @__PURE__ */ new Set();
-          __storeToDerived.set(dep, relatedLinkedDerivedVals);
-        }
-        relatedLinkedDerivedVals.add(this);
-        let relatedStores = __derivedToStore.get(this);
-        if (!relatedStores) {
-          relatedStores = /* @__PURE__ */ new Set();
-          __derivedToStore.set(this, relatedStores);
-        }
-        relatedStores.add(dep);
-      }
-    }
-  }
-  unregisterFromGraph(deps = this.options.deps) {
-    for (const dep of deps) {
-      if (dep instanceof Derived) {
-        this.unregisterFromGraph(dep.options.deps);
-      } else if (dep instanceof Store) {
-        const relatedLinkedDerivedVals = __storeToDerived.get(dep);
-        if (relatedLinkedDerivedVals) {
-          relatedLinkedDerivedVals.delete(this);
-        }
-        const relatedStores = __derivedToStore.get(this);
-        if (relatedStores) {
-          relatedStores.delete(dep);
-        }
-      }
-    }
-  }
-}
-const stateIndexKey = "__TSR_index";
-const popStateEvent = "popstate";
-const beforeUnloadEvent = "beforeunload";
-function createHistory(opts) {
-  let location = opts.getLocation();
-  const subscribers = /* @__PURE__ */ new Set();
-  const notify = (action) => {
-    location = opts.getLocation();
-    subscribers.forEach((subscriber) => subscriber({ location, action }));
-  };
-  const handleIndexChange = (action) => {
-    if (opts.notifyOnIndexChange ?? true) notify(action);
-    else location = opts.getLocation();
-  };
-  const tryNavigation = async ({
-    task,
-    navigateOpts,
-    ...actionInfo
-  }) => {
-    var _a, _b;
-    const ignoreBlocker = (navigateOpts == null ? void 0 : navigateOpts.ignoreBlocker) ?? false;
-    if (ignoreBlocker) {
-      task();
-      return;
-    }
-    const blockers = ((_a = opts.getBlockers) == null ? void 0 : _a.call(opts)) ?? [];
-    const isPushOrReplace = actionInfo.type === "PUSH" || actionInfo.type === "REPLACE";
-    if (typeof document !== "undefined" && blockers.length && isPushOrReplace) {
-      for (const blocker of blockers) {
-        const nextLocation = parseHref(actionInfo.path, actionInfo.state);
-        const isBlocked = await blocker.blockerFn({
-          currentLocation: location,
-          nextLocation,
-          action: actionInfo.type
-        });
-        if (isBlocked) {
-          (_b = opts.onBlocked) == null ? void 0 : _b.call(opts);
-          return;
-        }
-      }
-    }
-    task();
-  };
-  return {
-    get location() {
-      return location;
-    },
-    get length() {
-      return opts.getLength();
-    },
-    subscribers,
-    subscribe: (cb2) => {
-      subscribers.add(cb2);
-      return () => {
-        subscribers.delete(cb2);
-      };
-    },
-    push: (path, state, navigateOpts) => {
-      const currentIndex = location.state[stateIndexKey];
-      state = assignKeyAndIndex(currentIndex + 1, state);
-      tryNavigation({
-        task: () => {
-          opts.pushState(path, state);
-          notify({ type: "PUSH" });
-        },
-        navigateOpts,
-        type: "PUSH",
-        path,
-        state
-      });
-    },
-    replace: (path, state, navigateOpts) => {
-      const currentIndex = location.state[stateIndexKey];
-      state = assignKeyAndIndex(currentIndex, state);
-      tryNavigation({
-        task: () => {
-          opts.replaceState(path, state);
-          notify({ type: "REPLACE" });
-        },
-        navigateOpts,
-        type: "REPLACE",
-        path,
-        state
-      });
-    },
-    go: (index2, navigateOpts) => {
-      tryNavigation({
-        task: () => {
-          opts.go(index2);
-          handleIndexChange({ type: "GO", index: index2 });
-        },
-        navigateOpts,
-        type: "GO"
-      });
-    },
-    back: (navigateOpts) => {
-      tryNavigation({
-        task: () => {
-          opts.back((navigateOpts == null ? void 0 : navigateOpts.ignoreBlocker) ?? false);
-          handleIndexChange({ type: "BACK" });
-        },
-        navigateOpts,
-        type: "BACK"
-      });
-    },
-    forward: (navigateOpts) => {
-      tryNavigation({
-        task: () => {
-          opts.forward((navigateOpts == null ? void 0 : navigateOpts.ignoreBlocker) ?? false);
-          handleIndexChange({ type: "FORWARD" });
-        },
-        navigateOpts,
-        type: "FORWARD"
-      });
-    },
-    canGoBack: () => location.state[stateIndexKey] !== 0,
-    createHref: (str) => opts.createHref(str),
-    block: (blocker) => {
-      var _a;
-      if (!opts.setBlockers) return () => {
-      };
-      const blockers = ((_a = opts.getBlockers) == null ? void 0 : _a.call(opts)) ?? [];
-      opts.setBlockers([...blockers, blocker]);
-      return () => {
-        var _a2, _b;
-        const blockers2 = ((_a2 = opts.getBlockers) == null ? void 0 : _a2.call(opts)) ?? [];
-        (_b = opts.setBlockers) == null ? void 0 : _b.call(opts, blockers2.filter((b) => b !== blocker));
-      };
-    },
-    flush: () => {
-      var _a;
-      return (_a = opts.flush) == null ? void 0 : _a.call(opts);
-    },
-    destroy: () => {
-      var _a;
-      return (_a = opts.destroy) == null ? void 0 : _a.call(opts);
-    },
-    notify
-  };
-}
-function assignKeyAndIndex(index2, state) {
-  if (!state) {
-    state = {};
-  }
-  const key = createRandomKey();
-  return {
-    ...state,
-    key,
-    // TODO: Remove in v2 - use __TSR_key instead
-    __TSR_key: key,
-    [stateIndexKey]: index2
-  };
-}
-function createBrowserHistory(opts) {
-  var _a, _b;
-  const win = typeof document !== "undefined" ? window : void 0;
-  const originalPushState = win.history.pushState;
-  const originalReplaceState = win.history.replaceState;
-  let blockers = [];
-  const _getBlockers = () => blockers;
-  const _setBlockers = (newBlockers) => blockers = newBlockers;
-  const createHref = (path) => path;
-  const parseLocation = () => parseHref(
-    `${win.location.pathname}${win.location.search}${win.location.hash}`,
-    win.history.state
-  );
-  if (!((_a = win.history.state) == null ? void 0 : _a.__TSR_key) && !((_b = win.history.state) == null ? void 0 : _b.key)) {
-    const addedKey = createRandomKey();
-    win.history.replaceState(
-      {
-        [stateIndexKey]: 0,
-        key: addedKey,
-        // TODO: Remove in v2 - use __TSR_key instead
-        __TSR_key: addedKey
-      },
-      ""
-    );
-  }
-  let currentLocation = parseLocation();
-  let rollbackLocation;
-  let nextPopIsGo = false;
-  let ignoreNextPop = false;
-  let skipBlockerNextPop = false;
-  let ignoreNextBeforeUnload = false;
-  const getLocation = () => currentLocation;
-  let next;
-  let scheduled;
-  const flush = () => {
-    if (!next) {
-      return;
-    }
-    history._ignoreSubscribers = true;
-    (next.isPush ? win.history.pushState : win.history.replaceState)(
-      next.state,
-      "",
-      next.href
-    );
-    history._ignoreSubscribers = false;
-    next = void 0;
-    scheduled = void 0;
-    rollbackLocation = void 0;
-  };
-  const queueHistoryAction = (type, destHref, state) => {
-    const href = createHref(destHref);
-    if (!scheduled) {
-      rollbackLocation = currentLocation;
-    }
-    currentLocation = parseHref(destHref, state);
-    next = {
-      href,
-      state,
-      isPush: (next == null ? void 0 : next.isPush) || type === "push"
-    };
-    if (!scheduled) {
-      scheduled = Promise.resolve().then(() => flush());
-    }
-  };
-  const onPushPop = (type) => {
-    currentLocation = parseLocation();
-    history.notify({ type });
-  };
-  const onPushPopEvent = async () => {
-    if (ignoreNextPop) {
-      ignoreNextPop = false;
-      return;
-    }
-    const nextLocation = parseLocation();
-    const delta = nextLocation.state[stateIndexKey] - currentLocation.state[stateIndexKey];
-    const isForward = delta === 1;
-    const isBack = delta === -1;
-    const isGo = !isForward && !isBack || nextPopIsGo;
-    nextPopIsGo = false;
-    const action = isGo ? "GO" : isBack ? "BACK" : "FORWARD";
-    const notify = isGo ? {
-      type: "GO",
-      index: delta
-    } : {
-      type: isBack ? "BACK" : "FORWARD"
-    };
-    if (skipBlockerNextPop) {
-      skipBlockerNextPop = false;
-    } else {
-      const blockers2 = _getBlockers();
-      if (typeof document !== "undefined" && blockers2.length) {
-        for (const blocker of blockers2) {
-          const isBlocked = await blocker.blockerFn({
-            currentLocation,
-            nextLocation,
-            action
-          });
-          if (isBlocked) {
-            ignoreNextPop = true;
-            win.history.go(1);
-            history.notify(notify);
-            return;
-          }
-        }
-      }
-    }
-    currentLocation = parseLocation();
-    history.notify(notify);
-  };
-  const onBeforeUnload = (e) => {
-    if (ignoreNextBeforeUnload) {
-      ignoreNextBeforeUnload = false;
-      return;
-    }
-    let shouldBlock = false;
-    const blockers2 = _getBlockers();
-    if (typeof document !== "undefined" && blockers2.length) {
-      for (const blocker of blockers2) {
-        const shouldHaveBeforeUnload = blocker.enableBeforeUnload ?? true;
-        if (shouldHaveBeforeUnload === true) {
-          shouldBlock = true;
-          break;
-        }
-        if (typeof shouldHaveBeforeUnload === "function" && shouldHaveBeforeUnload() === true) {
-          shouldBlock = true;
-          break;
-        }
-      }
-    }
-    if (shouldBlock) {
-      e.preventDefault();
-      return e.returnValue = "";
-    }
-    return;
-  };
-  const history = createHistory({
-    getLocation,
-    getLength: () => win.history.length,
-    pushState: (href, state) => queueHistoryAction("push", href, state),
-    replaceState: (href, state) => queueHistoryAction("replace", href, state),
-    back: (ignoreBlocker) => {
-      if (ignoreBlocker) skipBlockerNextPop = true;
-      ignoreNextBeforeUnload = true;
-      return win.history.back();
-    },
-    forward: (ignoreBlocker) => {
-      if (ignoreBlocker) skipBlockerNextPop = true;
-      ignoreNextBeforeUnload = true;
-      win.history.forward();
-    },
-    go: (n2) => {
-      nextPopIsGo = true;
-      win.history.go(n2);
-    },
-    createHref: (href) => createHref(href),
-    flush,
-    destroy: () => {
-      win.history.pushState = originalPushState;
-      win.history.replaceState = originalReplaceState;
-      win.removeEventListener(beforeUnloadEvent, onBeforeUnload, {
-        capture: true
-      });
-      win.removeEventListener(popStateEvent, onPushPopEvent);
-    },
-    onBlocked: () => {
-      if (rollbackLocation && currentLocation !== rollbackLocation) {
-        currentLocation = rollbackLocation;
-      }
-    },
-    getBlockers: _getBlockers,
-    setBlockers: _setBlockers,
-    notifyOnIndexChange: false
-  });
-  win.addEventListener(beforeUnloadEvent, onBeforeUnload, { capture: true });
-  win.addEventListener(popStateEvent, onPushPopEvent);
-  win.history.pushState = function(...args) {
-    const res = originalPushState.apply(win.history, args);
-    if (!history._ignoreSubscribers) onPushPop("PUSH");
-    return res;
-  };
-  win.history.replaceState = function(...args) {
-    const res = originalReplaceState.apply(win.history, args);
-    if (!history._ignoreSubscribers) onPushPop("REPLACE");
-    return res;
-  };
-  return history;
-}
-function parseHref(href, state) {
-  const hashIndex = href.indexOf("#");
-  const searchIndex = href.indexOf("?");
-  const addedKey = createRandomKey();
-  return {
-    href,
-    pathname: href.substring(
-      0,
-      hashIndex > 0 ? searchIndex > 0 ? Math.min(hashIndex, searchIndex) : hashIndex : searchIndex > 0 ? searchIndex : href.length
-    ),
-    hash: hashIndex > -1 ? href.substring(hashIndex) : "",
-    search: searchIndex > -1 ? href.slice(searchIndex, hashIndex === -1 ? void 0 : hashIndex) : "",
-    state: state || { [stateIndexKey]: 0, key: addedKey, __TSR_key: addedKey }
-  };
-}
-function createRandomKey() {
-  return (Math.random() + 1).toString(36).substring(7);
-}
-function last(arr) {
-  return arr[arr.length - 1];
-}
-function isFunction$1(d) {
-  return typeof d === "function";
-}
-function functionalUpdate(updater, previous) {
-  if (isFunction$1(updater)) {
-    return updater(previous);
-  }
-  return updater;
-}
-const hasOwn = Object.prototype.hasOwnProperty;
-function replaceEqualDeep(prev, _next) {
-  if (prev === _next) {
-    return prev;
-  }
-  const next = _next;
-  const array = isPlainArray(prev) && isPlainArray(next);
-  if (!array && !(isPlainObject(prev) && isPlainObject(next))) return next;
-  const prevItems = array ? prev : getEnumerableOwnKeys(prev);
-  if (!prevItems) return next;
-  const nextItems = array ? next : getEnumerableOwnKeys(next);
-  if (!nextItems) return next;
-  const prevSize = prevItems.length;
-  const nextSize = nextItems.length;
-  const copy = array ? new Array(nextSize) : {};
-  let equalItems = 0;
-  for (let i = 0; i < nextSize; i++) {
-    const key = array ? i : nextItems[i];
-    const p2 = prev[key];
-    const n2 = next[key];
-    if (p2 === n2) {
-      copy[key] = p2;
-      if (array ? i < prevSize : hasOwn.call(prev, key)) equalItems++;
-      continue;
-    }
-    if (p2 === null || n2 === null || typeof p2 !== "object" || typeof n2 !== "object") {
-      copy[key] = n2;
-      continue;
-    }
-    const v2 = replaceEqualDeep(p2, n2);
-    copy[key] = v2;
-    if (v2 === p2) equalItems++;
-  }
-  return prevSize === nextSize && equalItems === prevSize ? prev : copy;
-}
-function getEnumerableOwnKeys(o) {
-  const keys = [];
-  const names = Object.getOwnPropertyNames(o);
-  for (const name of names) {
-    if (!Object.prototype.propertyIsEnumerable.call(o, name)) return false;
-    keys.push(name);
-  }
-  const symbols = Object.getOwnPropertySymbols(o);
-  for (const symbol of symbols) {
-    if (!Object.prototype.propertyIsEnumerable.call(o, symbol)) return false;
-    keys.push(symbol);
-  }
-  return keys;
-}
-function isPlainObject(o) {
-  if (!hasObjectPrototype(o)) {
-    return false;
-  }
-  const ctor = o.constructor;
-  if (typeof ctor === "undefined") {
-    return true;
-  }
-  const prot = ctor.prototype;
-  if (!hasObjectPrototype(prot)) {
-    return false;
-  }
-  if (!prot.hasOwnProperty("isPrototypeOf")) {
-    return false;
-  }
-  return true;
-}
-function hasObjectPrototype(o) {
-  return Object.prototype.toString.call(o) === "[object Object]";
-}
-function isPlainArray(value) {
-  return Array.isArray(value) && value.length === Object.keys(value).length;
-}
-function deepEqual$1(a, b, opts) {
-  if (a === b) {
-    return true;
-  }
-  if (typeof a !== typeof b) {
-    return false;
-  }
-  if (Array.isArray(a) && Array.isArray(b)) {
-    if (a.length !== b.length) return false;
-    for (let i = 0, l2 = a.length; i < l2; i++) {
-      if (!deepEqual$1(a[i], b[i], opts)) return false;
-    }
-    return true;
-  }
-  if (isPlainObject(a) && isPlainObject(b)) {
-    const ignoreUndefined = (opts == null ? void 0 : opts.ignoreUndefined) ?? true;
-    if (opts == null ? void 0 : opts.partial) {
-      for (const k2 in b) {
-        if (!ignoreUndefined || b[k2] !== void 0) {
-          if (!deepEqual$1(a[k2], b[k2], opts)) return false;
-        }
-      }
-      return true;
-    }
-    let aCount = 0;
-    if (!ignoreUndefined) {
-      aCount = Object.keys(a).length;
-    } else {
-      for (const k2 in a) {
-        if (a[k2] !== void 0) aCount++;
-      }
-    }
-    let bCount = 0;
-    for (const k2 in b) {
-      if (!ignoreUndefined || b[k2] !== void 0) {
-        bCount++;
-        if (bCount > aCount || !deepEqual$1(a[k2], b[k2], opts)) return false;
-      }
-    }
-    return aCount === bCount;
-  }
-  return false;
-}
-function createControlledPromise(onResolve) {
-  let resolveLoadPromise;
-  let rejectLoadPromise;
-  const controlledPromise = new Promise((resolve, reject) => {
-    resolveLoadPromise = resolve;
-    rejectLoadPromise = reject;
-  });
-  controlledPromise.status = "pending";
-  controlledPromise.resolve = (value) => {
-    controlledPromise.status = "resolved";
-    controlledPromise.value = value;
-    resolveLoadPromise(value);
-    onResolve == null ? void 0 : onResolve(value);
-  };
-  controlledPromise.reject = (e) => {
-    controlledPromise.status = "rejected";
-    rejectLoadPromise(e);
-  };
-  return controlledPromise;
-}
-function isPromise(value) {
-  return Boolean(
-    value && typeof value === "object" && typeof value.then === "function"
-  );
-}
-var prefix = "Invariant failed";
-function invariant(condition, message) {
-  if (condition) {
-    return;
-  }
-  {
-    throw new Error(prefix);
-  }
-}
-const rootRouteId = "__root__";
-const SEGMENT_TYPE_PATHNAME = 0;
-const SEGMENT_TYPE_PARAM = 1;
-const SEGMENT_TYPE_WILDCARD = 2;
-const SEGMENT_TYPE_OPTIONAL_PARAM = 3;
-function joinPaths(paths) {
-  return cleanPath(
-    paths.filter((val) => {
-      return val !== void 0;
-    }).join("/")
-  );
-}
-function cleanPath(path) {
-  return path.replace(/\/{2,}/g, "/");
-}
-function trimPathLeft(path) {
-  return path === "/" ? path : path.replace(/^\/{1,}/, "");
-}
-function trimPathRight(path) {
-  return path === "/" ? path : path.replace(/\/{1,}$/, "");
-}
-function trimPath(path) {
-  return trimPathRight(trimPathLeft(path));
-}
-function removeTrailingSlash(value, basepath) {
-  if ((value == null ? void 0 : value.endsWith("/")) && value !== "/" && value !== `${basepath}/`) {
-    return value.slice(0, -1);
-  }
-  return value;
-}
-function exactPathTest(pathName1, pathName2, basepath) {
-  return removeTrailingSlash(pathName1, basepath) === removeTrailingSlash(pathName2, basepath);
-}
-function segmentToString(segment) {
-  const { type, value } = segment;
-  if (type === SEGMENT_TYPE_PATHNAME) {
-    return value;
-  }
-  const { prefixSegment, suffixSegment } = segment;
-  if (type === SEGMENT_TYPE_PARAM) {
-    const param = value.substring(1);
-    if (prefixSegment && suffixSegment) {
-      return `${prefixSegment}{$${param}}${suffixSegment}`;
-    } else if (prefixSegment) {
-      return `${prefixSegment}{$${param}}`;
-    } else if (suffixSegment) {
-      return `{$${param}}${suffixSegment}`;
-    }
-  }
-  if (type === SEGMENT_TYPE_OPTIONAL_PARAM) {
-    const param = value.substring(1);
-    if (prefixSegment && suffixSegment) {
-      return `${prefixSegment}{-$${param}}${suffixSegment}`;
-    } else if (prefixSegment) {
-      return `${prefixSegment}{-$${param}}`;
-    } else if (suffixSegment) {
-      return `{-$${param}}${suffixSegment}`;
-    }
-    return `{-$${param}}`;
-  }
-  if (type === SEGMENT_TYPE_WILDCARD) {
-    if (prefixSegment && suffixSegment) {
-      return `${prefixSegment}{$}${suffixSegment}`;
-    } else if (prefixSegment) {
-      return `${prefixSegment}{$}`;
-    } else if (suffixSegment) {
-      return `{$}${suffixSegment}`;
-    }
-  }
-  return value;
-}
-function resolvePath({
-  base,
-  to,
-  trailingSlash = "never",
-  parseCache
-}) {
-  var _a;
-  let baseSegments = parseBasePathSegments(base, parseCache).slice();
-  const toSegments = parseRoutePathSegments(to, parseCache);
-  if (baseSegments.length > 1 && ((_a = last(baseSegments)) == null ? void 0 : _a.value) === "/") {
-    baseSegments.pop();
-  }
-  for (let index2 = 0, length = toSegments.length; index2 < length; index2++) {
-    const toSegment = toSegments[index2];
-    const value = toSegment.value;
-    if (value === "/") {
-      if (!index2) {
-        baseSegments = [toSegment];
-      } else if (index2 === length - 1) {
-        baseSegments.push(toSegment);
-      } else ;
-    } else if (value === "..") {
-      baseSegments.pop();
-    } else if (value === ".") ;
-    else {
-      baseSegments.push(toSegment);
-    }
-  }
-  if (baseSegments.length > 1) {
-    if (last(baseSegments).value === "/") {
-      if (trailingSlash === "never") {
-        baseSegments.pop();
-      }
-    } else if (trailingSlash === "always") {
-      baseSegments.push({ type: SEGMENT_TYPE_PATHNAME, value: "/" });
-    }
-  }
-  const segmentValues = baseSegments.map(segmentToString);
-  const joined = joinPaths(segmentValues);
-  return joined;
-}
-const parseBasePathSegments = (pathname, cache) => parsePathname(pathname, cache, true);
-const parseRoutePathSegments = (pathname, cache) => parsePathname(pathname, cache, false);
-const parsePathname = (pathname, cache, basePathValues) => {
-  if (!pathname) return [];
-  const cached = cache == null ? void 0 : cache.get(pathname);
-  if (cached) return cached;
-  const parsed = baseParsePathname(pathname, basePathValues);
-  cache == null ? void 0 : cache.set(pathname, parsed);
-  return parsed;
-};
-const PARAM_RE = /^\$.{1,}$/;
-const PARAM_W_CURLY_BRACES_RE = /^(.*?)\{(\$[a-zA-Z_$][a-zA-Z0-9_$]*)\}(.*)$/;
-const OPTIONAL_PARAM_W_CURLY_BRACES_RE = /^(.*?)\{-(\$[a-zA-Z_$][a-zA-Z0-9_$]*)\}(.*)$/;
-const WILDCARD_RE = /^\$$/;
-const WILDCARD_W_CURLY_BRACES_RE = /^(.*?)\{\$\}(.*)$/;
-function baseParsePathname(pathname, basePathValues) {
-  pathname = cleanPath(pathname);
-  const segments = [];
-  if (pathname.slice(0, 1) === "/") {
-    pathname = pathname.substring(1);
-    segments.push({
-      type: SEGMENT_TYPE_PATHNAME,
-      value: "/"
-    });
-  }
-  if (!pathname) {
-    return segments;
-  }
-  const split = pathname.split("/").filter(Boolean);
-  segments.push(
-    ...split.map((part) => {
-      const partToMatch = !basePathValues && part !== rootRouteId && part.slice(-1) === "_" ? part.slice(0, -1) : part;
-      const wildcardBracesMatch = partToMatch.match(WILDCARD_W_CURLY_BRACES_RE);
-      if (wildcardBracesMatch) {
-        const prefix2 = wildcardBracesMatch[1];
-        const suffix = wildcardBracesMatch[2];
-        return {
-          type: SEGMENT_TYPE_WILDCARD,
-          value: "$",
-          prefixSegment: prefix2 || void 0,
-          suffixSegment: suffix || void 0
-        };
-      }
-      const optionalParamBracesMatch = partToMatch.match(
-        OPTIONAL_PARAM_W_CURLY_BRACES_RE
-      );
-      if (optionalParamBracesMatch) {
-        const prefix2 = optionalParamBracesMatch[1];
-        const paramName = optionalParamBracesMatch[2];
-        const suffix = optionalParamBracesMatch[3];
-        return {
-          type: SEGMENT_TYPE_OPTIONAL_PARAM,
-          value: paramName,
-          // Now just $paramName (no prefix)
-          prefixSegment: prefix2 || void 0,
-          suffixSegment: suffix || void 0
-        };
-      }
-      const paramBracesMatch = partToMatch.match(PARAM_W_CURLY_BRACES_RE);
-      if (paramBracesMatch) {
-        const prefix2 = paramBracesMatch[1];
-        const paramName = paramBracesMatch[2];
-        const suffix = paramBracesMatch[3];
-        return {
-          type: SEGMENT_TYPE_PARAM,
-          value: "" + paramName,
-          prefixSegment: prefix2 || void 0,
-          suffixSegment: suffix || void 0
-        };
-      }
-      if (PARAM_RE.test(partToMatch)) {
-        const paramName = partToMatch.substring(1);
-        return {
-          type: SEGMENT_TYPE_PARAM,
-          value: "$" + paramName,
-          prefixSegment: void 0,
-          suffixSegment: void 0
-        };
-      }
-      if (WILDCARD_RE.test(partToMatch)) {
-        return {
-          type: SEGMENT_TYPE_WILDCARD,
-          value: "$",
-          prefixSegment: void 0,
-          suffixSegment: void 0
-        };
-      }
-      return {
-        type: SEGMENT_TYPE_PATHNAME,
-        value: partToMatch.includes("%25") ? partToMatch.split("%25").map((segment) => decodeURI(segment)).join("%25") : decodeURI(partToMatch)
-      };
-    })
-  );
-  if (pathname.slice(-1) === "/") {
-    pathname = pathname.substring(1);
-    segments.push({
-      type: SEGMENT_TYPE_PATHNAME,
-      value: "/"
-    });
-  }
-  return segments;
-}
-function interpolatePath({
-  path,
-  params,
-  leaveWildcards,
-  leaveParams,
-  decodeCharMap,
-  parseCache
-}) {
-  const interpolatedPathSegments = parseRoutePathSegments(path, parseCache);
-  function encodeParam(key) {
-    const value = params[key];
-    const isValueString = typeof value === "string";
-    if (key === "*" || key === "_splat") {
-      return isValueString ? encodeURI(value) : value;
-    } else {
-      return isValueString ? encodePathParam(value, decodeCharMap) : value;
-    }
-  }
-  let isMissingParams = false;
-  const usedParams = {};
-  const interpolatedPath = joinPaths(
-    interpolatedPathSegments.map((segment) => {
-      if (segment.type === SEGMENT_TYPE_PATHNAME) {
-        return segment.value;
-      }
-      if (segment.type === SEGMENT_TYPE_WILDCARD) {
-        usedParams._splat = params._splat;
-        usedParams["*"] = params._splat;
-        const segmentPrefix = segment.prefixSegment || "";
-        const segmentSuffix = segment.suffixSegment || "";
-        if (!("_splat" in params)) {
-          isMissingParams = true;
-          if (leaveWildcards) {
-            return `${segmentPrefix}${segment.value}${segmentSuffix}`;
-          }
-          if (segmentPrefix || segmentSuffix) {
-            return `${segmentPrefix}${segmentSuffix}`;
-          }
-          return void 0;
-        }
-        const value = encodeParam("_splat");
-        if (leaveWildcards) {
-          return `${segmentPrefix}${segment.value}${value ?? ""}${segmentSuffix}`;
-        }
-        return `${segmentPrefix}${value}${segmentSuffix}`;
-      }
-      if (segment.type === SEGMENT_TYPE_PARAM) {
-        const key = segment.value.substring(1);
-        if (!isMissingParams && !(key in params)) {
-          isMissingParams = true;
-        }
-        usedParams[key] = params[key];
-        const segmentPrefix = segment.prefixSegment || "";
-        const segmentSuffix = segment.suffixSegment || "";
-        if (leaveParams) {
-          const value = encodeParam(segment.value);
-          return `${segmentPrefix}${segment.value}${value ?? ""}${segmentSuffix}`;
-        }
-        return `${segmentPrefix}${encodeParam(key) ?? "undefined"}${segmentSuffix}`;
-      }
-      if (segment.type === SEGMENT_TYPE_OPTIONAL_PARAM) {
-        const key = segment.value.substring(1);
-        const segmentPrefix = segment.prefixSegment || "";
-        const segmentSuffix = segment.suffixSegment || "";
-        if (!(key in params) || params[key] == null) {
-          if (leaveWildcards) {
-            return `${segmentPrefix}${key}${segmentSuffix}`;
-          }
-          if (segmentPrefix || segmentSuffix) {
-            return `${segmentPrefix}${segmentSuffix}`;
-          }
-          return void 0;
-        }
-        usedParams[key] = params[key];
-        if (leaveParams) {
-          const value = encodeParam(segment.value);
-          return `${segmentPrefix}${segment.value}${value ?? ""}${segmentSuffix}`;
-        }
-        if (leaveWildcards) {
-          return `${segmentPrefix}${key}${encodeParam(key) ?? ""}${segmentSuffix}`;
-        }
-        return `${segmentPrefix}${encodeParam(key) ?? ""}${segmentSuffix}`;
-      }
-      return segment.value;
-    })
-  );
-  return { usedParams, interpolatedPath, isMissingParams };
-}
-function encodePathParam(value, decodeCharMap) {
-  let encoded = encodeURIComponent(value);
-  if (decodeCharMap) {
-    for (const [encodedChar, char] of decodeCharMap) {
-      encoded = encoded.replaceAll(encodedChar, char);
-    }
-  }
-  return encoded;
-}
-function matchPathname(currentPathname, matchLocation, parseCache) {
-  const pathParams = matchByPath(currentPathname, matchLocation, parseCache);
-  if (matchLocation.to && !pathParams) {
-    return;
-  }
-  return pathParams ?? {};
-}
-function matchByPath(from, {
-  to,
-  fuzzy,
-  caseSensitive
-}, parseCache) {
-  const stringTo = to;
-  const baseSegments = parseBasePathSegments(
-    from.startsWith("/") ? from : `/${from}`,
-    parseCache
-  );
-  const routeSegments = parseRoutePathSegments(
-    stringTo.startsWith("/") ? stringTo : `/${stringTo}`,
-    parseCache
-  );
-  const params = {};
-  const result = isMatch(
-    baseSegments,
-    routeSegments,
-    params,
-    fuzzy,
-    caseSensitive
-  );
-  return result ? params : void 0;
-}
-function isMatch(baseSegments, routeSegments, params, fuzzy, caseSensitive) {
-  var _a, _b, _c;
-  let baseIndex = 0;
-  let routeIndex = 0;
-  while (baseIndex < baseSegments.length || routeIndex < routeSegments.length) {
-    const baseSegment = baseSegments[baseIndex];
-    const routeSegment = routeSegments[routeIndex];
-    if (routeSegment) {
-      if (routeSegment.type === SEGMENT_TYPE_WILDCARD) {
-        const remainingBaseSegments = baseSegments.slice(baseIndex);
-        let _splat;
-        if (routeSegment.prefixSegment || routeSegment.suffixSegment) {
-          if (!baseSegment) return false;
-          const prefix2 = routeSegment.prefixSegment || "";
-          const suffix = routeSegment.suffixSegment || "";
-          const baseValue = baseSegment.value;
-          if ("prefixSegment" in routeSegment) {
-            if (!baseValue.startsWith(prefix2)) {
-              return false;
-            }
-          }
-          if ("suffixSegment" in routeSegment) {
-            if (!((_a = baseSegments[baseSegments.length - 1]) == null ? void 0 : _a.value.endsWith(suffix))) {
-              return false;
-            }
-          }
-          let rejoinedSplat = decodeURI(
-            joinPaths(remainingBaseSegments.map((d) => d.value))
-          );
-          if (prefix2 && rejoinedSplat.startsWith(prefix2)) {
-            rejoinedSplat = rejoinedSplat.slice(prefix2.length);
-          }
-          if (suffix && rejoinedSplat.endsWith(suffix)) {
-            rejoinedSplat = rejoinedSplat.slice(
-              0,
-              rejoinedSplat.length - suffix.length
-            );
-          }
-          _splat = rejoinedSplat;
-        } else {
-          _splat = decodeURI(
-            joinPaths(remainingBaseSegments.map((d) => d.value))
-          );
-        }
-        params["*"] = _splat;
-        params["_splat"] = _splat;
-        return true;
-      }
-      if (routeSegment.type === SEGMENT_TYPE_PATHNAME) {
-        if (routeSegment.value === "/" && !(baseSegment == null ? void 0 : baseSegment.value)) {
-          routeIndex++;
-          continue;
-        }
-        if (baseSegment) {
-          if (caseSensitive) {
-            if (routeSegment.value !== baseSegment.value) {
-              return false;
-            }
-          } else if (routeSegment.value.toLowerCase() !== baseSegment.value.toLowerCase()) {
-            return false;
-          }
-          baseIndex++;
-          routeIndex++;
-          continue;
-        } else {
-          return false;
-        }
-      }
-      if (routeSegment.type === SEGMENT_TYPE_PARAM) {
-        if (!baseSegment) {
-          return false;
-        }
-        if (baseSegment.value === "/") {
-          return false;
-        }
-        let _paramValue = "";
-        let matched = false;
-        if (routeSegment.prefixSegment || routeSegment.suffixSegment) {
-          const prefix2 = routeSegment.prefixSegment || "";
-          const suffix = routeSegment.suffixSegment || "";
-          const baseValue = baseSegment.value;
-          if (prefix2 && !baseValue.startsWith(prefix2)) {
-            return false;
-          }
-          if (suffix && !baseValue.endsWith(suffix)) {
-            return false;
-          }
-          let paramValue = baseValue;
-          if (prefix2 && paramValue.startsWith(prefix2)) {
-            paramValue = paramValue.slice(prefix2.length);
-          }
-          if (suffix && paramValue.endsWith(suffix)) {
-            paramValue = paramValue.slice(0, paramValue.length - suffix.length);
-          }
-          _paramValue = decodeURIComponent(paramValue);
-          matched = true;
-        } else {
-          _paramValue = decodeURIComponent(baseSegment.value);
-          matched = true;
-        }
-        if (matched) {
-          params[routeSegment.value.substring(1)] = _paramValue;
-          baseIndex++;
-        }
-        routeIndex++;
-        continue;
-      }
-      if (routeSegment.type === SEGMENT_TYPE_OPTIONAL_PARAM) {
-        if (!baseSegment) {
-          routeIndex++;
-          continue;
-        }
-        if (baseSegment.value === "/") {
-          routeIndex++;
-          continue;
-        }
-        let _paramValue = "";
-        let matched = false;
-        if (routeSegment.prefixSegment || routeSegment.suffixSegment) {
-          const prefix2 = routeSegment.prefixSegment || "";
-          const suffix = routeSegment.suffixSegment || "";
-          const baseValue = baseSegment.value;
-          if ((!prefix2 || baseValue.startsWith(prefix2)) && (!suffix || baseValue.endsWith(suffix))) {
-            let paramValue = baseValue;
-            if (prefix2 && paramValue.startsWith(prefix2)) {
-              paramValue = paramValue.slice(prefix2.length);
-            }
-            if (suffix && paramValue.endsWith(suffix)) {
-              paramValue = paramValue.slice(
-                0,
-                paramValue.length - suffix.length
-              );
-            }
-            _paramValue = decodeURIComponent(paramValue);
-            matched = true;
-          }
-        } else {
-          let shouldMatchOptional = true;
-          for (let lookAhead = routeIndex + 1; lookAhead < routeSegments.length; lookAhead++) {
-            const futureRouteSegment = routeSegments[lookAhead];
-            if ((futureRouteSegment == null ? void 0 : futureRouteSegment.type) === SEGMENT_TYPE_PATHNAME && futureRouteSegment.value === baseSegment.value) {
-              shouldMatchOptional = false;
-              break;
-            }
-            if ((futureRouteSegment == null ? void 0 : futureRouteSegment.type) === SEGMENT_TYPE_PARAM || (futureRouteSegment == null ? void 0 : futureRouteSegment.type) === SEGMENT_TYPE_WILDCARD) {
-              if (baseSegments.length < routeSegments.length) {
-                shouldMatchOptional = false;
-              }
-              break;
-            }
-          }
-          if (shouldMatchOptional) {
-            _paramValue = decodeURIComponent(baseSegment.value);
-            matched = true;
-          }
-        }
-        if (matched) {
-          params[routeSegment.value.substring(1)] = _paramValue;
-          baseIndex++;
-        }
-        routeIndex++;
-        continue;
-      }
-    }
-    if (baseIndex < baseSegments.length && routeIndex >= routeSegments.length) {
-      params["**"] = joinPaths(
-        baseSegments.slice(baseIndex).map((d) => d.value)
-      );
-      return !!fuzzy && ((_b = routeSegments[routeSegments.length - 1]) == null ? void 0 : _b.value) !== "/";
-    }
-    if (routeIndex < routeSegments.length && baseIndex >= baseSegments.length) {
-      for (let i = routeIndex; i < routeSegments.length; i++) {
-        if (((_c = routeSegments[i]) == null ? void 0 : _c.type) !== SEGMENT_TYPE_OPTIONAL_PARAM) {
-          return false;
-        }
-      }
-      break;
-    }
-    break;
-  }
-  return true;
-}
-const SLASH_SCORE = 0.75;
-const STATIC_SEGMENT_SCORE = 1;
-const REQUIRED_PARAM_BASE_SCORE = 0.5;
-const OPTIONAL_PARAM_BASE_SCORE = 0.4;
-const WILDCARD_PARAM_BASE_SCORE = 0.25;
-const STATIC_AFTER_DYNAMIC_BONUS_SCORE = 0.2;
-const BOTH_PRESENCE_BASE_SCORE = 0.05;
-const PREFIX_PRESENCE_BASE_SCORE = 0.02;
-const SUFFIX_PRESENCE_BASE_SCORE = 0.01;
-const PREFIX_LENGTH_SCORE_MULTIPLIER = 2e-4;
-const SUFFIX_LENGTH_SCORE_MULTIPLIER = 1e-4;
-function handleParam(segment, baseScore) {
-  if (segment.prefixSegment && segment.suffixSegment) {
-    return baseScore + BOTH_PRESENCE_BASE_SCORE + PREFIX_LENGTH_SCORE_MULTIPLIER * segment.prefixSegment.length + SUFFIX_LENGTH_SCORE_MULTIPLIER * segment.suffixSegment.length;
-  }
-  if (segment.prefixSegment) {
-    return baseScore + PREFIX_PRESENCE_BASE_SCORE + PREFIX_LENGTH_SCORE_MULTIPLIER * segment.prefixSegment.length;
-  }
-  if (segment.suffixSegment) {
-    return baseScore + SUFFIX_PRESENCE_BASE_SCORE + SUFFIX_LENGTH_SCORE_MULTIPLIER * segment.suffixSegment.length;
-  }
-  return baseScore;
-}
-function sortRoutes(routes) {
-  const scoredRoutes = [];
-  routes.forEach((d, i) => {
-    var _a;
-    if (d.isRoot || !d.path) {
-      return;
-    }
-    const trimmed = trimPathLeft(d.fullPath);
-    let parsed = parseRoutePathSegments(trimmed);
-    let skip = 0;
-    while (parsed.length > skip + 1 && ((_a = parsed[skip]) == null ? void 0 : _a.value) === "/") {
-      skip++;
-    }
-    if (skip > 0) parsed = parsed.slice(skip);
-    let optionalParamCount = 0;
-    let hasStaticAfter = false;
-    const scores = parsed.map((segment, index2) => {
-      if (segment.value === "/") {
-        return SLASH_SCORE;
-      }
-      if (segment.type === SEGMENT_TYPE_PATHNAME) {
-        return STATIC_SEGMENT_SCORE;
-      }
-      let baseScore = void 0;
-      if (segment.type === SEGMENT_TYPE_PARAM) {
-        baseScore = REQUIRED_PARAM_BASE_SCORE;
-      } else if (segment.type === SEGMENT_TYPE_OPTIONAL_PARAM) {
-        baseScore = OPTIONAL_PARAM_BASE_SCORE;
-        optionalParamCount++;
-      } else {
-        baseScore = WILDCARD_PARAM_BASE_SCORE;
-      }
-      for (let i2 = index2 + 1; i2 < parsed.length; i2++) {
-        const nextSegment = parsed[i2];
-        if (nextSegment.type === SEGMENT_TYPE_PATHNAME && nextSegment.value !== "/") {
-          hasStaticAfter = true;
-          return handleParam(
-            segment,
-            baseScore + STATIC_AFTER_DYNAMIC_BONUS_SCORE
-          );
-        }
-      }
-      return handleParam(segment, baseScore);
-    });
-    scoredRoutes.push({
-      child: d,
-      trimmed,
-      parsed,
-      index: i,
-      scores,
-      optionalParamCount,
-      hasStaticAfter
-    });
-  });
-  const flatRoutes = scoredRoutes.sort((a, b) => {
-    const minLength = Math.min(a.scores.length, b.scores.length);
-    for (let i = 0; i < minLength; i++) {
-      if (a.scores[i] !== b.scores[i]) {
-        return b.scores[i] - a.scores[i];
-      }
-    }
-    if (a.scores.length !== b.scores.length) {
-      if (a.optionalParamCount !== b.optionalParamCount) {
-        if (a.hasStaticAfter === b.hasStaticAfter) {
-          return a.optionalParamCount - b.optionalParamCount;
-        } else if (a.hasStaticAfter && !b.hasStaticAfter) {
-          return -1;
-        } else if (!a.hasStaticAfter && b.hasStaticAfter) {
-          return 1;
-        }
-      }
-      return b.scores.length - a.scores.length;
-    }
-    for (let i = 0; i < minLength; i++) {
-      if (a.parsed[i].value !== b.parsed[i].value) {
-        return a.parsed[i].value > b.parsed[i].value ? 1 : -1;
-      }
-    }
-    return a.index - b.index;
-  }).map((d, i) => {
-    d.child.rank = i;
-    return d.child;
-  });
-  return flatRoutes;
-}
-function processRouteTree({
-  routeTree: routeTree2,
-  initRoute
-}) {
-  const routesById = {};
-  const routesByPath = {};
-  const recurseRoutes = (childRoutes) => {
-    childRoutes.forEach((childRoute, i) => {
-      initRoute == null ? void 0 : initRoute(childRoute, i);
-      const existingRoute = routesById[childRoute.id];
-      invariant(
-        !existingRoute,
-        `Duplicate routes found with id: ${String(childRoute.id)}`
-      );
-      routesById[childRoute.id] = childRoute;
-      if (!childRoute.isRoot && childRoute.path) {
-        const trimmedFullPath = trimPathRight(childRoute.fullPath);
-        if (!routesByPath[trimmedFullPath] || childRoute.fullPath.endsWith("/")) {
-          routesByPath[trimmedFullPath] = childRoute;
-        }
-      }
-      const children = childRoute.children;
-      if (children == null ? void 0 : children.length) {
-        recurseRoutes(children);
-      }
-    });
-  };
-  recurseRoutes([routeTree2]);
-  const flatRoutes = sortRoutes(Object.values(routesById));
-  return { routesById, routesByPath, flatRoutes };
-}
-function isNotFound(obj) {
-  return !!(obj == null ? void 0 : obj.isNotFound);
-}
-function getSafeSessionStorage() {
-  try {
-    if (typeof window !== "undefined" && typeof window.sessionStorage === "object") {
-      return window.sessionStorage;
-    }
-  } catch {
-  }
-  return void 0;
-}
-const storageKey = "tsr-scroll-restoration-v1_3";
-const throttle = (fn, wait) => {
-  let timeout;
-  return (...args) => {
-    if (!timeout) {
-      timeout = setTimeout(() => {
-        fn(...args);
-        timeout = null;
-      }, wait);
-    }
-  };
-};
-function createScrollRestorationCache() {
-  const safeSessionStorage = getSafeSessionStorage();
-  if (!safeSessionStorage) {
-    return null;
-  }
-  const persistedState = safeSessionStorage.getItem(storageKey);
-  let state = persistedState ? JSON.parse(persistedState) : {};
-  return {
-    state,
-    // This setter is simply to make sure that we set the sessionStorage right
-    // after the state is updated. It doesn't necessarily need to be a functional
-    // update.
-    set: (updater) => (state = functionalUpdate(updater, state) || state, safeSessionStorage.setItem(storageKey, JSON.stringify(state)))
-  };
-}
-const scrollRestorationCache = createScrollRestorationCache();
-const defaultGetScrollRestorationKey = (location) => {
-  return location.state.__TSR_key || location.href;
-};
-function getCssSelector(el2) {
-  const path = [];
-  let parent;
-  while (parent = el2.parentNode) {
-    path.push(
-      `${el2.tagName}:nth-child(${Array.prototype.indexOf.call(parent.children, el2) + 1})`
-    );
-    el2 = parent;
-  }
-  return `${path.reverse().join(" > ")}`.toLowerCase();
-}
-let ignoreScroll = false;
-function restoreScroll({
-  storageKey: storageKey2,
-  key,
-  behavior,
-  shouldScrollRestoration,
-  scrollToTopSelectors,
-  location
-}) {
-  var _a, _b;
-  let byKey;
-  try {
-    byKey = JSON.parse(sessionStorage.getItem(storageKey2) || "{}");
-  } catch (error) {
-    console.error(error);
-    return;
-  }
-  const resolvedKey = key || ((_a = window.history.state) == null ? void 0 : _a.__TSR_key);
-  const elementEntries = byKey[resolvedKey];
-  ignoreScroll = true;
-  scroll: {
-    if (shouldScrollRestoration && elementEntries && Object.keys(elementEntries).length > 0) {
-      for (const elementSelector in elementEntries) {
-        const entry = elementEntries[elementSelector];
-        if (elementSelector === "window") {
-          window.scrollTo({
-            top: entry.scrollY,
-            left: entry.scrollX,
-            behavior
-          });
-        } else if (elementSelector) {
-          const element = document.querySelector(elementSelector);
-          if (element) {
-            element.scrollLeft = entry.scrollX;
-            element.scrollTop = entry.scrollY;
-          }
-        }
-      }
-      break scroll;
-    }
-    const hash = (location ?? window.location).hash.split("#", 2)[1];
-    if (hash) {
-      const hashScrollIntoViewOptions = ((_b = window.history.state) == null ? void 0 : _b.__hashScrollIntoViewOptions) ?? true;
-      if (hashScrollIntoViewOptions) {
-        const el2 = document.getElementById(hash);
-        if (el2) {
-          el2.scrollIntoView(hashScrollIntoViewOptions);
-        }
-      }
-      break scroll;
-    }
-    const scrollOptions = { top: 0, left: 0, behavior };
-    window.scrollTo(scrollOptions);
-    if (scrollToTopSelectors) {
-      for (const selector of scrollToTopSelectors) {
-        if (selector === "window") continue;
-        const element = typeof selector === "function" ? selector() : document.querySelector(selector);
-        if (element) element.scrollTo(scrollOptions);
-      }
-    }
-  }
-  ignoreScroll = false;
-}
-function setupScrollRestoration(router2, force) {
-  if (!scrollRestorationCache && !router2.isServer) {
-    return;
-  }
-  const shouldScrollRestoration = router2.options.scrollRestoration ?? false;
-  if (shouldScrollRestoration) {
-    router2.isScrollRestoring = true;
-  }
-  if (router2.isServer || router2.isScrollRestorationSetup || !scrollRestorationCache) {
-    return;
-  }
-  router2.isScrollRestorationSetup = true;
-  ignoreScroll = false;
-  const getKey = router2.options.getScrollRestorationKey || defaultGetScrollRestorationKey;
-  window.history.scrollRestoration = "manual";
-  const onScroll = (event) => {
-    if (ignoreScroll || !router2.isScrollRestoring) {
-      return;
-    }
-    let elementSelector = "";
-    if (event.target === document || event.target === window) {
-      elementSelector = "window";
-    } else {
-      const attrId = event.target.getAttribute(
-        "data-scroll-restoration-id"
-      );
-      if (attrId) {
-        elementSelector = `[data-scroll-restoration-id="${attrId}"]`;
-      } else {
-        elementSelector = getCssSelector(event.target);
-      }
-    }
-    const restoreKey = getKey(router2.state.location);
-    scrollRestorationCache.set((state) => {
-      const keyEntry = state[restoreKey] || (state[restoreKey] = {});
-      const elementEntry = keyEntry[elementSelector] || (keyEntry[elementSelector] = {});
-      if (elementSelector === "window") {
-        elementEntry.scrollX = window.scrollX || 0;
-        elementEntry.scrollY = window.scrollY || 0;
-      } else if (elementSelector) {
-        const element = document.querySelector(elementSelector);
-        if (element) {
-          elementEntry.scrollX = element.scrollLeft || 0;
-          elementEntry.scrollY = element.scrollTop || 0;
-        }
-      }
-      return state;
-    });
-  };
-  if (typeof document !== "undefined") {
-    document.addEventListener("scroll", throttle(onScroll, 100), true);
-  }
-  router2.subscribe("onRendered", (event) => {
-    const cacheKey = getKey(event.toLocation);
-    if (!router2.resetNextScroll) {
-      router2.resetNextScroll = true;
-      return;
-    }
-    if (typeof router2.options.scrollRestoration === "function") {
-      const shouldRestore = router2.options.scrollRestoration({
-        location: router2.latestLocation
-      });
-      if (!shouldRestore) {
-        return;
-      }
-    }
-    restoreScroll({
-      storageKey,
-      key: cacheKey,
-      behavior: router2.options.scrollRestorationBehavior,
-      shouldScrollRestoration: router2.isScrollRestoring,
-      scrollToTopSelectors: router2.options.scrollToTopSelectors,
-      location: router2.history.location
-    });
-    if (router2.isScrollRestoring) {
-      scrollRestorationCache.set((state) => {
-        state[cacheKey] || (state[cacheKey] = {});
-        return state;
-      });
-    }
-  });
-}
-function handleHashScroll(router2) {
-  if (typeof document !== "undefined" && document.querySelector) {
-    const hashScrollIntoViewOptions = router2.state.location.state.__hashScrollIntoViewOptions ?? true;
-    if (hashScrollIntoViewOptions && router2.state.location.hash !== "") {
-      const el2 = document.getElementById(router2.state.location.hash);
-      if (el2) {
-        el2.scrollIntoView(hashScrollIntoViewOptions);
-      }
-    }
-  }
-}
-function encode(obj, stringify = String) {
-  const result = new URLSearchParams();
-  for (const key in obj) {
-    const val = obj[key];
-    if (val !== void 0) {
-      result.set(key, stringify(val));
-    }
-  }
-  return result.toString();
-}
-function toValue$1(str) {
-  if (!str) return "";
-  if (str === "false") return false;
-  if (str === "true") return true;
-  return +str * 0 === 0 && +str + "" === str ? +str : str;
-}
-function decode(str) {
-  const searchParams = new URLSearchParams(str);
-  const result = {};
-  for (const [key, value] of searchParams.entries()) {
-    const previousValue = result[key];
-    if (previousValue == null) {
-      result[key] = toValue$1(value);
-    } else if (Array.isArray(previousValue)) {
-      previousValue.push(toValue$1(value));
-    } else {
-      result[key] = [previousValue, toValue$1(value)];
-    }
-  }
-  return result;
-}
-const defaultParseSearch = parseSearchWith(JSON.parse);
-const defaultStringifySearch = stringifySearchWith(
-  JSON.stringify,
-  JSON.parse
-);
-function parseSearchWith(parser) {
-  return (searchStr) => {
-    if (searchStr[0] === "?") {
-      searchStr = searchStr.substring(1);
-    }
-    const query = decode(searchStr);
-    for (const key in query) {
-      const value = query[key];
-      if (typeof value === "string") {
-        try {
-          query[key] = parser(value);
-        } catch (_err) {
-        }
-      }
-    }
-    return query;
-  };
-}
-function stringifySearchWith(stringify, parser) {
-  const hasParser = typeof parser === "function";
-  function stringifyValue(val) {
-    if (typeof val === "object" && val !== null) {
-      try {
-        return stringify(val);
-      } catch (_err) {
-      }
-    } else if (hasParser && typeof val === "string") {
-      try {
-        parser(val);
-        return stringify(val);
-      } catch (_err) {
-      }
-    }
-    return val;
-  }
-  return (search) => {
-    const searchStr = encode(search, stringifyValue);
-    return searchStr ? `?${searchStr}` : "";
-  };
-}
-function redirect(opts) {
-  opts.statusCode = opts.statusCode || opts.code || 307;
-  if (!opts.reloadDocument && typeof opts.href === "string") {
-    try {
-      new URL(opts.href);
-      opts.reloadDocument = true;
-    } catch {
-    }
-  }
-  const headers = new Headers(opts.headers);
-  if (opts.href && headers.get("Location") === null) {
-    headers.set("Location", opts.href);
-  }
-  const response = new Response(null, {
-    status: opts.statusCode,
-    headers
-  });
-  response.options = opts;
-  if (opts.throw) {
-    throw response;
-  }
-  return response;
-}
-function isRedirect(obj) {
-  return obj instanceof Response && !!obj.options;
-}
-function createLRUCache(max2) {
-  const cache = /* @__PURE__ */ new Map();
-  let oldest;
-  let newest;
-  const touch = (entry) => {
-    if (!entry.next) return;
-    if (!entry.prev) {
-      entry.next.prev = void 0;
-      oldest = entry.next;
-      entry.next = void 0;
-      if (newest) {
-        entry.prev = newest;
-        newest.next = entry;
-      }
-    } else {
-      entry.prev.next = entry.next;
-      entry.next.prev = entry.prev;
-      entry.next = void 0;
-      if (newest) {
-        newest.next = entry;
-        entry.prev = newest;
-      }
-    }
-    newest = entry;
-  };
-  return {
-    get(key) {
-      const entry = cache.get(key);
-      if (!entry) return void 0;
-      touch(entry);
-      return entry.value;
-    },
-    set(key, value) {
-      if (cache.size >= max2 && oldest) {
-        const toDelete = oldest;
-        cache.delete(toDelete.key);
-        if (toDelete.next) {
-          oldest = toDelete.next;
-          toDelete.next.prev = void 0;
-        }
-        if (toDelete === newest) {
-          newest = void 0;
-        }
-      }
-      const existing = cache.get(key);
-      if (existing) {
-        existing.value = value;
-        touch(existing);
-      } else {
-        const entry = { key, value, prev: newest };
-        if (newest) newest.next = entry;
-        newest = entry;
-        if (!oldest) oldest = entry;
-        cache.set(key, entry);
-      }
-    }
-  };
-}
-const triggerOnReady = (inner) => {
-  var _a;
-  if (!inner.rendered) {
-    inner.rendered = true;
-    return (_a = inner.onReady) == null ? void 0 : _a.call(inner);
-  }
-};
-const resolvePreload = (inner, matchId) => {
-  return !!(inner.preload && !inner.router.state.matches.some((d) => d.id === matchId));
-};
-const _handleNotFound = (inner, err) => {
-  var _a;
-  const routeCursor = inner.router.routesById[err.routeId ?? ""] ?? inner.router.routeTree;
-  if (!routeCursor.options.notFoundComponent && ((_a = inner.router.options) == null ? void 0 : _a.defaultNotFoundComponent)) {
-    routeCursor.options.notFoundComponent = inner.router.options.defaultNotFoundComponent;
-  }
-  invariant(
-    routeCursor.options.notFoundComponent
-  );
-  const matchForRoute = inner.matches.find((m2) => m2.routeId === routeCursor.id);
-  invariant(matchForRoute, "Could not find match for route: " + routeCursor.id);
-  inner.updateMatch(matchForRoute.id, (prev) => ({
-    ...prev,
-    status: "notFound",
-    error: err,
-    isFetching: false
-  }));
-  if (err.routerCode === "BEFORE_LOAD" && routeCursor.parentRoute) {
-    err.routeId = routeCursor.parentRoute.id;
-    _handleNotFound(inner, err);
-  }
-};
-const handleRedirectAndNotFound = (inner, match, err) => {
-  var _a, _b, _c;
-  if (!isRedirect(err) && !isNotFound(err)) return;
-  if (isRedirect(err) && err.redirectHandled && !err.options.reloadDocument) {
-    throw err;
-  }
-  if (match) {
-    (_a = match._nonReactive.beforeLoadPromise) == null ? void 0 : _a.resolve();
-    (_b = match._nonReactive.loaderPromise) == null ? void 0 : _b.resolve();
-    match._nonReactive.beforeLoadPromise = void 0;
-    match._nonReactive.loaderPromise = void 0;
-    const status = isRedirect(err) ? "redirected" : "notFound";
-    inner.updateMatch(match.id, (prev) => ({
-      ...prev,
-      status,
-      isFetching: false,
-      error: err
-    }));
-    if (isNotFound(err) && !err.routeId) {
-      err.routeId = match.routeId;
-    }
-    (_c = match._nonReactive.loadPromise) == null ? void 0 : _c.resolve();
-  }
-  if (isRedirect(err)) {
-    inner.rendered = true;
-    err.options._fromLocation = inner.location;
-    err.redirectHandled = true;
-    err = inner.router.resolveRedirect(err);
-    throw err;
-  } else {
-    _handleNotFound(inner, err);
-    throw err;
-  }
-};
-const shouldSkipLoader = (inner, matchId) => {
-  const match = inner.router.getMatch(matchId);
-  if (!inner.router.isServer && match._nonReactive.dehydrated) {
-    return true;
-  }
-  if (inner.router.isServer && match.ssr === false) {
-    return true;
-  }
-  return false;
-};
-const handleSerialError = (inner, index2, err, routerCode) => {
-  var _a, _b;
-  const { id: matchId, routeId } = inner.matches[index2];
-  const route = inner.router.looseRoutesById[routeId];
-  if (err instanceof Promise) {
-    throw err;
-  }
-  err.routerCode = routerCode;
-  inner.firstBadMatchIndex ?? (inner.firstBadMatchIndex = index2);
-  handleRedirectAndNotFound(inner, inner.router.getMatch(matchId), err);
-  try {
-    (_b = (_a = route.options).onError) == null ? void 0 : _b.call(_a, err);
-  } catch (errorHandlerErr) {
-    err = errorHandlerErr;
-    handleRedirectAndNotFound(inner, inner.router.getMatch(matchId), err);
-  }
-  inner.updateMatch(matchId, (prev) => {
-    var _a2, _b2;
-    (_a2 = prev._nonReactive.beforeLoadPromise) == null ? void 0 : _a2.resolve();
-    prev._nonReactive.beforeLoadPromise = void 0;
-    (_b2 = prev._nonReactive.loadPromise) == null ? void 0 : _b2.resolve();
-    return {
-      ...prev,
-      error: err,
-      status: "error",
-      isFetching: false,
-      updatedAt: Date.now(),
-      abortController: new AbortController()
-    };
-  });
-};
-const isBeforeLoadSsr = (inner, matchId, index2, route) => {
-  var _a;
-  const existingMatch = inner.router.getMatch(matchId);
-  const parentMatchId = (_a = inner.matches[index2 - 1]) == null ? void 0 : _a.id;
-  const parentMatch = parentMatchId ? inner.router.getMatch(parentMatchId) : void 0;
-  if (inner.router.isShell()) {
-    existingMatch.ssr = matchId === rootRouteId;
-    return;
-  }
-  if ((parentMatch == null ? void 0 : parentMatch.ssr) === false) {
-    existingMatch.ssr = false;
-    return;
-  }
-  const parentOverride = (tempSsr2) => {
-    if (tempSsr2 === true && (parentMatch == null ? void 0 : parentMatch.ssr) === "data-only") {
-      return "data-only";
-    }
-    return tempSsr2;
-  };
-  const defaultSsr = inner.router.options.defaultSsr ?? true;
-  if (route.options.ssr === void 0) {
-    existingMatch.ssr = parentOverride(defaultSsr);
-    return;
-  }
-  if (typeof route.options.ssr !== "function") {
-    existingMatch.ssr = parentOverride(route.options.ssr);
-    return;
-  }
-  const { search, params } = existingMatch;
-  const ssrFnContext = {
-    search: makeMaybe(search, existingMatch.searchError),
-    params: makeMaybe(params, existingMatch.paramsError),
-    location: inner.location,
-    matches: inner.matches.map((match) => ({
-      index: match.index,
-      pathname: match.pathname,
-      fullPath: match.fullPath,
-      staticData: match.staticData,
-      id: match.id,
-      routeId: match.routeId,
-      search: makeMaybe(match.search, match.searchError),
-      params: makeMaybe(match.params, match.paramsError),
-      ssr: match.ssr
-    }))
-  };
-  const tempSsr = route.options.ssr(ssrFnContext);
-  if (isPromise(tempSsr)) {
-    return tempSsr.then((ssr) => {
-      existingMatch.ssr = parentOverride(ssr ?? defaultSsr);
-    });
-  }
-  existingMatch.ssr = parentOverride(tempSsr ?? defaultSsr);
-  return;
-};
-const setupPendingTimeout = (inner, matchId, route, match) => {
-  var _a;
-  if (match._nonReactive.pendingTimeout !== void 0) return;
-  const pendingMs = route.options.pendingMs ?? inner.router.options.defaultPendingMs;
-  const shouldPending = !!(inner.onReady && !inner.router.isServer && !resolvePreload(inner, matchId) && (route.options.loader || route.options.beforeLoad || routeNeedsPreload(route)) && typeof pendingMs === "number" && pendingMs !== Infinity && (route.options.pendingComponent ?? ((_a = inner.router.options) == null ? void 0 : _a.defaultPendingComponent)));
-  if (shouldPending) {
-    const pendingTimeout = setTimeout(() => {
-      triggerOnReady(inner);
-    }, pendingMs);
-    match._nonReactive.pendingTimeout = pendingTimeout;
-  }
-};
-const preBeforeLoadSetup = (inner, matchId, route) => {
-  const existingMatch = inner.router.getMatch(matchId);
-  if (!existingMatch._nonReactive.beforeLoadPromise && !existingMatch._nonReactive.loaderPromise)
-    return;
-  setupPendingTimeout(inner, matchId, route, existingMatch);
-  const then = () => {
-    const match = inner.router.getMatch(matchId);
-    if (match.preload && (match.status === "redirected" || match.status === "notFound")) {
-      handleRedirectAndNotFound(inner, match, match.error);
-    }
-  };
-  return existingMatch._nonReactive.beforeLoadPromise ? existingMatch._nonReactive.beforeLoadPromise.then(then) : then();
-};
-const executeBeforeLoad = (inner, matchId, index2, route) => {
-  var _a;
-  const match = inner.router.getMatch(matchId);
-  const prevLoadPromise = match._nonReactive.loadPromise;
-  match._nonReactive.loadPromise = createControlledPromise(() => {
-    prevLoadPromise == null ? void 0 : prevLoadPromise.resolve();
-  });
-  const { paramsError, searchError } = match;
-  if (paramsError) {
-    handleSerialError(inner, index2, paramsError, "PARSE_PARAMS");
-  }
-  if (searchError) {
-    handleSerialError(inner, index2, searchError, "VALIDATE_SEARCH");
-  }
-  setupPendingTimeout(inner, matchId, route, match);
-  const abortController = new AbortController();
-  const parentMatchId = (_a = inner.matches[index2 - 1]) == null ? void 0 : _a.id;
-  const parentMatch = parentMatchId ? inner.router.getMatch(parentMatchId) : void 0;
-  const parentMatchContext = (parentMatch == null ? void 0 : parentMatch.context) ?? inner.router.options.context ?? void 0;
-  const context = { ...parentMatchContext, ...match.__routeContext };
-  let isPending = false;
-  const pending = () => {
-    if (isPending) return;
-    isPending = true;
-    inner.updateMatch(matchId, (prev) => ({
-      ...prev,
-      isFetching: "beforeLoad",
-      fetchCount: prev.fetchCount + 1,
-      abortController,
-      context
-    }));
-  };
-  const resolve = () => {
-    var _a2;
-    (_a2 = match._nonReactive.beforeLoadPromise) == null ? void 0 : _a2.resolve();
-    match._nonReactive.beforeLoadPromise = void 0;
-    inner.updateMatch(matchId, (prev) => ({
-      ...prev,
-      isFetching: false
-    }));
-  };
-  if (!route.options.beforeLoad) {
-    batch(() => {
-      pending();
-      resolve();
-    });
-    return;
-  }
-  match._nonReactive.beforeLoadPromise = createControlledPromise();
-  const { search, params, cause } = match;
-  const preload = resolvePreload(inner, matchId);
-  const beforeLoadFnContext = {
-    search,
-    abortController,
-    params,
-    preload,
-    context,
-    location: inner.location,
-    navigate: (opts) => inner.router.navigate({
-      ...opts,
-      _fromLocation: inner.location
-    }),
-    buildLocation: inner.router.buildLocation,
-    cause: preload ? "preload" : cause,
-    matches: inner.matches,
-    ...inner.router.options.additionalContext
-  };
-  const updateContext = (beforeLoadContext2) => {
-    if (beforeLoadContext2 === void 0) {
-      batch(() => {
-        pending();
-        resolve();
-      });
-      return;
-    }
-    if (isRedirect(beforeLoadContext2) || isNotFound(beforeLoadContext2)) {
-      pending();
-      handleSerialError(inner, index2, beforeLoadContext2, "BEFORE_LOAD");
-    }
-    batch(() => {
-      pending();
-      inner.updateMatch(matchId, (prev) => ({
-        ...prev,
-        __beforeLoadContext: beforeLoadContext2,
-        context: {
-          ...prev.context,
-          ...beforeLoadContext2
-        }
-      }));
-      resolve();
-    });
-  };
-  let beforeLoadContext;
-  try {
-    beforeLoadContext = route.options.beforeLoad(beforeLoadFnContext);
-    if (isPromise(beforeLoadContext)) {
-      pending();
-      return beforeLoadContext.catch((err) => {
-        handleSerialError(inner, index2, err, "BEFORE_LOAD");
-      }).then(updateContext);
-    }
-  } catch (err) {
-    pending();
-    handleSerialError(inner, index2, err, "BEFORE_LOAD");
-  }
-  updateContext(beforeLoadContext);
-  return;
-};
-const handleBeforeLoad = (inner, index2) => {
-  const { id: matchId, routeId } = inner.matches[index2];
-  const route = inner.router.looseRoutesById[routeId];
-  const serverSsr = () => {
-    if (inner.router.isServer) {
-      const maybePromise = isBeforeLoadSsr(inner, matchId, index2, route);
-      if (isPromise(maybePromise)) return maybePromise.then(queueExecution);
-    }
-    return queueExecution();
-  };
-  const execute = () => executeBeforeLoad(inner, matchId, index2, route);
-  const queueExecution = () => {
-    if (shouldSkipLoader(inner, matchId)) return;
-    const result = preBeforeLoadSetup(inner, matchId, route);
-    return isPromise(result) ? result.then(execute) : execute();
-  };
-  return serverSsr();
-};
-const executeHead = (inner, matchId, route) => {
-  var _a, _b, _c, _d, _e2, _f;
-  const match = inner.router.getMatch(matchId);
-  if (!match) {
-    return;
-  }
-  if (!route.options.head && !route.options.scripts && !route.options.headers) {
-    return;
-  }
-  const assetContext = {
-    matches: inner.matches,
-    match,
-    params: match.params,
-    loaderData: match.loaderData
-  };
-  return Promise.all([
-    (_b = (_a = route.options).head) == null ? void 0 : _b.call(_a, assetContext),
-    (_d = (_c = route.options).scripts) == null ? void 0 : _d.call(_c, assetContext),
-    (_f = (_e2 = route.options).headers) == null ? void 0 : _f.call(_e2, assetContext)
-  ]).then(([headFnContent, scripts, headers]) => {
-    const meta = headFnContent == null ? void 0 : headFnContent.meta;
-    const links = headFnContent == null ? void 0 : headFnContent.links;
-    const headScripts = headFnContent == null ? void 0 : headFnContent.scripts;
-    const styles = headFnContent == null ? void 0 : headFnContent.styles;
-    return {
-      meta,
-      links,
-      headScripts,
-      headers,
-      scripts,
-      styles
-    };
-  });
-};
-const getLoaderContext = (inner, matchId, index2, route) => {
-  const parentMatchPromise = inner.matchPromises[index2 - 1];
-  const { params, loaderDeps, abortController, context, cause } = inner.router.getMatch(matchId);
-  const preload = resolvePreload(inner, matchId);
-  return {
-    params,
-    deps: loaderDeps,
-    preload: !!preload,
-    parentMatchPromise,
-    abortController,
-    context,
-    location: inner.location,
-    navigate: (opts) => inner.router.navigate({
-      ...opts,
-      _fromLocation: inner.location
-    }),
-    cause: preload ? "preload" : cause,
-    route,
-    ...inner.router.options.additionalContext
-  };
-};
-const runLoader = async (inner, matchId, index2, route) => {
-  var _a, _b, _c, _d;
-  try {
-    const match = inner.router.getMatch(matchId);
-    try {
-      if (!inner.router.isServer || match.ssr === true) {
-        loadRouteChunk(route);
-      }
-      const loaderResult = (_b = (_a = route.options).loader) == null ? void 0 : _b.call(
-        _a,
-        getLoaderContext(inner, matchId, index2, route)
-      );
-      const loaderResultIsPromise = route.options.loader && isPromise(loaderResult);
-      const willLoadSomething = !!(loaderResultIsPromise || route._lazyPromise || route._componentsPromise || route.options.head || route.options.scripts || route.options.headers || match._nonReactive.minPendingPromise);
-      if (willLoadSomething) {
-        inner.updateMatch(matchId, (prev) => ({
-          ...prev,
-          isFetching: "loader"
-        }));
-      }
-      if (route.options.loader) {
-        const loaderData = loaderResultIsPromise ? await loaderResult : loaderResult;
-        handleRedirectAndNotFound(
-          inner,
-          inner.router.getMatch(matchId),
-          loaderData
-        );
-        if (loaderData !== void 0) {
-          inner.updateMatch(matchId, (prev) => ({
-            ...prev,
-            loaderData
-          }));
-        }
-      }
-      if (route._lazyPromise) await route._lazyPromise;
-      const headResult = executeHead(inner, matchId, route);
-      const head = headResult ? await headResult : void 0;
-      const pendingPromise = match._nonReactive.minPendingPromise;
-      if (pendingPromise) await pendingPromise;
-      if (route._componentsPromise) await route._componentsPromise;
-      inner.updateMatch(matchId, (prev) => ({
-        ...prev,
-        error: void 0,
-        status: "success",
-        isFetching: false,
-        updatedAt: Date.now(),
-        ...head
-      }));
-    } catch (e) {
-      let error = e;
-      const pendingPromise = match._nonReactive.minPendingPromise;
-      if (pendingPromise) await pendingPromise;
-      handleRedirectAndNotFound(inner, inner.router.getMatch(matchId), e);
-      try {
-        (_d = (_c = route.options).onError) == null ? void 0 : _d.call(_c, e);
-      } catch (onErrorError) {
-        error = onErrorError;
-        handleRedirectAndNotFound(
-          inner,
-          inner.router.getMatch(matchId),
-          onErrorError
-        );
-      }
-      const headResult = executeHead(inner, matchId, route);
-      const head = headResult ? await headResult : void 0;
-      inner.updateMatch(matchId, (prev) => ({
-        ...prev,
-        error,
-        status: "error",
-        isFetching: false,
-        ...head
-      }));
-    }
-  } catch (err) {
-    const match = inner.router.getMatch(matchId);
-    if (match) {
-      const headResult = executeHead(inner, matchId, route);
-      if (headResult) {
-        const head = await headResult;
-        inner.updateMatch(matchId, (prev) => ({
-          ...prev,
-          ...head
-        }));
-      }
-      match._nonReactive.loaderPromise = void 0;
-    }
-    handleRedirectAndNotFound(inner, match, err);
-  }
-};
-const loadRouteMatch = async (inner, index2) => {
-  var _a, _b;
-  const { id: matchId, routeId } = inner.matches[index2];
-  let loaderShouldRunAsync = false;
-  let loaderIsRunningAsync = false;
-  const route = inner.router.looseRoutesById[routeId];
-  if (shouldSkipLoader(inner, matchId)) {
-    if (inner.router.isServer) {
-      const headResult = executeHead(inner, matchId, route);
-      if (headResult) {
-        const head = await headResult;
-        inner.updateMatch(matchId, (prev) => ({
-          ...prev,
-          ...head
-        }));
-      }
-      return inner.router.getMatch(matchId);
-    }
-  } else {
-    const prevMatch = inner.router.getMatch(matchId);
-    if (prevMatch._nonReactive.loaderPromise) {
-      if (prevMatch.status === "success" && !inner.sync && !prevMatch.preload) {
-        return prevMatch;
-      }
-      await prevMatch._nonReactive.loaderPromise;
-      const match2 = inner.router.getMatch(matchId);
-      if (match2.error) {
-        handleRedirectAndNotFound(inner, match2, match2.error);
-      }
-    } else {
-      const age = Date.now() - prevMatch.updatedAt;
-      const preload = resolvePreload(inner, matchId);
-      const staleAge = preload ? route.options.preloadStaleTime ?? inner.router.options.defaultPreloadStaleTime ?? 3e4 : route.options.staleTime ?? inner.router.options.defaultStaleTime ?? 0;
-      const shouldReloadOption = route.options.shouldReload;
-      const shouldReload = typeof shouldReloadOption === "function" ? shouldReloadOption(getLoaderContext(inner, matchId, index2, route)) : shouldReloadOption;
-      const nextPreload = !!preload && !inner.router.state.matches.some((d) => d.id === matchId);
-      const match2 = inner.router.getMatch(matchId);
-      match2._nonReactive.loaderPromise = createControlledPromise();
-      if (nextPreload !== match2.preload) {
-        inner.updateMatch(matchId, (prev) => ({
-          ...prev,
-          preload: nextPreload
-        }));
-      }
-      const { status, invalid } = match2;
-      loaderShouldRunAsync = status === "success" && (invalid || (shouldReload ?? age > staleAge));
-      if (preload && route.options.preload === false) ;
-      else if (loaderShouldRunAsync && !inner.sync) {
-        loaderIsRunningAsync = true;
-        (async () => {
-          var _a2, _b2;
-          try {
-            await runLoader(inner, matchId, index2, route);
-            const match3 = inner.router.getMatch(matchId);
-            (_a2 = match3._nonReactive.loaderPromise) == null ? void 0 : _a2.resolve();
-            (_b2 = match3._nonReactive.loadPromise) == null ? void 0 : _b2.resolve();
-            match3._nonReactive.loaderPromise = void 0;
-          } catch (err) {
-            if (isRedirect(err)) {
-              await inner.router.navigate(err.options);
-            }
-          }
-        })();
-      } else if (status !== "success" || loaderShouldRunAsync && inner.sync) {
-        await runLoader(inner, matchId, index2, route);
-      } else {
-        const headResult = executeHead(inner, matchId, route);
-        if (headResult) {
-          const head = await headResult;
-          inner.updateMatch(matchId, (prev) => ({
-            ...prev,
-            ...head
-          }));
-        }
-      }
-    }
-  }
-  const match = inner.router.getMatch(matchId);
-  if (!loaderIsRunningAsync) {
-    (_a = match._nonReactive.loaderPromise) == null ? void 0 : _a.resolve();
-    (_b = match._nonReactive.loadPromise) == null ? void 0 : _b.resolve();
-  }
-  clearTimeout(match._nonReactive.pendingTimeout);
-  match._nonReactive.pendingTimeout = void 0;
-  if (!loaderIsRunningAsync) match._nonReactive.loaderPromise = void 0;
-  match._nonReactive.dehydrated = void 0;
-  const nextIsFetching = loaderIsRunningAsync ? match.isFetching : false;
-  if (nextIsFetching !== match.isFetching || match.invalid !== false) {
-    inner.updateMatch(matchId, (prev) => ({
-      ...prev,
-      isFetching: nextIsFetching,
-      invalid: false
-    }));
-    return inner.router.getMatch(matchId);
-  } else {
-    return match;
-  }
-};
-async function loadMatches(arg) {
-  const inner = Object.assign(arg, {
-    matchPromises: []
-  });
-  if (!inner.router.isServer && inner.router.state.matches.some((d) => d._forcePending)) {
-    triggerOnReady(inner);
-  }
-  try {
-    for (let i = 0; i < inner.matches.length; i++) {
-      const beforeLoad = handleBeforeLoad(inner, i);
-      if (isPromise(beforeLoad)) await beforeLoad;
-    }
-    const max2 = inner.firstBadMatchIndex ?? inner.matches.length;
-    for (let i = 0; i < max2; i++) {
-      inner.matchPromises.push(loadRouteMatch(inner, i));
-    }
-    await Promise.all(inner.matchPromises);
-    const readyPromise = triggerOnReady(inner);
-    if (isPromise(readyPromise)) await readyPromise;
-  } catch (err) {
-    if (isNotFound(err) && !inner.preload) {
-      const readyPromise = triggerOnReady(inner);
-      if (isPromise(readyPromise)) await readyPromise;
-      throw err;
-    }
-    if (isRedirect(err)) {
-      throw err;
-    }
-  }
-  return inner.matches;
-}
-async function loadRouteChunk(route) {
-  if (!route._lazyLoaded && route._lazyPromise === void 0) {
-    if (route.lazyFn) {
-      route._lazyPromise = route.lazyFn().then((lazyRoute) => {
-        const { id: _id, ...options } = lazyRoute.options;
-        Object.assign(route.options, options);
-        route._lazyLoaded = true;
-        route._lazyPromise = void 0;
-      });
-    } else {
-      route._lazyLoaded = true;
-    }
-  }
-  if (!route._componentsLoaded && route._componentsPromise === void 0) {
-    const loadComponents = () => {
-      var _a;
-      const preloads = [];
-      for (const type of componentTypes) {
-        const preload = (_a = route.options[type]) == null ? void 0 : _a.preload;
-        if (preload) preloads.push(preload());
-      }
-      if (preloads.length)
-        return Promise.all(preloads).then(() => {
-          route._componentsLoaded = true;
-          route._componentsPromise = void 0;
-        });
-      route._componentsLoaded = true;
-      route._componentsPromise = void 0;
-      return;
-    };
-    route._componentsPromise = route._lazyPromise ? route._lazyPromise.then(loadComponents) : loadComponents();
-  }
-  return route._componentsPromise;
-}
-function makeMaybe(value, error) {
-  if (error) {
-    return { status: "error", error };
-  }
-  return { status: "success", value };
-}
-function routeNeedsPreload(route) {
-  var _a;
-  for (const componentType of componentTypes) {
-    if ((_a = route.options[componentType]) == null ? void 0 : _a.preload) {
-      return true;
-    }
-  }
-  return false;
-}
-const componentTypes = [
-  "component",
-  "errorComponent",
-  "pendingComponent",
-  "notFoundComponent"
-];
-function composeRewrites(rewrites) {
-  return {
-    input: ({ url }) => {
-      for (const rewrite of rewrites) {
-        url = executeRewriteInput(rewrite, url);
-      }
-      return url;
-    },
-    output: ({ url }) => {
-      for (let i = rewrites.length - 1; i >= 0; i--) {
-        url = executeRewriteOutput(rewrites[i], url);
-      }
-      return url;
-    }
-  };
-}
-function rewriteBasepath(opts) {
-  const trimmedBasepath = trimPath(opts.basepath);
-  const regex = new RegExp(
-    `^/${trimmedBasepath}/`,
-    opts.caseSensitive ? "" : "i"
-  );
-  return {
-    input: ({ url }) => {
-      url.pathname = url.pathname.replace(regex, "/");
-      return url;
-    },
-    output: ({ url }) => {
-      url.pathname = joinPaths(["/", trimmedBasepath, url.pathname]);
-      return url;
-    }
-  };
-}
-function executeRewriteInput(rewrite, url) {
-  var _a;
-  const res = (_a = rewrite == null ? void 0 : rewrite.input) == null ? void 0 : _a.call(rewrite, { url });
-  if (res) {
-    if (typeof res === "string") {
-      return new URL(res);
-    } else if (res instanceof URL) {
-      return res;
-    }
-  }
-  return url;
-}
-function executeRewriteOutput(rewrite, url) {
-  var _a;
-  const res = (_a = rewrite == null ? void 0 : rewrite.output) == null ? void 0 : _a.call(rewrite, { url });
-  if (res) {
-    if (typeof res === "string") {
-      return new URL(res);
-    } else if (res instanceof URL) {
-      return res;
-    }
-  }
-  return url;
-}
-function getLocationChangeInfo(routerState) {
-  const fromLocation = routerState.resolvedLocation;
-  const toLocation = routerState.location;
-  const pathChanged = (fromLocation == null ? void 0 : fromLocation.pathname) !== toLocation.pathname;
-  const hrefChanged = (fromLocation == null ? void 0 : fromLocation.href) !== toLocation.href;
-  const hashChanged = (fromLocation == null ? void 0 : fromLocation.hash) !== toLocation.hash;
-  return { fromLocation, toLocation, pathChanged, hrefChanged, hashChanged };
-}
-class RouterCore {
-  /**
-   * @deprecated Use the `createRouter` function instead
-   */
-  constructor(options) {
-    this.tempLocationKey = `${Math.round(
-      Math.random() * 1e7
-    )}`;
-    this.resetNextScroll = true;
-    this.shouldViewTransition = void 0;
-    this.isViewTransitionTypesSupported = void 0;
-    this.subscribers = /* @__PURE__ */ new Set();
-    this.isScrollRestoring = false;
-    this.isScrollRestorationSetup = false;
-    this.startTransition = (fn) => fn();
-    this.update = (newOptions) => {
-      var _a;
-      if (newOptions.notFoundRoute) {
-        console.warn(
-          "The notFoundRoute API is deprecated and will be removed in the next major version. See https://tanstack.com/router/v1/docs/framework/react/guide/not-found-errors#migrating-from-notfoundroute for more info."
-        );
-      }
-      this.options = {
-        ...this.options,
-        ...newOptions
-      };
-      this.isServer = this.options.isServer ?? typeof document === "undefined";
-      this.pathParamsDecodeCharMap = this.options.pathParamsAllowedCharacters ? new Map(
-        this.options.pathParamsAllowedCharacters.map((char) => [
-          encodeURIComponent(char),
-          char
-        ])
-      ) : void 0;
-      if (!this.history || this.options.history && this.options.history !== this.history) {
-        if (!this.options.history) {
-          if (!this.isServer) {
-            this.history = createBrowserHistory();
-          }
-        } else {
-          this.history = this.options.history;
-        }
-      }
-      if (this.options.basepath) {
-        const basepathRewrite = rewriteBasepath({
-          basepath: this.options.basepath
-        });
-        if (this.options.rewrite) {
-          this.rewrite = composeRewrites([basepathRewrite, this.options.rewrite]);
-        } else {
-          this.rewrite = basepathRewrite;
-        }
-      } else {
-        this.rewrite = this.options.rewrite;
-      }
-      this.origin = this.options.origin;
-      if (!this.origin) {
-        if (!this.isServer) {
-          this.origin = window.origin;
-        } else {
-          this.origin = "http://localhost";
-        }
-      }
-      if (this.history) {
-        this.updateLatestLocation();
-      }
-      if (this.options.routeTree !== this.routeTree) {
-        this.routeTree = this.options.routeTree;
-        this.buildRouteTree();
-      }
-      if (!this.__store && this.latestLocation) {
-        this.__store = new Store(getInitialRouterState(this.latestLocation), {
-          onUpdate: () => {
-            this.__store.state = {
-              ...this.state,
-              cachedMatches: this.state.cachedMatches.filter(
-                (d) => !["redirected"].includes(d.status)
-              )
-            };
-          }
-        });
-        setupScrollRestoration(this);
-      }
-      if (typeof window !== "undefined" && "CSS" in window && typeof ((_a = window.CSS) == null ? void 0 : _a.supports) === "function") {
-        this.isViewTransitionTypesSupported = window.CSS.supports(
-          "selector(:active-view-transition-type(a)"
-        );
-      }
-    };
-    this.updateLatestLocation = () => {
-      this.latestLocation = this.parseLocation(
-        this.history.location,
-        this.latestLocation
-      );
-    };
-    this.buildRouteTree = () => {
-      const { routesById, routesByPath, flatRoutes } = processRouteTree({
-        routeTree: this.routeTree,
-        initRoute: (route, i) => {
-          route.init({
-            originalIndex: i
-          });
-        }
-      });
-      this.routesById = routesById;
-      this.routesByPath = routesByPath;
-      this.flatRoutes = flatRoutes;
-      const notFoundRoute = this.options.notFoundRoute;
-      if (notFoundRoute) {
-        notFoundRoute.init({
-          originalIndex: 99999999999
-        });
-        this.routesById[notFoundRoute.id] = notFoundRoute;
-      }
-    };
-    this.subscribe = (eventType, fn) => {
-      const listener = {
-        eventType,
-        fn
-      };
-      this.subscribers.add(listener);
-      return () => {
-        this.subscribers.delete(listener);
-      };
-    };
-    this.emit = (routerEvent) => {
-      this.subscribers.forEach((listener) => {
-        if (listener.eventType === routerEvent.type) {
-          listener.fn(routerEvent);
-        }
-      });
-    };
-    this.parseLocation = (locationToParse, previousLocation) => {
-      const parse2 = ({
-        href,
-        state
-      }) => {
-        const fullUrl = new URL(href, this.origin);
-        const url = executeRewriteInput(this.rewrite, fullUrl);
-        const parsedSearch = this.options.parseSearch(url.search);
-        const searchStr = this.options.stringifySearch(parsedSearch);
-        url.search = searchStr;
-        const fullPath = url.href.replace(url.origin, "");
-        const { pathname, hash } = url;
-        return {
-          href: fullPath,
-          publicHref: href,
-          url: url.href,
-          pathname,
-          searchStr,
-          search: replaceEqualDeep(previousLocation == null ? void 0 : previousLocation.search, parsedSearch),
-          hash: hash.split("#").reverse()[0] ?? "",
-          state: replaceEqualDeep(previousLocation == null ? void 0 : previousLocation.state, state)
-        };
-      };
-      const location = parse2(locationToParse);
-      const { __tempLocation, __tempKey } = location.state;
-      if (__tempLocation && (!__tempKey || __tempKey === this.tempLocationKey)) {
-        const parsedTempLocation = parse2(__tempLocation);
-        parsedTempLocation.state.key = location.state.key;
-        parsedTempLocation.state.__TSR_key = location.state.__TSR_key;
-        delete parsedTempLocation.state.__tempLocation;
-        return {
-          ...parsedTempLocation,
-          maskedLocation: location
-        };
-      }
-      return location;
-    };
-    this.resolvePathWithBase = (from, path) => {
-      const resolvedPath = resolvePath({
-        base: from,
-        to: cleanPath(path),
-        trailingSlash: this.options.trailingSlash,
-        parseCache: this.parsePathnameCache
-      });
-      return resolvedPath;
-    };
-    this.matchRoutes = (pathnameOrNext, locationSearchOrOpts, opts) => {
-      if (typeof pathnameOrNext === "string") {
-        return this.matchRoutesInternal(
-          {
-            pathname: pathnameOrNext,
-            search: locationSearchOrOpts
-          },
-          opts
-        );
-      }
-      return this.matchRoutesInternal(pathnameOrNext, locationSearchOrOpts);
-    };
-    this.parsePathnameCache = createLRUCache(1e3);
-    this.getMatchedRoutes = (pathname, routePathname) => {
-      return getMatchedRoutes({
-        pathname,
-        routePathname,
-        caseSensitive: this.options.caseSensitive,
-        routesByPath: this.routesByPath,
-        routesById: this.routesById,
-        flatRoutes: this.flatRoutes,
-        parseCache: this.parsePathnameCache
-      });
-    };
-    this.cancelMatch = (id2) => {
-      const match = this.getMatch(id2);
-      if (!match) return;
-      match.abortController.abort();
-      clearTimeout(match._nonReactive.pendingTimeout);
-      match._nonReactive.pendingTimeout = void 0;
-    };
-    this.cancelMatches = () => {
-      var _a;
-      (_a = this.state.pendingMatches) == null ? void 0 : _a.forEach((match) => {
-        this.cancelMatch(match.id);
-      });
-    };
-    this.buildLocation = (opts) => {
-      const build = (dest = {}) => {
-        var _a, _b;
-        const currentLocation = dest._fromLocation || this.latestLocation;
-        const allCurrentLocationMatches = this.matchRoutes(currentLocation, {
-          _buildLocation: true
-        });
-        const lastMatch = last(allCurrentLocationMatches);
-        if (dest.from && false) ;
-        const defaultedFromPath = dest.unsafeRelative === "path" ? currentLocation.pathname : dest.from ?? lastMatch.fullPath;
-        const fromPath = this.resolvePathWithBase(defaultedFromPath, ".");
-        const fromSearch = lastMatch.search;
-        const fromParams = { ...lastMatch.params };
-        const nextTo = dest.to ? this.resolvePathWithBase(fromPath, `${dest.to}`) : this.resolvePathWithBase(fromPath, ".");
-        const nextParams = dest.params === false || dest.params === null ? {} : (dest.params ?? true) === true ? fromParams : Object.assign(
-          fromParams,
-          functionalUpdate(dest.params, fromParams)
-        );
-        const interpolatedNextTo = interpolatePath({
-          path: nextTo,
-          params: nextParams,
-          parseCache: this.parsePathnameCache
-        }).interpolatedPath;
-        const destRoutes = this.matchRoutes(interpolatedNextTo, void 0, {
-          _buildLocation: true
-        }).map((d) => this.looseRoutesById[d.routeId]);
-        if (Object.keys(nextParams).length > 0) {
-          for (const route of destRoutes) {
-            const fn = ((_a = route.options.params) == null ? void 0 : _a.stringify) ?? route.options.stringifyParams;
-            if (fn) {
-              Object.assign(nextParams, fn(nextParams));
-            }
-          }
-        }
-        const nextPathname = interpolatePath({
-          // Use the original template path for interpolation
-          // This preserves the original parameter syntax including optional parameters
-          path: nextTo,
-          params: nextParams,
-          leaveWildcards: false,
-          leaveParams: opts.leaveParams,
-          decodeCharMap: this.pathParamsDecodeCharMap,
-          parseCache: this.parsePathnameCache
-        }).interpolatedPath;
-        let nextSearch = fromSearch;
-        if (opts._includeValidateSearch && ((_b = this.options.search) == null ? void 0 : _b.strict)) {
-          const validatedSearch = {};
-          destRoutes.forEach((route) => {
-            if (route.options.validateSearch) {
-              try {
-                Object.assign(
-                  validatedSearch,
-                  validateSearch(route.options.validateSearch, {
-                    ...validatedSearch,
-                    ...nextSearch
-                  })
-                );
-              } catch {
-              }
-            }
-          });
-          nextSearch = validatedSearch;
-        }
-        nextSearch = applySearchMiddleware({
-          search: nextSearch,
-          dest,
-          destRoutes,
-          _includeValidateSearch: opts._includeValidateSearch
-        });
-        nextSearch = replaceEqualDeep(fromSearch, nextSearch);
-        const searchStr = this.options.stringifySearch(nextSearch);
-        const hash = dest.hash === true ? currentLocation.hash : dest.hash ? functionalUpdate(dest.hash, currentLocation.hash) : void 0;
-        const hashStr = hash ? `#${hash}` : "";
-        let nextState = dest.state === true ? currentLocation.state : dest.state ? functionalUpdate(dest.state, currentLocation.state) : {};
-        nextState = replaceEqualDeep(currentLocation.state, nextState);
-        const fullPath = `${nextPathname}${searchStr}${hashStr}`;
-        const url = new URL(fullPath, this.origin);
-        const rewrittenUrl = executeRewriteOutput(this.rewrite, url);
-        return {
-          publicHref: rewrittenUrl.pathname + rewrittenUrl.search + rewrittenUrl.hash,
-          href: fullPath,
-          url: rewrittenUrl.href,
-          pathname: nextPathname,
-          search: nextSearch,
-          searchStr,
-          state: nextState,
-          hash: hash ?? "",
-          unmaskOnReload: dest.unmaskOnReload
-        };
-      };
-      const buildWithMatches = (dest = {}, maskedDest) => {
-        var _a;
-        const next = build(dest);
-        let maskedNext = maskedDest ? build(maskedDest) : void 0;
-        if (!maskedNext) {
-          let params = {};
-          const foundMask = (_a = this.options.routeMasks) == null ? void 0 : _a.find((d) => {
-            const match = matchPathname(
-              next.pathname,
-              {
-                to: d.from,
-                caseSensitive: false,
-                fuzzy: false
-              },
-              this.parsePathnameCache
-            );
-            if (match) {
-              params = match;
-              return true;
-            }
-            return false;
-          });
-          if (foundMask) {
-            const { from: _from, ...maskProps } = foundMask;
-            maskedDest = {
-              from: opts.from,
-              ...maskProps,
-              params
-            };
-            maskedNext = build(maskedDest);
-          }
-        }
-        if (maskedNext) {
-          next.maskedLocation = maskedNext;
-        }
-        return next;
-      };
-      if (opts.mask) {
-        return buildWithMatches(opts, {
-          from: opts.from,
-          ...opts.mask
-        });
-      }
-      return buildWithMatches(opts);
-    };
-    this.commitLocation = ({
-      viewTransition,
-      ignoreBlocker,
-      ...next
-    }) => {
-      const isSameState = () => {
-        const ignoredProps = [
-          "key",
-          // TODO: Remove in v2 - use __TSR_key instead
-          "__TSR_key",
-          "__TSR_index",
-          "__hashScrollIntoViewOptions"
-        ];
-        ignoredProps.forEach((prop) => {
-          next.state[prop] = this.latestLocation.state[prop];
-        });
-        const isEqual = deepEqual$1(next.state, this.latestLocation.state);
-        ignoredProps.forEach((prop) => {
-          delete next.state[prop];
-        });
-        return isEqual;
-      };
-      const isSameUrl = trimPathRight(this.latestLocation.href) === trimPathRight(next.href);
-      const previousCommitPromise = this.commitLocationPromise;
-      this.commitLocationPromise = createControlledPromise(() => {
-        previousCommitPromise == null ? void 0 : previousCommitPromise.resolve();
-      });
-      if (isSameUrl && isSameState()) {
-        this.load();
-      } else {
-        let { maskedLocation, hashScrollIntoView, ...nextHistory } = next;
-        if (maskedLocation) {
-          nextHistory = {
-            ...maskedLocation,
-            state: {
-              ...maskedLocation.state,
-              __tempKey: void 0,
-              __tempLocation: {
-                ...nextHistory,
-                search: nextHistory.searchStr,
-                state: {
-                  ...nextHistory.state,
-                  __tempKey: void 0,
-                  __tempLocation: void 0,
-                  __TSR_key: void 0,
-                  key: void 0
-                  // TODO: Remove in v2 - use __TSR_key instead
-                }
-              }
-            }
-          };
-          if (nextHistory.unmaskOnReload ?? this.options.unmaskOnReload ?? false) {
-            nextHistory.state.__tempKey = this.tempLocationKey;
-          }
-        }
-        nextHistory.state.__hashScrollIntoViewOptions = hashScrollIntoView ?? this.options.defaultHashScrollIntoView ?? true;
-        this.shouldViewTransition = viewTransition;
-        this.history[next.replace ? "replace" : "push"](
-          nextHistory.publicHref,
-          nextHistory.state,
-          { ignoreBlocker }
-        );
-      }
-      this.resetNextScroll = next.resetScroll ?? true;
-      if (!this.history.subscribers.size) {
-        this.load();
-      }
-      return this.commitLocationPromise;
-    };
-    this.buildAndCommitLocation = ({
-      replace,
-      resetScroll,
-      hashScrollIntoView,
-      viewTransition,
-      ignoreBlocker,
-      href,
-      ...rest
-    } = {}) => {
-      if (href) {
-        const currentIndex = this.history.location.state.__TSR_index;
-        const parsed = parseHref(href, {
-          __TSR_index: replace ? currentIndex : currentIndex + 1
-        });
-        rest.to = parsed.pathname;
-        rest.search = this.options.parseSearch(parsed.search);
-        rest.hash = parsed.hash.slice(1);
-      }
-      const location = this.buildLocation({
-        ...rest,
-        _includeValidateSearch: true
-      });
-      return this.commitLocation({
-        ...location,
-        viewTransition,
-        replace,
-        resetScroll,
-        hashScrollIntoView,
-        ignoreBlocker
-      });
-    };
-    this.navigate = ({ to, reloadDocument, href, ...rest }) => {
-      if (!reloadDocument && href) {
-        try {
-          new URL(`${href}`);
-          reloadDocument = true;
-        } catch {
-        }
-      }
-      if (reloadDocument) {
-        if (!href) {
-          const location = this.buildLocation({ to, ...rest });
-          href = location.href;
-        }
-        if (rest.replace) {
-          window.location.replace(href);
-        } else {
-          window.location.href = href;
-        }
-        return Promise.resolve();
-      }
-      return this.buildAndCommitLocation({
-        ...rest,
-        href,
-        to,
-        _isNavigate: true
-      });
-    };
-    this.beforeLoad = () => {
-      this.cancelMatches();
-      this.updateLatestLocation();
-      if (this.isServer) {
-        const nextLocation = this.buildLocation({
-          to: this.latestLocation.pathname,
-          search: true,
-          params: true,
-          hash: true,
-          state: true,
-          _includeValidateSearch: true
-        });
-        const normalizeUrl = (url) => {
-          try {
-            return encodeURI(decodeURI(url));
-          } catch {
-            return url;
-          }
-        };
-        if (trimPath(normalizeUrl(this.latestLocation.href)) !== trimPath(normalizeUrl(nextLocation.href))) {
-          throw redirect({ href: nextLocation.href });
-        }
-      }
-      const pendingMatches = this.matchRoutes(this.latestLocation);
-      this.__store.setState((s) => ({
-        ...s,
-        status: "pending",
-        statusCode: 200,
-        isLoading: true,
-        location: this.latestLocation,
-        pendingMatches,
-        // If a cached moved to pendingMatches, remove it from cachedMatches
-        cachedMatches: s.cachedMatches.filter(
-          (d) => !pendingMatches.some((e) => e.id === d.id)
-        )
-      }));
-    };
-    this.load = async (opts) => {
-      let redirect2;
-      let notFound;
-      let loadPromise;
-      loadPromise = new Promise((resolve) => {
-        this.startTransition(async () => {
-          var _a;
-          try {
-            this.beforeLoad();
-            const next = this.latestLocation;
-            const prevLocation = this.state.resolvedLocation;
-            if (!this.state.redirect) {
-              this.emit({
-                type: "onBeforeNavigate",
-                ...getLocationChangeInfo({
-                  resolvedLocation: prevLocation,
-                  location: next
-                })
-              });
-            }
-            this.emit({
-              type: "onBeforeLoad",
-              ...getLocationChangeInfo({
-                resolvedLocation: prevLocation,
-                location: next
-              })
-            });
-            await loadMatches({
-              router: this,
-              sync: opts == null ? void 0 : opts.sync,
-              matches: this.state.pendingMatches,
-              location: next,
-              updateMatch: this.updateMatch,
-              // eslint-disable-next-line @typescript-eslint/require-await
-              onReady: async () => {
-                this.startViewTransition(async () => {
-                  let exitingMatches;
-                  let enteringMatches;
-                  let stayingMatches;
-                  batch(() => {
-                    this.__store.setState((s) => {
-                      const previousMatches = s.matches;
-                      const newMatches = s.pendingMatches || s.matches;
-                      exitingMatches = previousMatches.filter(
-                        (match) => !newMatches.some((d) => d.id === match.id)
-                      );
-                      enteringMatches = newMatches.filter(
-                        (match) => !previousMatches.some((d) => d.id === match.id)
-                      );
-                      stayingMatches = previousMatches.filter(
-                        (match) => newMatches.some((d) => d.id === match.id)
-                      );
-                      return {
-                        ...s,
-                        isLoading: false,
-                        loadedAt: Date.now(),
-                        matches: newMatches,
-                        pendingMatches: void 0,
-                        cachedMatches: [
-                          ...s.cachedMatches,
-                          ...exitingMatches.filter((d) => d.status !== "error")
-                        ]
-                      };
-                    });
-                    this.clearExpiredCache();
-                  });
-                  [
-                    [exitingMatches, "onLeave"],
-                    [enteringMatches, "onEnter"],
-                    [stayingMatches, "onStay"]
-                  ].forEach(([matches, hook]) => {
-                    matches.forEach((match) => {
-                      var _a2, _b;
-                      (_b = (_a2 = this.looseRoutesById[match.routeId].options)[hook]) == null ? void 0 : _b.call(_a2, match);
-                    });
-                  });
-                });
-              }
-            });
-          } catch (err) {
-            if (isRedirect(err)) {
-              redirect2 = err;
-              if (!this.isServer) {
-                this.navigate({
-                  ...redirect2.options,
-                  replace: true,
-                  ignoreBlocker: true
-                });
-              }
-            } else if (isNotFound(err)) {
-              notFound = err;
-            }
-            this.__store.setState((s) => ({
-              ...s,
-              statusCode: redirect2 ? redirect2.status : notFound ? 404 : s.matches.some((d) => d.status === "error") ? 500 : 200,
-              redirect: redirect2
-            }));
-          }
-          if (this.latestLoadPromise === loadPromise) {
-            (_a = this.commitLocationPromise) == null ? void 0 : _a.resolve();
-            this.latestLoadPromise = void 0;
-            this.commitLocationPromise = void 0;
-          }
-          resolve();
-        });
-      });
-      this.latestLoadPromise = loadPromise;
-      await loadPromise;
-      while (this.latestLoadPromise && loadPromise !== this.latestLoadPromise) {
-        await this.latestLoadPromise;
-      }
-      if (this.hasNotFoundMatch()) {
-        this.__store.setState((s) => ({
-          ...s,
-          statusCode: 404
-        }));
-      }
-    };
-    this.startViewTransition = (fn) => {
-      const shouldViewTransition = this.shouldViewTransition ?? this.options.defaultViewTransition;
-      delete this.shouldViewTransition;
-      if (shouldViewTransition && typeof document !== "undefined" && "startViewTransition" in document && typeof document.startViewTransition === "function") {
-        let startViewTransitionParams;
-        if (typeof shouldViewTransition === "object" && this.isViewTransitionTypesSupported) {
-          const next = this.latestLocation;
-          const prevLocation = this.state.resolvedLocation;
-          const resolvedViewTransitionTypes = typeof shouldViewTransition.types === "function" ? shouldViewTransition.types(
-            getLocationChangeInfo({
-              resolvedLocation: prevLocation,
-              location: next
-            })
-          ) : shouldViewTransition.types;
-          startViewTransitionParams = {
-            update: fn,
-            types: resolvedViewTransitionTypes
-          };
-        } else {
-          startViewTransitionParams = fn;
-        }
-        document.startViewTransition(startViewTransitionParams);
-      } else {
-        fn();
-      }
-    };
-    this.updateMatch = (id2, updater) => {
-      var _a;
-      const matchesKey = ((_a = this.state.pendingMatches) == null ? void 0 : _a.some((d) => d.id === id2)) ? "pendingMatches" : this.state.matches.some((d) => d.id === id2) ? "matches" : this.state.cachedMatches.some((d) => d.id === id2) ? "cachedMatches" : "";
-      if (matchesKey) {
-        this.__store.setState((s) => {
-          var _a2;
-          return {
-            ...s,
-            [matchesKey]: (_a2 = s[matchesKey]) == null ? void 0 : _a2.map((d) => d.id === id2 ? updater(d) : d)
-          };
-        });
-      }
-    };
-    this.getMatch = (matchId) => {
-      var _a;
-      const findFn = (d) => d.id === matchId;
-      return this.state.cachedMatches.find(findFn) ?? ((_a = this.state.pendingMatches) == null ? void 0 : _a.find(findFn)) ?? this.state.matches.find(findFn);
-    };
-    this.invalidate = (opts) => {
-      const invalidate = (d) => {
-        var _a;
-        if (((_a = opts == null ? void 0 : opts.filter) == null ? void 0 : _a.call(opts, d)) ?? true) {
-          return {
-            ...d,
-            invalid: true,
-            ...(opts == null ? void 0 : opts.forcePending) || d.status === "error" ? { status: "pending", error: void 0 } : void 0
-          };
-        }
-        return d;
-      };
-      this.__store.setState((s) => {
-        var _a;
-        return {
-          ...s,
-          matches: s.matches.map(invalidate),
-          cachedMatches: s.cachedMatches.map(invalidate),
-          pendingMatches: (_a = s.pendingMatches) == null ? void 0 : _a.map(invalidate)
-        };
-      });
-      this.shouldViewTransition = false;
-      return this.load({ sync: opts == null ? void 0 : opts.sync });
-    };
-    this.resolveRedirect = (redirect2) => {
-      if (!redirect2.options.href) {
-        redirect2.options.href = this.buildLocation(redirect2.options).href;
-        redirect2.headers.set("Location", redirect2.options.href);
-      }
-      if (!redirect2.headers.get("Location")) {
-        redirect2.headers.set("Location", redirect2.options.href);
-      }
-      return redirect2;
-    };
-    this.clearCache = (opts) => {
-      const filter = opts == null ? void 0 : opts.filter;
-      if (filter !== void 0) {
-        this.__store.setState((s) => {
-          return {
-            ...s,
-            cachedMatches: s.cachedMatches.filter(
-              (m2) => !filter(m2)
-            )
-          };
-        });
-      } else {
-        this.__store.setState((s) => {
-          return {
-            ...s,
-            cachedMatches: []
-          };
-        });
-      }
-    };
-    this.clearExpiredCache = () => {
-      const filter = (d) => {
-        const route = this.looseRoutesById[d.routeId];
-        if (!route.options.loader) {
-          return true;
-        }
-        const gcTime = (d.preload ? route.options.preloadGcTime ?? this.options.defaultPreloadGcTime : route.options.gcTime ?? this.options.defaultGcTime) ?? 5 * 60 * 1e3;
-        const isError = d.status === "error";
-        if (isError) return true;
-        const gcEligible = Date.now() - d.updatedAt >= gcTime;
-        return gcEligible;
-      };
-      this.clearCache({ filter });
-    };
-    this.loadRouteChunk = loadRouteChunk;
-    this.preloadRoute = async (opts) => {
-      const next = this.buildLocation(opts);
-      let matches = this.matchRoutes(next, {
-        throwOnError: true,
-        preload: true,
-        dest: opts
-      });
-      const activeMatchIds = new Set(
-        [...this.state.matches, ...this.state.pendingMatches ?? []].map(
-          (d) => d.id
-        )
-      );
-      const loadedMatchIds = /* @__PURE__ */ new Set([
-        ...activeMatchIds,
-        ...this.state.cachedMatches.map((d) => d.id)
-      ]);
-      batch(() => {
-        matches.forEach((match) => {
-          if (!loadedMatchIds.has(match.id)) {
-            this.__store.setState((s) => ({
-              ...s,
-              cachedMatches: [...s.cachedMatches, match]
-            }));
-          }
-        });
-      });
-      try {
-        matches = await loadMatches({
-          router: this,
-          matches,
-          location: next,
-          preload: true,
-          updateMatch: (id2, updater) => {
-            if (activeMatchIds.has(id2)) {
-              matches = matches.map((d) => d.id === id2 ? updater(d) : d);
-            } else {
-              this.updateMatch(id2, updater);
-            }
-          }
-        });
-        return matches;
-      } catch (err) {
-        if (isRedirect(err)) {
-          if (err.options.reloadDocument) {
-            return void 0;
-          }
-          return await this.preloadRoute({
-            ...err.options,
-            _fromLocation: next
-          });
-        }
-        if (!isNotFound(err)) {
-          console.error(err);
-        }
-        return void 0;
-      }
-    };
-    this.matchRoute = (location, opts) => {
-      const matchLocation = {
-        ...location,
-        to: location.to ? this.resolvePathWithBase(
-          location.from || "",
-          location.to
-        ) : void 0,
-        params: location.params || {},
-        leaveParams: true
-      };
-      const next = this.buildLocation(matchLocation);
-      if ((opts == null ? void 0 : opts.pending) && this.state.status !== "pending") {
-        return false;
-      }
-      const pending = (opts == null ? void 0 : opts.pending) === void 0 ? !this.state.isLoading : opts.pending;
-      const baseLocation = pending ? this.latestLocation : this.state.resolvedLocation || this.state.location;
-      const match = matchPathname(
-        baseLocation.pathname,
-        {
-          ...opts,
-          to: next.pathname
-        },
-        this.parsePathnameCache
-      );
-      if (!match) {
-        return false;
-      }
-      if (location.params) {
-        if (!deepEqual$1(match, location.params, { partial: true })) {
-          return false;
-        }
-      }
-      if (match && ((opts == null ? void 0 : opts.includeSearch) ?? true)) {
-        return deepEqual$1(baseLocation.search, next.search, { partial: true }) ? match : false;
-      }
-      return match;
-    };
-    this.hasNotFoundMatch = () => {
-      return this.__store.state.matches.some(
-        (d) => d.status === "notFound" || d.globalNotFound
-      );
-    };
-    this.update({
-      defaultPreloadDelay: 50,
-      defaultPendingMs: 1e3,
-      defaultPendingMinMs: 500,
-      context: void 0,
-      ...options,
-      caseSensitive: options.caseSensitive ?? false,
-      notFoundMode: options.notFoundMode ?? "fuzzy",
-      stringifySearch: options.stringifySearch ?? defaultStringifySearch,
-      parseSearch: options.parseSearch ?? defaultParseSearch
-    });
-    if (typeof document !== "undefined") {
-      self.__TSR_ROUTER__ = this;
-    }
-  }
-  isShell() {
-    return !!this.options.isShell;
-  }
-  isPrerendering() {
-    return !!this.options.isPrerendering;
-  }
-  get state() {
-    return this.__store.state;
-  }
-  get looseRoutesById() {
-    return this.routesById;
-  }
-  matchRoutesInternal(next, opts) {
-    var _a;
-    const { foundRoute, matchedRoutes, routeParams } = this.getMatchedRoutes(
-      next.pathname,
-      (_a = opts == null ? void 0 : opts.dest) == null ? void 0 : _a.to
-    );
-    let isGlobalNotFound = false;
-    if (
-      // If we found a route, and it's not an index route and we have left over path
-      foundRoute ? foundRoute.path !== "/" && routeParams["**"] : (
-        // Or if we didn't find a route and we have left over path
-        trimPathRight(next.pathname)
-      )
-    ) {
-      if (this.options.notFoundRoute) {
-        matchedRoutes.push(this.options.notFoundRoute);
-      } else {
-        isGlobalNotFound = true;
-      }
-    }
-    const globalNotFoundRouteId = (() => {
-      if (!isGlobalNotFound) {
-        return void 0;
-      }
-      if (this.options.notFoundMode !== "root") {
-        for (let i = matchedRoutes.length - 1; i >= 0; i--) {
-          const route = matchedRoutes[i];
-          if (route.children) {
-            return route.id;
-          }
-        }
-      }
-      return rootRouteId;
-    })();
-    const matches = [];
-    const getParentContext = (parentMatch) => {
-      const parentMatchId = parentMatch == null ? void 0 : parentMatch.id;
-      const parentContext = !parentMatchId ? this.options.context ?? void 0 : parentMatch.context ?? this.options.context ?? void 0;
-      return parentContext;
-    };
-    matchedRoutes.forEach((route, index2) => {
-      var _a2, _b, _c;
-      const parentMatch = matches[index2 - 1];
-      const [preMatchSearch, strictMatchSearch, searchError] = (() => {
-        const parentSearch = (parentMatch == null ? void 0 : parentMatch.search) ?? next.search;
-        const parentStrictSearch = (parentMatch == null ? void 0 : parentMatch._strictSearch) ?? void 0;
-        try {
-          const strictSearch = validateSearch(route.options.validateSearch, { ...parentSearch }) ?? void 0;
-          return [
-            {
-              ...parentSearch,
-              ...strictSearch
-            },
-            { ...parentStrictSearch, ...strictSearch },
-            void 0
-          ];
-        } catch (err) {
-          let searchParamError = err;
-          if (!(err instanceof SearchParamError)) {
-            searchParamError = new SearchParamError(err.message, {
-              cause: err
-            });
-          }
-          if (opts == null ? void 0 : opts.throwOnError) {
-            throw searchParamError;
-          }
-          return [parentSearch, {}, searchParamError];
-        }
-      })();
-      const loaderDeps = ((_b = (_a2 = route.options).loaderDeps) == null ? void 0 : _b.call(_a2, {
-        search: preMatchSearch
-      })) ?? "";
-      const loaderDepsHash = loaderDeps ? JSON.stringify(loaderDeps) : "";
-      const { interpolatedPath, usedParams } = interpolatePath({
-        path: route.fullPath,
-        params: routeParams,
-        decodeCharMap: this.pathParamsDecodeCharMap
-      });
-      const matchId = interpolatePath({
-        path: route.id,
-        params: routeParams,
-        leaveWildcards: true,
-        decodeCharMap: this.pathParamsDecodeCharMap,
-        parseCache: this.parsePathnameCache
-      }).interpolatedPath + loaderDepsHash;
-      const existingMatch = this.getMatch(matchId);
-      const previousMatch = this.state.matches.find(
-        (d) => d.routeId === route.id
-      );
-      const strictParams = (existingMatch == null ? void 0 : existingMatch._strictParams) ?? usedParams;
-      let paramsError = void 0;
-      if (!existingMatch) {
-        const strictParseParams = ((_c = route.options.params) == null ? void 0 : _c.parse) ?? route.options.parseParams;
-        if (strictParseParams) {
-          try {
-            Object.assign(
-              strictParams,
-              strictParseParams(strictParams)
-            );
-          } catch (err) {
-            paramsError = new PathParamError(err.message, {
-              cause: err
-            });
-            if (opts == null ? void 0 : opts.throwOnError) {
-              throw paramsError;
-            }
-          }
-        }
-      }
-      Object.assign(routeParams, strictParams);
-      const cause = previousMatch ? "stay" : "enter";
-      let match;
-      if (existingMatch) {
-        match = {
-          ...existingMatch,
-          cause,
-          params: previousMatch ? replaceEqualDeep(previousMatch.params, routeParams) : routeParams,
-          _strictParams: strictParams,
-          search: previousMatch ? replaceEqualDeep(previousMatch.search, preMatchSearch) : replaceEqualDeep(existingMatch.search, preMatchSearch),
-          _strictSearch: strictMatchSearch
-        };
-      } else {
-        const status = route.options.loader || route.options.beforeLoad || route.lazyFn || routeNeedsPreload(route) ? "pending" : "success";
-        match = {
-          id: matchId,
-          index: index2,
-          routeId: route.id,
-          params: previousMatch ? replaceEqualDeep(previousMatch.params, routeParams) : routeParams,
-          _strictParams: strictParams,
-          pathname: interpolatedPath,
-          updatedAt: Date.now(),
-          search: previousMatch ? replaceEqualDeep(previousMatch.search, preMatchSearch) : preMatchSearch,
-          _strictSearch: strictMatchSearch,
-          searchError: void 0,
-          status,
-          isFetching: false,
-          error: void 0,
-          paramsError,
-          __routeContext: void 0,
-          _nonReactive: {
-            loadPromise: createControlledPromise()
-          },
-          __beforeLoadContext: void 0,
-          context: {},
-          abortController: new AbortController(),
-          fetchCount: 0,
-          cause,
-          loaderDeps: previousMatch ? replaceEqualDeep(previousMatch.loaderDeps, loaderDeps) : loaderDeps,
-          invalid: false,
-          preload: false,
-          links: void 0,
-          scripts: void 0,
-          headScripts: void 0,
-          meta: void 0,
-          staticData: route.options.staticData || {},
-          fullPath: route.fullPath
-        };
-      }
-      if (!(opts == null ? void 0 : opts.preload)) {
-        match.globalNotFound = globalNotFoundRouteId === route.id;
-      }
-      match.searchError = searchError;
-      const parentContext = getParentContext(parentMatch);
-      match.context = {
-        ...parentContext,
-        ...match.__routeContext,
-        ...match.__beforeLoadContext
-      };
-      matches.push(match);
-    });
-    matches.forEach((match, index2) => {
-      const route = this.looseRoutesById[match.routeId];
-      const existingMatch = this.getMatch(match.id);
-      if (!existingMatch && (opts == null ? void 0 : opts._buildLocation) !== true) {
-        const parentMatch = matches[index2 - 1];
-        const parentContext = getParentContext(parentMatch);
-        if (route.options.context) {
-          const contextFnContext = {
-            deps: match.loaderDeps,
-            params: match.params,
-            context: parentContext ?? {},
-            location: next,
-            navigate: (opts2) => this.navigate({ ...opts2, _fromLocation: next }),
-            buildLocation: this.buildLocation,
-            cause: match.cause,
-            abortController: match.abortController,
-            preload: !!match.preload,
-            matches
-          };
-          match.__routeContext = route.options.context(contextFnContext) ?? void 0;
-        }
-        match.context = {
-          ...parentContext,
-          ...match.__routeContext,
-          ...match.__beforeLoadContext
-        };
-      }
-    });
-    return matches;
-  }
-}
-class SearchParamError extends Error {
-}
-class PathParamError extends Error {
-}
-function getInitialRouterState(location) {
-  return {
-    loadedAt: 0,
-    isLoading: false,
-    isTransitioning: false,
-    status: "idle",
-    resolvedLocation: void 0,
-    location,
-    matches: [],
-    pendingMatches: [],
-    cachedMatches: [],
-    statusCode: 200
-  };
-}
-function validateSearch(validateSearch2, input) {
-  if (validateSearch2 == null) return {};
-  if ("~standard" in validateSearch2) {
-    const result = validateSearch2["~standard"].validate(input);
-    if (result instanceof Promise)
-      throw new SearchParamError("Async validation not supported");
-    if (result.issues)
-      throw new SearchParamError(JSON.stringify(result.issues, void 0, 2), {
-        cause: result
-      });
-    return result.value;
-  }
-  if ("parse" in validateSearch2) {
-    return validateSearch2.parse(input);
-  }
-  if (typeof validateSearch2 === "function") {
-    return validateSearch2(input);
-  }
-  return {};
-}
-function getMatchedRoutes({
-  pathname,
-  routePathname,
-  caseSensitive,
-  routesByPath,
-  routesById,
-  flatRoutes,
-  parseCache
-}) {
-  let routeParams = {};
-  const trimmedPath = trimPathRight(pathname);
-  const getMatchedParams = (route) => {
-    var _a;
-    const result = matchPathname(
-      trimmedPath,
-      {
-        to: route.fullPath,
-        caseSensitive: ((_a = route.options) == null ? void 0 : _a.caseSensitive) ?? caseSensitive,
-        // we need fuzzy matching for `notFoundMode: 'fuzzy'`
-        fuzzy: true
-      },
-      parseCache
-    );
-    return result;
-  };
-  let foundRoute = routePathname !== void 0 ? routesByPath[routePathname] : void 0;
-  if (foundRoute) {
-    routeParams = getMatchedParams(foundRoute);
-  } else {
-    let fuzzyMatch = void 0;
-    for (const route of flatRoutes) {
-      const matchedParams = getMatchedParams(route);
-      if (matchedParams) {
-        if (route.path !== "/" && matchedParams["**"]) {
-          if (!fuzzyMatch) {
-            fuzzyMatch = { foundRoute: route, routeParams: matchedParams };
-          }
-        } else {
-          foundRoute = route;
-          routeParams = matchedParams;
-          break;
-        }
-      }
-    }
-    if (!foundRoute && fuzzyMatch) {
-      foundRoute = fuzzyMatch.foundRoute;
-      routeParams = fuzzyMatch.routeParams;
-    }
-  }
-  let routeCursor = foundRoute || routesById[rootRouteId];
-  const matchedRoutes = [routeCursor];
-  while (routeCursor.parentRoute) {
-    routeCursor = routeCursor.parentRoute;
-    matchedRoutes.push(routeCursor);
-  }
-  matchedRoutes.reverse();
-  return { matchedRoutes, routeParams, foundRoute };
-}
-function applySearchMiddleware({
-  search,
-  dest,
-  destRoutes,
-  _includeValidateSearch
-}) {
-  const allMiddlewares = destRoutes.reduce(
-    (acc, route) => {
-      var _a;
-      const middlewares = [];
-      if ("search" in route.options) {
-        if ((_a = route.options.search) == null ? void 0 : _a.middlewares) {
-          middlewares.push(...route.options.search.middlewares);
-        }
-      } else if (route.options.preSearchFilters || route.options.postSearchFilters) {
-        const legacyMiddleware = ({
-          search: search2,
-          next
-        }) => {
-          let nextSearch = search2;
-          if ("preSearchFilters" in route.options && route.options.preSearchFilters) {
-            nextSearch = route.options.preSearchFilters.reduce(
-              (prev, next2) => next2(prev),
-              search2
-            );
-          }
-          const result = next(nextSearch);
-          if ("postSearchFilters" in route.options && route.options.postSearchFilters) {
-            return route.options.postSearchFilters.reduce(
-              (prev, next2) => next2(prev),
-              result
-            );
-          }
-          return result;
-        };
-        middlewares.push(legacyMiddleware);
-      }
-      if (_includeValidateSearch && route.options.validateSearch) {
-        const validate = ({ search: search2, next }) => {
-          const result = next(search2);
-          try {
-            const validatedSearch = {
-              ...result,
-              ...validateSearch(route.options.validateSearch, result) ?? void 0
-            };
-            return validatedSearch;
-          } catch {
-            return result;
-          }
-        };
-        middlewares.push(validate);
-      }
-      return acc.concat(middlewares);
-    },
-    []
-  ) ?? [];
-  const final = ({ search: search2 }) => {
-    if (!dest.search) {
-      return {};
-    }
-    if (dest.search === true) {
-      return search2;
-    }
-    return functionalUpdate(dest.search, search2);
-  };
-  allMiddlewares.push(final);
-  const applyNext = (index2, currentSearch) => {
-    if (index2 >= allMiddlewares.length) {
-      return currentSearch;
-    }
-    const middleware = allMiddlewares[index2];
-    const next = (newSearch) => {
-      return applyNext(index2 + 1, newSearch);
-    };
-    return middleware({ search: currentSearch, next });
-  };
-  return applyNext(0, search);
-}
-const preloadWarning = "Error preloading route! ☝️";
-class BaseRoute {
-  constructor(options) {
-    this.init = (opts) => {
-      var _a, _b;
-      this.originalIndex = opts.originalIndex;
-      const options2 = this.options;
-      const isRoot = !(options2 == null ? void 0 : options2.path) && !(options2 == null ? void 0 : options2.id);
-      this.parentRoute = (_b = (_a = this.options).getParentRoute) == null ? void 0 : _b.call(_a);
-      if (isRoot) {
-        this._path = rootRouteId;
-      } else if (!this.parentRoute) {
-        invariant(
-          false
-        );
-      }
-      let path = isRoot ? rootRouteId : options2 == null ? void 0 : options2.path;
-      if (path && path !== "/") {
-        path = trimPathLeft(path);
-      }
-      const customId = (options2 == null ? void 0 : options2.id) || path;
-      let id2 = isRoot ? rootRouteId : joinPaths([
-        this.parentRoute.id === rootRouteId ? "" : this.parentRoute.id,
-        customId
-      ]);
-      if (path === rootRouteId) {
-        path = "/";
-      }
-      if (id2 !== rootRouteId) {
-        id2 = joinPaths(["/", id2]);
-      }
-      const fullPath = id2 === rootRouteId ? "/" : joinPaths([this.parentRoute.fullPath, path]);
-      this._path = path;
-      this._id = id2;
-      this._fullPath = fullPath;
-      this._to = fullPath;
-    };
-    this.clone = (other) => {
-      this._path = other._path;
-      this._id = other._id;
-      this._fullPath = other._fullPath;
-      this._to = other._to;
-      this.options.getParentRoute = other.options.getParentRoute;
-      this.children = other.children;
-    };
-    this.addChildren = (children) => {
-      return this._addFileChildren(children);
-    };
-    this._addFileChildren = (children) => {
-      if (Array.isArray(children)) {
-        this.children = children;
-      }
-      if (typeof children === "object" && children !== null) {
-        this.children = Object.values(children);
-      }
-      return this;
-    };
-    this._addFileTypes = () => {
-      return this;
-    };
-    this.updateLoader = (options2) => {
-      Object.assign(this.options, options2);
-      return this;
-    };
-    this.update = (options2) => {
-      Object.assign(this.options, options2);
-      return this;
-    };
-    this.lazy = (lazyFn) => {
-      this.lazyFn = lazyFn;
-      return this;
-    };
-    this.options = options || {};
-    this.isRoot = !(options == null ? void 0 : options.getParentRoute);
-    if ((options == null ? void 0 : options.id) && (options == null ? void 0 : options.path)) {
-      throw new Error(`Route cannot have both an 'id' and a 'path' option.`);
-    }
-  }
-  get to() {
-    return this._to;
-  }
-  get id() {
-    return this._id;
-  }
-  get path() {
-    return this._path;
-  }
-  get fullPath() {
-    return this._fullPath;
-  }
-}
-class BaseRootRoute extends BaseRoute {
-  constructor(options) {
-    super(options);
-  }
-}
-function CatchBoundary(props) {
-  const errorComponent = props.errorComponent ?? ErrorComponent;
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    CatchBoundaryImpl,
-    {
-      getResetKey: props.getResetKey,
-      onCatch: props.onCatch,
-      children: ({ error, reset }) => {
-        if (error) {
-          return reactExports.createElement(errorComponent, {
-            error,
-            reset
-          });
-        }
-        return props.children;
-      }
-    }
-  );
-}
-class CatchBoundaryImpl extends reactExports.Component {
-  constructor() {
-    super(...arguments);
-    this.state = { error: null };
-  }
-  static getDerivedStateFromProps(props) {
-    return { resetKey: props.getResetKey() };
-  }
-  static getDerivedStateFromError(error) {
-    return { error };
-  }
-  reset() {
-    this.setState({ error: null });
-  }
-  componentDidUpdate(prevProps, prevState) {
-    if (prevState.error && prevState.resetKey !== this.state.resetKey) {
-      this.reset();
-    }
-  }
-  componentDidCatch(error, errorInfo) {
-    if (this.props.onCatch) {
-      this.props.onCatch(error, errorInfo);
-    }
-  }
-  render() {
-    return this.props.children({
-      error: this.state.resetKey !== this.props.getResetKey() ? null : this.state.error,
-      reset: () => {
-        this.reset();
-      }
-    });
-  }
-}
-function ErrorComponent({ error }) {
-  const [show, setShow] = reactExports.useState(false);
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: ".5rem", maxWidth: "100%" }, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: ".5rem" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { style: { fontSize: "1rem" }, children: "Something went wrong!" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "button",
-        {
-          style: {
-            appearance: "none",
-            fontSize: ".6em",
-            border: "1px solid currentColor",
-            padding: ".1rem .2rem",
-            fontWeight: "bold",
-            borderRadius: ".25rem"
-          },
-          onClick: () => setShow((d) => !d),
-          children: show ? "Hide Error" : "Show Error"
-        }
-      )
-    ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { height: ".25rem" } }),
-    show ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "pre",
-      {
-        style: {
-          fontSize: ".7em",
-          border: "1px solid red",
-          borderRadius: ".25rem",
-          padding: ".3rem",
-          color: "red",
-          overflow: "auto"
-        },
-        children: error.message ? /* @__PURE__ */ jsxRuntimeExports.jsx("code", { children: error.message }) : null
-      }
-    ) }) : null
-  ] });
-}
-function ClientOnly({ children, fallback = null }) {
-  return useHydrated() ? /* @__PURE__ */ jsxRuntimeExports.jsx(React$2.Fragment, { children }) : /* @__PURE__ */ jsxRuntimeExports.jsx(React$2.Fragment, { children: fallback });
-}
-function useHydrated() {
-  return React$2.useSyncExternalStore(
-    subscribe,
-    () => true,
-    () => false
-  );
-}
-function subscribe() {
-  return () => {
-  };
-}
-function warning(condition, message) {
-}
-var withSelector = { exports: {} };
-var withSelector_production = {};
-var shim$2 = { exports: {} };
-var useSyncExternalStoreShim_production = {};
-/**
- * @license React
- * use-sync-external-store-shim.production.js
- *
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- */
-var React$1 = reactExports;
-function is$1(x2, y2) {
-  return x2 === y2 && (0 !== x2 || 1 / x2 === 1 / y2) || x2 !== x2 && y2 !== y2;
-}
-var objectIs$1 = "function" === typeof Object.is ? Object.is : is$1, useState = React$1.useState, useEffect$1 = React$1.useEffect, useLayoutEffect$1 = React$1.useLayoutEffect, useDebugValue$1 = React$1.useDebugValue;
-function useSyncExternalStore$2(subscribe2, getSnapshot) {
-  var value = getSnapshot(), _useState = useState({ inst: { value, getSnapshot } }), inst = _useState[0].inst, forceUpdate = _useState[1];
-  useLayoutEffect$1(
-    function() {
-      inst.value = value;
-      inst.getSnapshot = getSnapshot;
-      checkIfSnapshotChanged(inst) && forceUpdate({ inst });
-    },
-    [subscribe2, value, getSnapshot]
-  );
-  useEffect$1(
-    function() {
-      checkIfSnapshotChanged(inst) && forceUpdate({ inst });
-      return subscribe2(function() {
-        checkIfSnapshotChanged(inst) && forceUpdate({ inst });
-      });
-    },
-    [subscribe2]
-  );
-  useDebugValue$1(value);
-  return value;
-}
-function checkIfSnapshotChanged(inst) {
-  var latestGetSnapshot = inst.getSnapshot;
-  inst = inst.value;
-  try {
-    var nextValue = latestGetSnapshot();
-    return !objectIs$1(inst, nextValue);
-  } catch (error) {
-    return true;
-  }
-}
-function useSyncExternalStore$1(subscribe2, getSnapshot) {
-  return getSnapshot();
-}
-var shim$1 = "undefined" === typeof window || "undefined" === typeof window.document || "undefined" === typeof window.document.createElement ? useSyncExternalStore$1 : useSyncExternalStore$2;
-useSyncExternalStoreShim_production.useSyncExternalStore = void 0 !== React$1.useSyncExternalStore ? React$1.useSyncExternalStore : shim$1;
-{
-  shim$2.exports = useSyncExternalStoreShim_production;
-}
-var shimExports = shim$2.exports;
-/**
- * @license React
- * use-sync-external-store-shim/with-selector.production.js
- *
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- */
-var React = reactExports, shim = shimExports;
-function is(x2, y2) {
-  return x2 === y2 && (0 !== x2 || 1 / x2 === 1 / y2) || x2 !== x2 && y2 !== y2;
-}
-var objectIs = "function" === typeof Object.is ? Object.is : is, useSyncExternalStore = shim.useSyncExternalStore, useRef = React.useRef, useEffect = React.useEffect, useMemo = React.useMemo, useDebugValue = React.useDebugValue;
-withSelector_production.useSyncExternalStoreWithSelector = function(subscribe2, getSnapshot, getServerSnapshot, selector, isEqual) {
-  var instRef = useRef(null);
-  if (null === instRef.current) {
-    var inst = { hasValue: false, value: null };
-    instRef.current = inst;
-  } else inst = instRef.current;
-  instRef = useMemo(
-    function() {
-      function memoizedSelector(nextSnapshot) {
-        if (!hasMemo) {
-          hasMemo = true;
-          memoizedSnapshot = nextSnapshot;
-          nextSnapshot = selector(nextSnapshot);
-          if (void 0 !== isEqual && inst.hasValue) {
-            var currentSelection = inst.value;
-            if (isEqual(currentSelection, nextSnapshot))
-              return memoizedSelection = currentSelection;
-          }
-          return memoizedSelection = nextSnapshot;
-        }
-        currentSelection = memoizedSelection;
-        if (objectIs(memoizedSnapshot, nextSnapshot)) return currentSelection;
-        var nextSelection = selector(nextSnapshot);
-        if (void 0 !== isEqual && isEqual(currentSelection, nextSelection))
-          return memoizedSnapshot = nextSnapshot, currentSelection;
-        memoizedSnapshot = nextSnapshot;
-        return memoizedSelection = nextSelection;
-      }
-      var hasMemo = false, memoizedSnapshot, memoizedSelection, maybeGetServerSnapshot = void 0 === getServerSnapshot ? null : getServerSnapshot;
-      return [
-        function() {
-          return memoizedSelector(getSnapshot());
-        },
-        null === maybeGetServerSnapshot ? void 0 : function() {
-          return memoizedSelector(maybeGetServerSnapshot());
-        }
-      ];
-    },
-    [getSnapshot, getServerSnapshot, selector, isEqual]
-  );
-  var value = useSyncExternalStore(subscribe2, instRef[0], instRef[1]);
-  useEffect(
-    function() {
-      inst.hasValue = true;
-      inst.value = value;
-    },
-    [value]
-  );
-  useDebugValue(value);
-  return value;
-};
-{
-  withSelector.exports = withSelector_production;
-}
-var withSelectorExports = withSelector.exports;
-function useStore(store, selector = (d) => d) {
-  const slice = withSelectorExports.useSyncExternalStoreWithSelector(
-    store.subscribe,
-    () => store.state,
-    () => store.state,
-    selector,
-    shallow
-  );
-  return slice;
-}
-function shallow(objA, objB) {
-  if (Object.is(objA, objB)) {
-    return true;
-  }
-  if (typeof objA !== "object" || objA === null || typeof objB !== "object" || objB === null) {
-    return false;
-  }
-  if (objA instanceof Map && objB instanceof Map) {
-    if (objA.size !== objB.size) return false;
-    for (const [k2, v2] of objA) {
-      if (!objB.has(k2) || !Object.is(v2, objB.get(k2))) return false;
-    }
-    return true;
-  }
-  if (objA instanceof Set && objB instanceof Set) {
-    if (objA.size !== objB.size) return false;
-    for (const v2 of objA) {
-      if (!objB.has(v2)) return false;
-    }
-    return true;
-  }
-  if (objA instanceof Date && objB instanceof Date) {
-    if (objA.getTime() !== objB.getTime()) return false;
-    return true;
-  }
-  const keysA = getOwnKeys(objA);
-  if (keysA.length !== getOwnKeys(objB).length) {
-    return false;
-  }
-  for (let i = 0; i < keysA.length; i++) {
-    if (!Object.prototype.hasOwnProperty.call(objB, keysA[i]) || !Object.is(objA[keysA[i]], objB[keysA[i]])) {
-      return false;
-    }
-  }
-  return true;
-}
-function getOwnKeys(obj) {
-  return Object.keys(obj).concat(
-    Object.getOwnPropertySymbols(obj)
-  );
-}
-const routerContext = reactExports.createContext(null);
-function getRouterContext() {
-  if (typeof document === "undefined") {
-    return routerContext;
-  }
-  if (window.__TSR_ROUTER_CONTEXT__) {
-    return window.__TSR_ROUTER_CONTEXT__;
-  }
-  window.__TSR_ROUTER_CONTEXT__ = routerContext;
-  return routerContext;
-}
-function useRouter(opts) {
-  const value = reactExports.useContext(getRouterContext());
-  warning(
-    !(((opts == null ? void 0 : opts.warn) ?? true) && !value)
-  );
-  return value;
-}
-function useRouterState(opts) {
-  const contextRouter = useRouter({
-    warn: (opts == null ? void 0 : opts.router) === void 0
-  });
-  const router2 = (opts == null ? void 0 : opts.router) || contextRouter;
-  const previousResult = reactExports.useRef(void 0);
-  return useStore(router2.__store, (state) => {
-    if (opts == null ? void 0 : opts.select) {
-      if (opts.structuralSharing ?? router2.options.defaultStructuralSharing) {
-        const newSlice = replaceEqualDeep(
-          previousResult.current,
-          opts.select(state)
-        );
-        previousResult.current = newSlice;
-        return newSlice;
-      }
-      return opts.select(state);
-    }
-    return state;
-  });
-}
-const matchContext = reactExports.createContext(void 0);
-const dummyMatchContext = reactExports.createContext(
-  void 0
-);
-function useMatch(opts) {
-  const nearestMatchId = reactExports.useContext(
-    opts.from ? dummyMatchContext : matchContext
-  );
-  const matchSelection = useRouterState({
-    select: (state) => {
-      const match = state.matches.find(
-        (d) => opts.from ? opts.from === d.routeId : d.id === nearestMatchId
-      );
-      invariant(
-        !((opts.shouldThrow ?? true) && !match),
-        `Could not find ${opts.from ? `an active match from "${opts.from}"` : "a nearest match!"}`
-      );
-      if (match === void 0) {
-        return void 0;
-      }
-      return opts.select ? opts.select(match) : match;
-    },
-    structuralSharing: opts.structuralSharing
-  });
-  return matchSelection;
-}
-function useLoaderData(opts) {
-  return useMatch({
-    from: opts.from,
-    strict: opts.strict,
-    structuralSharing: opts.structuralSharing,
-    select: (s) => {
-      return opts.select ? opts.select(s.loaderData) : s.loaderData;
-    }
-  });
-}
-function useLoaderDeps(opts) {
-  const { select, ...rest } = opts;
-  return useMatch({
-    ...rest,
-    select: (s) => {
-      return select ? select(s.loaderDeps) : s.loaderDeps;
-    }
-  });
-}
-function useParams(opts) {
-  return useMatch({
-    from: opts.from,
-    shouldThrow: opts.shouldThrow,
-    structuralSharing: opts.structuralSharing,
-    strict: opts.strict,
-    select: (match) => {
-      const params = opts.strict === false ? match.params : match._strictParams;
-      return opts.select ? opts.select(params) : params;
-    }
-  });
-}
-function useSearch(opts) {
-  return useMatch({
-    from: opts.from,
-    strict: opts.strict,
-    shouldThrow: opts.shouldThrow,
-    structuralSharing: opts.structuralSharing,
-    select: (match) => {
-      return opts.select ? opts.select(match.search) : match.search;
-    }
-  });
-}
-function useNavigate(_defaultOpts) {
-  const router2 = useRouter();
-  return reactExports.useCallback(
-    (options) => {
-      return router2.navigate({
-        ...options,
-        from: options.from ?? (_defaultOpts == null ? void 0 : _defaultOpts.from)
-      });
-    },
-    [_defaultOpts == null ? void 0 : _defaultOpts.from, router2]
-  );
-}
 const useLayoutEffect = typeof window !== "undefined" ? reactExports.useLayoutEffect : reactExports.useEffect;
 function usePrevious$2(value) {
   const ref = reactExports.useRef({
@@ -12265,12 +12259,24 @@ function useRouteContext(opts) {
     select: (match) => opts.select ? opts.select(match.context) : match.context
   });
 }
-function t(text) {
-  if (window.bookmarksManagerTranslations && window.bookmarksManagerTranslations[text]) {
-    return window.bookmarksManagerTranslations[text];
-  }
-  return text;
+var client = {};
+var m$1 = reactDomExports;
+{
+  client.createRoot = m$1.createRoot;
+  client.hydrateRoot = m$1.hydrateRoot;
 }
+const BookmarkContext = reactExports.createContext(void 0);
+const useBookmarks = () => {
+  const context = reactExports.useContext(BookmarkContext);
+  if (!context) {
+    throw new Error("useBookmarks must be used within a BookmarkProvider");
+  }
+  return context;
+};
+const BookmarkProvider = ({ initialBookmarks, children }) => {
+  const [bookmarks, setBookmarks] = reactExports.useState(initialBookmarks);
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(BookmarkContext.Provider, { value: { bookmarks, setBookmarks }, children });
+};
 function _objectWithoutPropertiesLoose(source, excluded) {
   if (source == null) return {};
   var target = {};
@@ -12391,6 +12397,24 @@ var DrawingPinIcon = /* @__PURE__ */ reactExports.forwardRef(function(_ref, forw
     clipRule: "evenodd"
   }));
 });
+var _excluded$3o = ["color"];
+var Pencil2Icon = /* @__PURE__ */ reactExports.forwardRef(function(_ref, forwardedRef) {
+  var _ref$color = _ref.color, color = _ref$color === void 0 ? "currentColor" : _ref$color, props = _objectWithoutPropertiesLoose(_ref, _excluded$3o);
+  return reactExports.createElement("svg", Object.assign({
+    width: "15",
+    height: "15",
+    viewBox: "0 0 15 15",
+    fill: "none",
+    xmlns: "http://www.w3.org/2000/svg"
+  }, props, {
+    ref: forwardedRef
+  }), reactExports.createElement("path", {
+    d: "M12.1464 1.14645C12.3417 0.951184 12.6583 0.951184 12.8535 1.14645L14.8535 3.14645C15.0488 3.34171 15.0488 3.65829 14.8535 3.85355L10.9109 7.79618C10.8349 7.87218 10.7471 7.93543 10.651 7.9835L6.72359 9.94721C6.53109 10.0435 6.29861 10.0057 6.14643 9.85355C5.99425 9.70137 5.95652 9.46889 6.05277 9.27639L8.01648 5.34897C8.06455 5.25283 8.1278 5.16507 8.2038 5.08907L12.1464 1.14645ZM12.5 2.20711L8.91091 5.79618L7.87266 7.87267L8.12731 8.12732L10.2038 7.08907L13.7929 3.5L12.5 2.20711ZM9.99998 2L8.99998 3H4.9C4.47171 3 4.18056 3.00039 3.95552 3.01877C3.73631 3.03668 3.62421 3.06915 3.54601 3.10899C3.35785 3.20487 3.20487 3.35785 3.10899 3.54601C3.06915 3.62421 3.03669 3.73631 3.01878 3.95552C3.00039 4.18056 3 4.47171 3 4.9V11.1C3 11.5283 3.00039 11.8194 3.01878 12.0445C3.03669 12.2637 3.06915 12.3758 3.10899 12.454C3.20487 12.6422 3.35785 12.7951 3.54601 12.891C3.62421 12.9309 3.73631 12.9633 3.95552 12.9812C4.18056 12.9996 4.47171 13 4.9 13H11.1C11.5283 13 11.8194 12.9996 12.0445 12.9812C12.2637 12.9633 12.3758 12.9309 12.454 12.891C12.6422 12.7951 12.7951 12.6422 12.891 12.454C12.9309 12.3758 12.9633 12.2637 12.9812 12.0445C12.9996 11.8194 13 11.5283 13 11.1V6.99998L14 5.99998V11.1V11.1207C14 11.5231 14 11.8553 13.9779 12.1259C13.9549 12.407 13.9057 12.6653 13.782 12.908C13.5903 13.2843 13.2843 13.5903 12.908 13.782C12.6653 13.9057 12.407 13.9549 12.1259 13.9779C11.8553 14 11.5231 14 11.1207 14H11.1H4.9H4.87934C4.47686 14 4.14468 14 3.87409 13.9779C3.59304 13.9549 3.33469 13.9057 3.09202 13.782C2.7157 13.5903 2.40973 13.2843 2.21799 12.908C2.09434 12.6653 2.04506 12.407 2.0221 12.1259C1.99999 11.8553 1.99999 11.5231 2 11.1207V11.1206V11.1V4.9V4.87935V4.87932V4.87931C1.99999 4.47685 1.99999 4.14468 2.0221 3.87409C2.04506 3.59304 2.09434 3.33469 2.21799 3.09202C2.40973 2.71569 2.7157 2.40973 3.09202 2.21799C3.33469 2.09434 3.59304 2.04506 3.87409 2.0221C4.14468 1.99999 4.47685 1.99999 4.87932 2H4.87935H4.9H9.99998Z",
+    fill: color,
+    fillRule: "evenodd",
+    clipRule: "evenodd"
+  }));
+});
 var _excluded$3p = ["color"];
 var PersonIcon = /* @__PURE__ */ reactExports.forwardRef(function(_ref, forwardedRef) {
   var _ref$color = _ref.color, color = _ref$color === void 0 ? "currentColor" : _ref$color, props = _objectWithoutPropertiesLoose(_ref, _excluded$3p);
@@ -12499,84 +12523,6 @@ var ViewHorizontalIcon = /* @__PURE__ */ reactExports.forwardRef(function(_ref, 
     clipRule: "evenodd"
   }));
 });
-const iconMap = {
-  briefcase: ArchiveIcon,
-  user: PersonIcon,
-  figma: DrawingPinIcon,
-  code: CodeIcon,
-  "chef-hat": VercelLogoIcon
-  // Placeholder
-};
-const CollectionItem = ({ collection }) => {
-  const Icon2 = collection.icon ? iconMap[collection.icon] : VercelLogoIcon;
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-    Link,
-    {
-      to: "/collections/$collectionId",
-      params: { collectionId: String(collection.id) },
-      className: "flex items-center space-x-2 p-2 hover:bg-accent rounded-md cursor-pointer",
-      activeProps: { className: "bg-accent" },
-      children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Icon2, { className: "h-4 w-4" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: collection.name })
-      ]
-    }
-  );
-};
-const Collections = () => {
-  const { collections } = useRouteContext({ from: "__root__" }) || { collections: [] };
-  const allCollections = collections || [];
-  const topLevelCollections = allCollections.filter((c) => !c.parentId);
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "p-4", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "text-lg font-semibold mb-4", children: t("Collections") }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-1", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        Link,
-        {
-          to: "/",
-          className: "flex items-center space-x-2 p-2 hover:bg-accent rounded-md cursor-pointer",
-          activeProps: { className: "bg-accent" },
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(DashboardIcon, { className: "h-4 w-4" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("All") })
-          ]
-        }
-      ),
-      topLevelCollections.map((collection) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(CollectionItem, { collection }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "ml-4 mt-1 space-y-1", children: allCollections.filter((c) => c.parentId === collection.id).map((child) => /* @__PURE__ */ jsxRuntimeExports.jsx(CollectionItem, { collection: child }, child.id)) })
-      ] }, collection.id))
-    ] })
-  ] });
-};
-const Tags = () => {
-  const { tags, bookmarks } = useRouteContext({ from: "__root__" }) || { tags: [], bookmarks: [] };
-  const allTags = tags || [];
-  const allBookmarks = bookmarks || [];
-  const getTagCount = (tagId) => {
-    return allBookmarks.filter((bookmark) => bookmark.tags.includes(tagId)).length;
-  };
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "p-4", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "text-lg font-semibold mb-4", children: t("Tags") }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-2", children: allTags.map((tag) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
-      Link,
-      {
-        to: "/tags/$tagId",
-        params: { tagId: String(tag.id) },
-        className: "flex justify-between items-center text-sm p-2 hover:bg-accent rounded-md cursor-pointer",
-        activeProps: { className: "bg-accent" },
-        children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
-            "# ",
-            tag.name
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "bg-muted-foreground/20 text-muted-foreground rounded-full px-2 py-0.5 text-xs", children: getTagCount(tag.id) })
-        ]
-      },
-      tag.id
-    )) })
-  ] });
-};
 function setRef(ref, value) {
   if (typeof ref === "function") {
     return ref(value);
@@ -15249,6 +15195,68 @@ const Button = reactExports.forwardRef(
   }
 );
 Button.displayName = "Button";
+function t(text) {
+  if (window.bookmarksManagerTranslations && window.bookmarksManagerTranslations[text]) {
+    return window.bookmarksManagerTranslations[text];
+  }
+  return text;
+}
+const iconMap = {
+  briefcase: ArchiveIcon,
+  user: PersonIcon,
+  figma: DrawingPinIcon,
+  code: CodeIcon,
+  "chef-hat": VercelLogoIcon
+  // Placeholder
+};
+const CollectionItem = ({ collection }) => {
+  const Icon2 = collection.icon ? iconMap[collection.icon] : VercelLogoIcon;
+  const { bookmarks } = useBookmarks();
+  const count2 = bookmarks.filter((b) => b.collectionId === collection.id).length;
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    Link,
+    {
+      to: "/collections/$collectionId",
+      params: { collectionId: String(collection.id) },
+      className: "flex items-center space-x-2 p-2 hover:bg-accent rounded-md cursor-pointer text-foreground",
+      activeProps: { className: "bg-accent" },
+      children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Icon2, { className: "h-4 w-4" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: collection.name }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "ml-auto bg-muted-foreground/20 text-muted-foreground rounded-full px-2 py-0.5 text-xs", children: count2 })
+      ]
+    }
+  );
+};
+const Collections = () => {
+  const { collections } = useLoaderData({ from: "__root__" }) || { collections: [] };
+  const allCollections = collections || [];
+  const topLevelCollections = allCollections.filter((c) => !c.parentId);
+  const { bookmarks } = useBookmarks();
+  const allCount = bookmarks.length;
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "p-4", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "text-lg font-semibold mb-4", children: t("Collections") }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-1", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        Link,
+        {
+          to: "/",
+          className: "flex items-center space-x-2 p-2 hover:bg-accent rounded-md cursor-pointer text-foreground",
+          activeProps: { className: "bg-accent" },
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(DashboardIcon, { className: "h-4 w-4" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("All") }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "ml-auto bg-muted-foreground/20 text-muted-foreground rounded-full px-2 py-0.5 text-xs", children: allCount })
+          ]
+        }
+      ),
+      topLevelCollections.map((collection) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(CollectionItem, { collection }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "ml-4 mt-1 space-y-1", children: allCollections.filter((c) => c.parentId === collection.id).map((child) => /* @__PURE__ */ jsxRuntimeExports.jsx(CollectionItem, { collection: child }, child.id)) })
+      ] }, collection.id))
+    ] })
+  ] });
+};
 function composeEventHandlers(originalEventHandler, ourEventHandler, { checkForDefaultPrevented = true } = {}) {
   return function handleEvent(event) {
     originalEventHandler == null ? void 0 : originalEventHandler(event);
@@ -15257,8 +15265,8 @@ function composeEventHandlers(originalEventHandler, ourEventHandler, { checkForD
     }
   };
 }
-function createContext2(rootComponentName, defaultContext2) {
-  const Context = reactExports.createContext(defaultContext2);
+function createContext2(rootComponentName, defaultContext) {
+  const Context = reactExports.createContext(defaultContext);
   const Provider = (props) => {
     const { children, ...context } = props;
     const value = reactExports.useMemo(() => context, Object.values(context));
@@ -15268,17 +15276,17 @@ function createContext2(rootComponentName, defaultContext2) {
   function useContext2(consumerName) {
     const context = reactExports.useContext(Context);
     if (context) return context;
-    if (defaultContext2 !== void 0) return defaultContext2;
+    if (defaultContext !== void 0) return defaultContext;
     throw new Error(`\`${consumerName}\` must be used within \`${rootComponentName}\``);
   }
   return [Provider, useContext2];
 }
 function createContextScope(scopeName, createContextScopeDeps = []) {
   let defaultContexts = [];
-  function createContext3(rootComponentName, defaultContext2) {
-    const BaseContext = reactExports.createContext(defaultContext2);
+  function createContext3(rootComponentName, defaultContext) {
+    const BaseContext = reactExports.createContext(defaultContext);
     const index2 = defaultContexts.length;
-    defaultContexts = [...defaultContexts, defaultContext2];
+    defaultContexts = [...defaultContexts, defaultContext];
     const Provider = (props) => {
       var _a;
       const { scope, children, ...context } = props;
@@ -15292,14 +15300,14 @@ function createContextScope(scopeName, createContextScopeDeps = []) {
       const Context = ((_a = scope == null ? void 0 : scope[scopeName]) == null ? void 0 : _a[index2]) || BaseContext;
       const context = reactExports.useContext(Context);
       if (context) return context;
-      if (defaultContext2 !== void 0) return defaultContext2;
+      if (defaultContext !== void 0) return defaultContext;
       throw new Error(`\`${consumerName}\` must be used within \`${rootComponentName}\``);
     }
     return [Provider, useContext2];
   }
   const createScope = () => {
-    const scopeContexts = defaultContexts.map((defaultContext2) => {
-      return reactExports.createContext(defaultContext2);
+    const scopeContexts = defaultContexts.map((defaultContext) => {
+      return reactExports.createContext(defaultContext);
     });
     return function useScope(scope) {
       const contexts = (scope == null ? void 0 : scope[scopeName]) || scopeContexts;
@@ -17096,7 +17104,7 @@ var DescriptionWarning = ({ contentRef, descriptionId }) => {
   }, [MESSAGE, contentRef, descriptionId]);
   return null;
 };
-var Root$4 = Dialog$1;
+var Root$3 = Dialog$1;
 var Trigger$1 = DialogTrigger$1;
 var Portal$1 = DialogPortal$1;
 var Overlay = DialogOverlay$1;
@@ -17228,7 +17236,7 @@ const X$1 = createLucideIcon("X", [
   ["path", { d: "M18 6 6 18", key: "1bl5f8" }],
   ["path", { d: "m6 6 12 12", key: "d8bk6v" }]
 ]);
-const Dialog = Root$4;
+const Dialog = Root$3;
 const DialogTrigger = Trigger$1;
 const DialogPortal = Portal$1;
 const DialogOverlay = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -17314,70 +17322,881 @@ const DialogDescription = reactExports.forwardRef(({ className, ...props }, ref)
   }
 ));
 DialogDescription.displayName = Description.displayName;
-const Input = reactExports.forwardRef(
-  ({ className, type, ...props }, ref) => {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "input",
-      {
-        type,
-        className: cn(
-          "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
-          className
-        ),
-        ref,
-        ...props
+var U = 1, Y$1 = 0.9, H = 0.8, J = 0.17, p = 0.1, u = 0.999, $ = 0.9999;
+var k$1 = 0.99, m = /[\\\/_+.#"@\[\(\{&]/, B$1 = /[\\\/_+.#"@\[\(\{&]/g, K$1 = /[\s-]/, X = /[\s-]/g;
+function G(_, C2, h, P2, A2, f2, O2) {
+  if (f2 === C2.length) return A2 === _.length ? U : k$1;
+  var T2 = `${A2},${f2}`;
+  if (O2[T2] !== void 0) return O2[T2];
+  for (var L2 = P2.charAt(f2), c = h.indexOf(L2, A2), S2 = 0, E2, N2, R2, M2; c >= 0; ) E2 = G(_, C2, h, P2, c + 1, f2 + 1, O2), E2 > S2 && (c === A2 ? E2 *= U : m.test(_.charAt(c - 1)) ? (E2 *= H, R2 = _.slice(A2, c - 1).match(B$1), R2 && A2 > 0 && (E2 *= Math.pow(u, R2.length))) : K$1.test(_.charAt(c - 1)) ? (E2 *= Y$1, M2 = _.slice(A2, c - 1).match(X), M2 && A2 > 0 && (E2 *= Math.pow(u, M2.length))) : (E2 *= J, A2 > 0 && (E2 *= Math.pow(u, c - A2))), _.charAt(c) !== C2.charAt(f2) && (E2 *= $)), (E2 < p && h.charAt(c - 1) === P2.charAt(f2 + 1) || P2.charAt(f2 + 1) === P2.charAt(f2) && h.charAt(c - 1) !== P2.charAt(f2)) && (N2 = G(_, C2, h, P2, c + 1, f2 + 2, O2), N2 * p > E2 && (E2 = N2 * p)), E2 > S2 && (S2 = E2), c = h.indexOf(L2, c + 1);
+  return O2[T2] = S2, S2;
+}
+function D(_) {
+  return _.toLowerCase().replace(X, " ");
+}
+function W(_, C2, h) {
+  return _ = h && h.length > 0 ? `${_ + " " + h.join(" ")}` : _, G(_, C2, D(_), D(C2), 0, 0, {});
+}
+var N = '[cmdk-group=""]', Y = '[cmdk-group-items=""]', be = '[cmdk-group-heading=""]', le = '[cmdk-item=""]', ce = `${le}:not([aria-disabled="true"])`, Z = "cmdk-item-select", T = "data-value", Re = (r2, o, n2) => W(r2, o, n2), ue = reactExports.createContext(void 0), K = () => reactExports.useContext(ue), de = reactExports.createContext(void 0), ee = () => reactExports.useContext(de), fe = reactExports.createContext(void 0), me = reactExports.forwardRef((r2, o) => {
+  let n2 = L(() => {
+    var e, a;
+    return { search: "", value: (a = (e = r2.value) != null ? e : r2.defaultValue) != null ? a : "", selectedItemId: void 0, filtered: { count: 0, items: /* @__PURE__ */ new Map(), groups: /* @__PURE__ */ new Set() } };
+  }), u2 = L(() => /* @__PURE__ */ new Set()), c = L(() => /* @__PURE__ */ new Map()), d = L(() => /* @__PURE__ */ new Map()), f2 = L(() => /* @__PURE__ */ new Set()), p2 = pe(r2), { label: b, children: m2, value: R2, onValueChange: x2, filter: C2, shouldFilter: S2, loop: A2, disablePointerSelection: ge2 = false, vimBindings: j = true, ...O2 } = r2, $2 = useId(), q2 = useId(), _ = useId(), I2 = reactExports.useRef(null), v2 = ke();
+  k(() => {
+    if (R2 !== void 0) {
+      let e = R2.trim();
+      n2.current.value = e, E2.emit();
+    }
+  }, [R2]), k(() => {
+    v2(6, ne2);
+  }, []);
+  let E2 = reactExports.useMemo(() => ({ subscribe: (e) => (f2.current.add(e), () => f2.current.delete(e)), snapshot: () => n2.current, setState: (e, a, s) => {
+    var i, l2, g, y2;
+    if (!Object.is(n2.current[e], a)) {
+      if (n2.current[e] = a, e === "search") J2(), z2(), v2(1, W2);
+      else if (e === "value") {
+        if (document.activeElement.hasAttribute("cmdk-input") || document.activeElement.hasAttribute("cmdk-root")) {
+          let h = document.getElementById(_);
+          h ? h.focus() : (i = document.getElementById($2)) == null || i.focus();
+        }
+        if (v2(7, () => {
+          var h;
+          n2.current.selectedItemId = (h = M2()) == null ? void 0 : h.id, E2.emit();
+        }), s || v2(5, ne2), ((l2 = p2.current) == null ? void 0 : l2.value) !== void 0) {
+          let h = a != null ? a : "";
+          (y2 = (g = p2.current).onValueChange) == null || y2.call(g, h);
+          return;
+        }
       }
-    );
+      E2.emit();
+    }
+  }, emit: () => {
+    f2.current.forEach((e) => e());
+  } }), []), U2 = reactExports.useMemo(() => ({ value: (e, a, s) => {
+    var i;
+    a !== ((i = d.current.get(e)) == null ? void 0 : i.value) && (d.current.set(e, { value: a, keywords: s }), n2.current.filtered.items.set(e, te2(a, s)), v2(2, () => {
+      z2(), E2.emit();
+    }));
+  }, item: (e, a) => (u2.current.add(e), a && (c.current.has(a) ? c.current.get(a).add(e) : c.current.set(a, /* @__PURE__ */ new Set([e]))), v2(3, () => {
+    J2(), z2(), n2.current.value || W2(), E2.emit();
+  }), () => {
+    d.current.delete(e), u2.current.delete(e), n2.current.filtered.items.delete(e);
+    let s = M2();
+    v2(4, () => {
+      J2(), (s == null ? void 0 : s.getAttribute("id")) === e && W2(), E2.emit();
+    });
+  }), group: (e) => (c.current.has(e) || c.current.set(e, /* @__PURE__ */ new Set()), () => {
+    d.current.delete(e), c.current.delete(e);
+  }), filter: () => p2.current.shouldFilter, label: b || r2["aria-label"], getDisablePointerSelection: () => p2.current.disablePointerSelection, listId: $2, inputId: _, labelId: q2, listInnerRef: I2 }), []);
+  function te2(e, a) {
+    var i, l2;
+    let s = (l2 = (i = p2.current) == null ? void 0 : i.filter) != null ? l2 : Re;
+    return e ? s(e, n2.current.search, a) : 0;
   }
-);
-Input.displayName = "Input";
-var NAME$3 = "Label";
-var Label$2 = reactExports.forwardRef((props, forwardedRef) => {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Primitive.label,
-    {
-      ...props,
-      ref: forwardedRef,
-      onMouseDown: (event) => {
-        var _a;
-        const target = event.target;
-        if (target.closest("button, input, select, textarea")) return;
-        (_a = props.onMouseDown) == null ? void 0 : _a.call(props, event);
-        if (!event.defaultPrevented && event.detail > 1) event.preventDefault();
+  function z2() {
+    if (!n2.current.search || p2.current.shouldFilter === false) return;
+    let e = n2.current.filtered.items, a = [];
+    n2.current.filtered.groups.forEach((i) => {
+      let l2 = c.current.get(i), g = 0;
+      l2.forEach((y2) => {
+        let h = e.get(y2);
+        g = Math.max(h, g);
+      }), a.push([i, g]);
+    });
+    let s = I2.current;
+    V2().sort((i, l2) => {
+      var h, F2;
+      let g = i.getAttribute("id"), y2 = l2.getAttribute("id");
+      return ((h = e.get(y2)) != null ? h : 0) - ((F2 = e.get(g)) != null ? F2 : 0);
+    }).forEach((i) => {
+      let l2 = i.closest(Y);
+      l2 ? l2.appendChild(i.parentElement === l2 ? i : i.closest(`${Y} > *`)) : s.appendChild(i.parentElement === s ? i : i.closest(`${Y} > *`));
+    }), a.sort((i, l2) => l2[1] - i[1]).forEach((i) => {
+      var g;
+      let l2 = (g = I2.current) == null ? void 0 : g.querySelector(`${N}[${T}="${encodeURIComponent(i[0])}"]`);
+      l2 == null || l2.parentElement.appendChild(l2);
+    });
+  }
+  function W2() {
+    let e = V2().find((s) => s.getAttribute("aria-disabled") !== "true"), a = e == null ? void 0 : e.getAttribute(T);
+    E2.setState("value", a || void 0);
+  }
+  function J2() {
+    var a, s, i, l2;
+    if (!n2.current.search || p2.current.shouldFilter === false) {
+      n2.current.filtered.count = u2.current.size;
+      return;
+    }
+    n2.current.filtered.groups = /* @__PURE__ */ new Set();
+    let e = 0;
+    for (let g of u2.current) {
+      let y2 = (s = (a = d.current.get(g)) == null ? void 0 : a.value) != null ? s : "", h = (l2 = (i = d.current.get(g)) == null ? void 0 : i.keywords) != null ? l2 : [], F2 = te2(y2, h);
+      n2.current.filtered.items.set(g, F2), F2 > 0 && e++;
+    }
+    for (let [g, y2] of c.current) for (let h of y2) if (n2.current.filtered.items.get(h) > 0) {
+      n2.current.filtered.groups.add(g);
+      break;
+    }
+    n2.current.filtered.count = e;
+  }
+  function ne2() {
+    var a, s, i;
+    let e = M2();
+    e && (((a = e.parentElement) == null ? void 0 : a.firstChild) === e && ((i = (s = e.closest(N)) == null ? void 0 : s.querySelector(be)) == null || i.scrollIntoView({ block: "nearest" })), e.scrollIntoView({ block: "nearest" }));
+  }
+  function M2() {
+    var e;
+    return (e = I2.current) == null ? void 0 : e.querySelector(`${le}[aria-selected="true"]`);
+  }
+  function V2() {
+    var e;
+    return Array.from(((e = I2.current) == null ? void 0 : e.querySelectorAll(ce)) || []);
+  }
+  function X2(e) {
+    let s = V2()[e];
+    s && E2.setState("value", s.getAttribute(T));
+  }
+  function Q2(e) {
+    var g;
+    let a = M2(), s = V2(), i = s.findIndex((y2) => y2 === a), l2 = s[i + e];
+    (g = p2.current) != null && g.loop && (l2 = i + e < 0 ? s[s.length - 1] : i + e === s.length ? s[0] : s[i + e]), l2 && E2.setState("value", l2.getAttribute(T));
+  }
+  function re2(e) {
+    let a = M2(), s = a == null ? void 0 : a.closest(N), i;
+    for (; s && !i; ) s = e > 0 ? we(s, N) : De(s, N), i = s == null ? void 0 : s.querySelector(ce);
+    i ? E2.setState("value", i.getAttribute(T)) : Q2(e);
+  }
+  let oe2 = () => X2(V2().length - 1), ie2 = (e) => {
+    e.preventDefault(), e.metaKey ? oe2() : e.altKey ? re2(1) : Q2(1);
+  }, se2 = (e) => {
+    e.preventDefault(), e.metaKey ? X2(0) : e.altKey ? re2(-1) : Q2(-1);
+  };
+  return reactExports.createElement(Primitive.div, { ref: o, tabIndex: -1, ...O2, "cmdk-root": "", onKeyDown: (e) => {
+    var s;
+    (s = O2.onKeyDown) == null || s.call(O2, e);
+    let a = e.nativeEvent.isComposing || e.keyCode === 229;
+    if (!(e.defaultPrevented || a)) switch (e.key) {
+      case "n":
+      case "j": {
+        j && e.ctrlKey && ie2(e);
+        break;
+      }
+      case "ArrowDown": {
+        ie2(e);
+        break;
+      }
+      case "p":
+      case "k": {
+        j && e.ctrlKey && se2(e);
+        break;
+      }
+      case "ArrowUp": {
+        se2(e);
+        break;
+      }
+      case "Home": {
+        e.preventDefault(), X2(0);
+        break;
+      }
+      case "End": {
+        e.preventDefault(), oe2();
+        break;
+      }
+      case "Enter": {
+        e.preventDefault();
+        let i = M2();
+        if (i) {
+          let l2 = new Event(Z);
+          i.dispatchEvent(l2);
+        }
       }
     }
-  );
-});
-Label$2.displayName = NAME$3;
-var Root$3 = Label$2;
-const labelVariants = cva(
-  "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-);
-const Label$1 = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-  Root$3,
+  } }, reactExports.createElement("label", { "cmdk-label": "", htmlFor: U2.inputId, id: U2.labelId, style: Te }, b), B(r2, (e) => reactExports.createElement(de.Provider, { value: E2 }, reactExports.createElement(ue.Provider, { value: U2 }, e))));
+}), he = reactExports.forwardRef((r2, o) => {
+  var _, I2;
+  let n2 = useId(), u2 = reactExports.useRef(null), c = reactExports.useContext(fe), d = K(), f2 = pe(r2), p2 = (I2 = (_ = f2.current) == null ? void 0 : _.forceMount) != null ? I2 : c == null ? void 0 : c.forceMount;
+  k(() => {
+    if (!p2) return d.item(n2, c == null ? void 0 : c.id);
+  }, [p2]);
+  let b = ve(n2, u2, [r2.value, r2.children, u2], r2.keywords), m2 = ee(), R2 = P((v2) => v2.value && v2.value === b.current), x2 = P((v2) => p2 || d.filter() === false ? true : v2.search ? v2.filtered.items.get(n2) > 0 : true);
+  reactExports.useEffect(() => {
+    let v2 = u2.current;
+    if (!(!v2 || r2.disabled)) return v2.addEventListener(Z, C2), () => v2.removeEventListener(Z, C2);
+  }, [x2, r2.onSelect, r2.disabled]);
+  function C2() {
+    var v2, E2;
+    S2(), (E2 = (v2 = f2.current).onSelect) == null || E2.call(v2, b.current);
+  }
+  function S2() {
+    m2.setState("value", b.current, true);
+  }
+  if (!x2) return null;
+  let { disabled: A2, value: ge2, onSelect: j, forceMount: O2, keywords: $2, ...q2 } = r2;
+  return reactExports.createElement(Primitive.div, { ref: composeRefs(u2, o), ...q2, id: n2, "cmdk-item": "", role: "option", "aria-disabled": !!A2, "aria-selected": !!R2, "data-disabled": !!A2, "data-selected": !!R2, onPointerMove: A2 || d.getDisablePointerSelection() ? void 0 : S2, onClick: A2 ? void 0 : C2 }, r2.children);
+}), Ee = reactExports.forwardRef((r2, o) => {
+  let { heading: n2, children: u2, forceMount: c, ...d } = r2, f2 = useId(), p2 = reactExports.useRef(null), b = reactExports.useRef(null), m2 = useId(), R2 = K(), x2 = P((S2) => c || R2.filter() === false ? true : S2.search ? S2.filtered.groups.has(f2) : true);
+  k(() => R2.group(f2), []), ve(f2, p2, [r2.value, r2.heading, b]);
+  let C2 = reactExports.useMemo(() => ({ id: f2, forceMount: c }), [c]);
+  return reactExports.createElement(Primitive.div, { ref: composeRefs(p2, o), ...d, "cmdk-group": "", role: "presentation", hidden: x2 ? void 0 : true }, n2 && reactExports.createElement("div", { ref: b, "cmdk-group-heading": "", "aria-hidden": true, id: m2 }, n2), B(r2, (S2) => reactExports.createElement("div", { "cmdk-group-items": "", role: "group", "aria-labelledby": n2 ? m2 : void 0 }, reactExports.createElement(fe.Provider, { value: C2 }, S2))));
+}), ye = reactExports.forwardRef((r2, o) => {
+  let { alwaysRender: n2, ...u2 } = r2, c = reactExports.useRef(null), d = P((f2) => !f2.search);
+  return !n2 && !d ? null : reactExports.createElement(Primitive.div, { ref: composeRefs(c, o), ...u2, "cmdk-separator": "", role: "separator" });
+}), Se = reactExports.forwardRef((r2, o) => {
+  let { onValueChange: n2, ...u2 } = r2, c = r2.value != null, d = ee(), f2 = P((m2) => m2.search), p2 = P((m2) => m2.selectedItemId), b = K();
+  return reactExports.useEffect(() => {
+    r2.value != null && d.setState("search", r2.value);
+  }, [r2.value]), reactExports.createElement(Primitive.input, { ref: o, ...u2, "cmdk-input": "", autoComplete: "off", autoCorrect: "off", spellCheck: false, "aria-autocomplete": "list", role: "combobox", "aria-expanded": true, "aria-controls": b.listId, "aria-labelledby": b.labelId, "aria-activedescendant": p2, id: b.inputId, type: "text", value: c ? r2.value : f2, onChange: (m2) => {
+    c || d.setState("search", m2.target.value), n2 == null || n2(m2.target.value);
+  } });
+}), Ce = reactExports.forwardRef((r2, o) => {
+  let { children: n2, label: u2 = "Suggestions", ...c } = r2, d = reactExports.useRef(null), f2 = reactExports.useRef(null), p2 = P((m2) => m2.selectedItemId), b = K();
+  return reactExports.useEffect(() => {
+    if (f2.current && d.current) {
+      let m2 = f2.current, R2 = d.current, x2, C2 = new ResizeObserver(() => {
+        x2 = requestAnimationFrame(() => {
+          let S2 = m2.offsetHeight;
+          R2.style.setProperty("--cmdk-list-height", S2.toFixed(1) + "px");
+        });
+      });
+      return C2.observe(m2), () => {
+        cancelAnimationFrame(x2), C2.unobserve(m2);
+      };
+    }
+  }, []), reactExports.createElement(Primitive.div, { ref: composeRefs(d, o), ...c, "cmdk-list": "", role: "listbox", tabIndex: -1, "aria-activedescendant": p2, "aria-label": u2, id: b.listId }, B(r2, (m2) => reactExports.createElement("div", { ref: composeRefs(f2, b.listInnerRef), "cmdk-list-sizer": "" }, m2)));
+}), xe = reactExports.forwardRef((r2, o) => {
+  let { open: n2, onOpenChange: u2, overlayClassName: c, contentClassName: d, container: f2, ...p2 } = r2;
+  return reactExports.createElement(Root$3, { open: n2, onOpenChange: u2 }, reactExports.createElement(Portal$1, { container: f2 }, reactExports.createElement(Overlay, { "cmdk-overlay": "", className: c }), reactExports.createElement(Content$1, { "aria-label": r2.label, "cmdk-dialog": "", className: d }, reactExports.createElement(me, { ref: o, ...p2 }))));
+}), Ie = reactExports.forwardRef((r2, o) => P((u2) => u2.filtered.count === 0) ? reactExports.createElement(Primitive.div, { ref: o, ...r2, "cmdk-empty": "", role: "presentation" }) : null), Pe = reactExports.forwardRef((r2, o) => {
+  let { progress: n2, children: u2, label: c = "Loading...", ...d } = r2;
+  return reactExports.createElement(Primitive.div, { ref: o, ...d, "cmdk-loading": "", role: "progressbar", "aria-valuenow": n2, "aria-valuemin": 0, "aria-valuemax": 100, "aria-label": c }, B(r2, (f2) => reactExports.createElement("div", { "aria-hidden": true }, f2)));
+}), _e = Object.assign(me, { List: Ce, Item: he, Input: Se, Group: Ee, Separator: ye, Dialog: xe, Empty: Ie, Loading: Pe });
+function we(r2, o) {
+  let n2 = r2.nextElementSibling;
+  for (; n2; ) {
+    if (n2.matches(o)) return n2;
+    n2 = n2.nextElementSibling;
+  }
+}
+function De(r2, o) {
+  let n2 = r2.previousElementSibling;
+  for (; n2; ) {
+    if (n2.matches(o)) return n2;
+    n2 = n2.previousElementSibling;
+  }
+}
+function pe(r2) {
+  let o = reactExports.useRef(r2);
+  return k(() => {
+    o.current = r2;
+  }), o;
+}
+var k = typeof window == "undefined" ? reactExports.useEffect : reactExports.useLayoutEffect;
+function L(r2) {
+  let o = reactExports.useRef();
+  return o.current === void 0 && (o.current = r2()), o;
+}
+function P(r2) {
+  let o = ee(), n2 = () => r2(o.snapshot());
+  return reactExports.useSyncExternalStore(o.subscribe, n2, n2);
+}
+function ve(r2, o, n2, u2 = []) {
+  let c = reactExports.useRef(), d = K();
+  return k(() => {
+    var b;
+    let f2 = (() => {
+      var m2;
+      for (let R2 of n2) {
+        if (typeof R2 == "string") return R2.trim();
+        if (typeof R2 == "object" && "current" in R2) return R2.current ? (m2 = R2.current.textContent) == null ? void 0 : m2.trim() : c.current;
+      }
+    })(), p2 = u2.map((m2) => m2.trim());
+    d.value(r2, f2, p2), (b = o.current) == null || b.setAttribute(T, f2), c.current = f2;
+  }), c;
+}
+var ke = () => {
+  let [r2, o] = reactExports.useState(), n2 = L(() => /* @__PURE__ */ new Map());
+  return k(() => {
+    n2.current.forEach((u2) => u2()), n2.current = /* @__PURE__ */ new Map();
+  }, [r2]), (u2, c) => {
+    n2.current.set(u2, c), o({});
+  };
+};
+function Me(r2) {
+  let o = r2.type;
+  return typeof o == "function" ? o(r2.props) : "render" in o ? o.render(r2.props) : r2;
+}
+function B({ asChild: r2, children: o }, n2) {
+  return r2 && reactExports.isValidElement(o) ? reactExports.cloneElement(Me(o), { ref: o.ref }, n2(o.props.children)) : n2(o);
+}
+var Te = { position: "absolute", width: "1px", height: "1px", padding: "0", margin: "-1px", overflow: "hidden", clip: "rect(0, 0, 0, 0)", whiteSpace: "nowrap", borderWidth: "0" };
+const Command = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+  _e,
   {
     ref,
-    className: cn(labelVariants(), className),
+    className: cn(
+      "flex h-full w-full flex-col overflow-hidden rounded-md bg-popover text-popover-foreground",
+      className
+    ),
     ...props
   }
 ));
-Label$1.displayName = Root$3.displayName;
-const Textarea = reactExports.forwardRef(
-  ({ className, ...props }, ref) => {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "textarea",
+Command.displayName = _e.displayName;
+const CommandInput = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center border-b px-3", "cmdk-input-wrapper": "", children: [
+  /* @__PURE__ */ jsxRuntimeExports.jsx(Search, { className: "mr-2 h-4 w-4 shrink-0 opacity-50" }),
+  /* @__PURE__ */ jsxRuntimeExports.jsx(
+    _e.Input,
+    {
+      ref,
+      className: cn(
+        "flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50",
+        className
+      ),
+      ...props
+    }
+  )
+] }));
+CommandInput.displayName = _e.Input.displayName;
+const CommandList = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+  _e.List,
+  {
+    ref,
+    className: cn("max-h-[300px] overflow-y-auto overflow-x-hidden", className),
+    ...props
+  }
+));
+CommandList.displayName = _e.List.displayName;
+const CommandEmpty$1 = reactExports.forwardRef((props, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+  _e.Empty,
+  {
+    ref,
+    className: "py-6 text-center text-sm",
+    ...props
+  }
+));
+CommandEmpty$1.displayName = _e.Empty.displayName;
+const CommandGroup = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+  _e.Group,
+  {
+    ref,
+    className: cn(
+      "overflow-hidden p-1 text-foreground [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground",
+      className
+    ),
+    ...props
+  }
+));
+CommandGroup.displayName = _e.Group.displayName;
+const CommandSeparator = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+  _e.Separator,
+  {
+    ref,
+    className: cn("-mx-1 h-px bg-border", className),
+    ...props
+  }
+));
+CommandSeparator.displayName = _e.Separator.displayName;
+const CommandItem = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+  _e.Item,
+  {
+    ref,
+    className: cn(
+      "relative flex cursor-default gap-2 select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected='true']:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+      className
+    ),
+    ...props
+  }
+));
+CommandItem.displayName = _e.Item.displayName;
+const badgeVariants = cva(
+  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  {
+    variants: {
+      variant: {
+        default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
+        secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
+        outline: "text-foreground"
+      }
+    },
+    defaultVariants: {
+      variant: "default"
+    }
+  }
+);
+function Badge({ className, variant, ...props }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: cn(badgeVariants({ variant }), className), ...props });
+}
+function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = reactExports.useState(value);
+  reactExports.useEffect(() => {
+    const timer = setTimeout(() => setDebouncedValue(value), delay);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [value, delay]);
+  return debouncedValue;
+}
+function transToGroupOption(options, groupBy) {
+  if (!options || options.length === 0) {
+    return { Options: [] };
+  }
+  if (groupBy) {
+    return options.reduce((acc, option) => {
+      const group = option[groupBy] || "Options";
+      if (!acc[group]) acc[group] = [];
+      acc[group].push(option);
+      return acc;
+    }, {});
+  }
+  return { Options: options };
+}
+function removePickedOption(groupOption, selected) {
+  const result = {};
+  for (const [group, options] of Object.entries(groupOption)) {
+    result[group] = options.filter(
+      (option) => !selected.some((s) => s.value === option.value)
+    );
+  }
+  return result;
+}
+function isOptionsExist(groupOption, targetOption) {
+  for (const [, value] of Object.entries(groupOption)) {
+    if (value.some((option) => targetOption.find((p2) => p2.value === option.value))) {
+      return true;
+    }
+  }
+  return false;
+}
+const CommandEmpty = reactExports.forwardRef(({ className, ...props }, forwardedRef) => {
+  const render = P((state) => state.filtered.count === 0);
+  if (!render) return null;
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "div",
+    {
+      ref: forwardedRef,
+      className: cn("py-6 text-center text-sm", className),
+      "cmdk-empty": "",
+      role: "presentation",
+      ...props
+    }
+  );
+});
+CommandEmpty.displayName = "CommandEmpty";
+const MultipleSelector = reactExports.forwardRef(
+  (props, ref) => {
+    const {
+      value,
+      onChange,
+      placeholder,
+      defaultOptions: arrayDefaultOptions = [],
+      options: arrayOptions,
+      delay,
+      onSearch,
+      onSearchSync,
+      loadingIndicator,
+      emptyIndicator,
+      maxSelected = Number.MAX_SAFE_INTEGER,
+      onMaxSelected,
+      hidePlaceholderWhenSelected,
+      disabled,
+      groupBy,
+      className,
+      badgeClassName,
+      selectFirstItem = true,
+      creatable = false,
+      triggerSearchOnFocus = false,
+      commandProps,
+      inputProps,
+      hideClearAllButton = false,
+      onCreateOption,
+      ...rest
+    } = props;
+    const inputRef = reactExports.useRef(null);
+    const mountedRef = reactExports.useRef(false);
+    const [open, setOpen] = reactExports.useState(false);
+    const [onScrollbar, setOnScrollbar] = reactExports.useState(false);
+    const [isLoading, setIsLoading] = reactExports.useState(false);
+    const dropdownRef = reactExports.useRef(null);
+    reactExports.useEffect(() => {
+      mountedRef.current = true;
+      return () => {
+        mountedRef.current = false;
+      };
+    }, []);
+    const [selected, setSelected] = reactExports.useState(value || []);
+    const [groupedOptions, setGroupedOptions] = reactExports.useState(
+      transToGroupOption(arrayDefaultOptions, groupBy)
+    );
+    const [inputValue, setInputValue] = reactExports.useState("");
+    const debouncedSearchTerm = useDebounce(inputValue, delay || 500);
+    const setOptions = (opts) => {
+      setGroupedOptions(opts);
+    };
+    reactExports.useImperativeHandle(ref, () => ({
+      selectedValue: [...selected],
+      input: inputRef.current,
+      focus: () => {
+        var _a;
+        return (_a = inputRef == null ? void 0 : inputRef.current) == null ? void 0 : _a.focus();
+      },
+      reset: () => setSelected([])
+    }), [selected]);
+    const handleClickOutside = (event) => {
+      if (!mountedRef.current) {
+        return;
+      }
+      const dropdown = dropdownRef.current;
+      const input = inputRef.current;
+      if (dropdown && !dropdown.contains(event.target) && input && !input.contains(event.target)) {
+        setOpen(false);
+        input.blur();
+      }
+    };
+    const handleUnselect = reactExports.useCallback(
+      (option) => {
+        const newOptions = selected.filter((s) => s.value !== option.value);
+        setSelected(newOptions);
+        onChange == null ? void 0 : onChange(newOptions);
+      },
+      [onChange, selected]
+    );
+    const handleKeyDown = reactExports.useCallback(
+      (e) => {
+        const input = inputRef.current;
+        if (input) {
+          if (e.key === "Delete" || e.key === "Backspace") {
+            if (input.value === "" && selected.length > 0) {
+              const lastSelectOption = selected[selected.length - 1];
+              if (lastSelectOption && !lastSelectOption.fixed) {
+                handleUnselect(lastSelectOption);
+              }
+            }
+          }
+          if (e.key === "Escape") {
+            input.blur();
+          }
+        }
+      },
+      [handleUnselect, selected]
+    );
+    reactExports.useEffect(() => {
+      if (open) {
+        document.addEventListener("mousedown", handleClickOutside);
+        document.addEventListener("touchend", handleClickOutside);
+      } else {
+        document.removeEventListener("mousedown", handleClickOutside);
+        document.removeEventListener("touchend", handleClickOutside);
+      }
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+        document.removeEventListener("touchend", handleClickOutside);
+      };
+    }, [open]);
+    reactExports.useEffect(() => {
+      if (value) {
+        setSelected(value);
+      }
+    }, [value]);
+    reactExports.useEffect(() => {
+      if (!arrayOptions || onSearch) {
+        return;
+      }
+      const newOption = transToGroupOption(arrayOptions || [], groupBy);
+      if (JSON.stringify(newOption) !== JSON.stringify(groupedOptions)) {
+        setGroupedOptions(newOption);
+      }
+    }, [arrayDefaultOptions, arrayOptions, groupBy, onSearch, groupedOptions]);
+    reactExports.useEffect(() => {
+      const doSearchSync = () => {
+        const res = onSearchSync == null ? void 0 : onSearchSync(debouncedSearchTerm);
+        setOptions(transToGroupOption(res || [], groupBy));
+      };
+      const exec = async () => {
+        if (!onSearchSync || !open) return;
+        if (triggerSearchOnFocus) {
+          doSearchSync();
+        }
+        if (debouncedSearchTerm) {
+          doSearchSync();
+        }
+      };
+      void exec();
+    }, [debouncedSearchTerm, groupBy, open, triggerSearchOnFocus, onSearchSync]);
+    reactExports.useEffect(() => {
+      const doSearch = async () => {
+        setIsLoading(true);
+        const res = await (onSearch == null ? void 0 : onSearch(debouncedSearchTerm));
+        setOptions(transToGroupOption(res || [], groupBy));
+        setIsLoading(false);
+      };
+      const exec = async () => {
+        if (!onSearch || !open) return;
+        if (triggerSearchOnFocus) {
+          await doSearch();
+        }
+        if (debouncedSearchTerm) {
+          await doSearch();
+        }
+      };
+      void exec();
+    }, [debouncedSearchTerm, groupBy, open, triggerSearchOnFocus, onSearch]);
+    const CreatableItem = () => {
+      if (!creatable) return void 0;
+      if (isOptionsExist(groupedOptions, [{ value: inputValue, label: inputValue }]) || selected.find((s) => s.value === inputValue)) {
+        return void 0;
+      }
+      const handleCreate = async (label) => {
+        if (selected.length >= maxSelected) {
+          onMaxSelected == null ? void 0 : onMaxSelected(selected.length);
+          return;
+        }
+        setInputValue("");
+        if (typeof onCreateOption === "function") {
+          const created = await onCreateOption(label);
+          if (created) {
+            const newOptions = [...selected, created];
+            setSelected(newOptions);
+            onChange == null ? void 0 : onChange(newOptions);
+          }
+        } else {
+          const newOptions = [...selected, { value: label, label }];
+          setSelected(newOptions);
+          onChange == null ? void 0 : onChange(newOptions);
+        }
+      };
+      const Item3 = /* @__PURE__ */ jsxRuntimeExports.jsx(
+        CommandItem,
+        {
+          value: inputValue,
+          className: "cursor-pointer",
+          onMouseDown: (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          },
+          onSelect: () => handleCreate(inputValue),
+          children: `Create "${inputValue}"`
+        }
+      );
+      if (!onSearch && inputValue.length > 0) {
+        return Item3;
+      }
+      if (onSearch && debouncedSearchTerm.length > 0 && !isLoading) {
+        return Item3;
+      }
+      return void 0;
+    };
+    const EmptyItem = reactExports.useCallback(() => {
+      if (!emptyIndicator) return void 0;
+      if (onSearch && !creatable && Object.keys(arrayOptions || {}).length === 0) {
+        return /* @__PURE__ */ jsxRuntimeExports.jsx(CommandItem, { value: "-", disabled: true, children: emptyIndicator });
+      }
+      return /* @__PURE__ */ jsxRuntimeExports.jsx(CommandEmpty, { children: emptyIndicator });
+    }, [creatable, emptyIndicator, onSearch, arrayOptions]);
+    const selectables = reactExports.useMemo(
+      () => removePickedOption(groupedOptions, selected),
+      [groupedOptions, selected]
+    );
+    const commandFilter = reactExports.useCallback(() => {
+      if (commandProps == null ? void 0 : commandProps.filter) {
+        return commandProps.filter;
+      }
+      if (creatable) {
+        return (value2, search) => {
+          return value2.toLowerCase().includes(search.toLowerCase()) ? 1 : -1;
+        };
+      }
+      return void 0;
+    }, [creatable, commandProps == null ? void 0 : commandProps.filter]);
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      Command,
       {
-        className: cn(
-          "flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
-          className
-        ),
-        ref,
-        ...props
+        ref: dropdownRef,
+        ...commandProps,
+        onKeyDown: (e) => {
+          var _a;
+          handleKeyDown(e);
+          (_a = commandProps == null ? void 0 : commandProps.onKeyDown) == null ? void 0 : _a.call(commandProps, e);
+        },
+        className: cn("h-auto overflow-visible bg-transparent", commandProps == null ? void 0 : commandProps.className),
+        shouldFilter: (commandProps == null ? void 0 : commandProps.shouldFilter) !== void 0 ? commandProps.shouldFilter : !onSearch,
+        filter: commandFilter(),
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "div",
+            {
+              className: cn(
+                "flex items-start justify-between rounded-md border border-input px-3 py-2 text-base ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 md:text-sm",
+                {
+                  "cursor-text": !disabled && selected.length !== 0
+                },
+                className
+              ),
+              onClick: () => {
+                var _a;
+                if (disabled) return;
+                (_a = inputRef == null ? void 0 : inputRef.current) == null ? void 0 : _a.focus();
+              },
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative flex flex-wrap gap-1", children: [
+                  selected.map((option) => {
+                    return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                      Badge,
+                      {
+                        className: cn(
+                          "tag-badge",
+                          "!rounded !rounded-md px-2 py-0.5",
+                          badgeClassName
+                        ),
+                        "data-fixed": option.fixed,
+                        "data-disabled": disabled || void 0,
+                        children: [
+                          option.label,
+                          /* @__PURE__ */ jsxRuntimeExports.jsx(
+                            "button",
+                            {
+                              type: "button",
+                              className: cn(
+                                "ml-0.5 rounded outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2 p-0.5 h-4 w-4 flex items-center justify-center",
+                                (disabled || option.fixed) && "hidden"
+                              ),
+                              style: { minWidth: 16, minHeight: 16 },
+                              onKeyDown: (e) => {
+                                if (e.key === "Enter") {
+                                  handleUnselect(option);
+                                }
+                              },
+                              onMouseDown: (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                              },
+                              onClick: () => handleUnselect(option),
+                              children: /* @__PURE__ */ jsxRuntimeExports.jsx(X$1, { className: "h-2.5 w-2.5 text-muted-foreground hover:text-foreground" })
+                            }
+                          )
+                        ]
+                      },
+                      option.value
+                    );
+                  }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    _e.Input,
+                    {
+                      ...inputProps,
+                      ref: inputRef,
+                      value: inputValue,
+                      disabled,
+                      onValueChange: (value2) => {
+                        var _a;
+                        setInputValue(value2);
+                        (_a = inputProps == null ? void 0 : inputProps.onValueChange) == null ? void 0 : _a.call(inputProps, value2);
+                      },
+                      onBlur: (event) => {
+                        var _a;
+                        if (!onScrollbar) {
+                          setOpen(false);
+                        }
+                        (_a = inputProps == null ? void 0 : inputProps.onBlur) == null ? void 0 : _a.call(inputProps, event);
+                      },
+                      onFocus: (event) => {
+                        var _a;
+                        setOpen(true);
+                        (_a = inputProps == null ? void 0 : inputProps.onFocus) == null ? void 0 : _a.call(inputProps, event);
+                      },
+                      placeholder: hidePlaceholderWhenSelected && selected.length !== 0 ? "" : placeholder,
+                      className: cn(
+                        "flex-1 self-baseline bg-transparent outline-none placeholder:text-muted-foreground",
+                        {
+                          "w-full": hidePlaceholderWhenSelected,
+                          "ml-1": selected.length !== 0
+                        },
+                        inputProps == null ? void 0 : inputProps.className
+                      )
+                    }
+                  )
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: () => {
+                      setSelected(selected.filter((s) => s.fixed));
+                      onChange == null ? void 0 : onChange(selected.filter((s) => s.fixed));
+                    },
+                    className: cn(
+                      "size-5",
+                      (hideClearAllButton || disabled || selected.length < 1 || selected.filter((s) => s.fixed).length === selected.length) && "hidden"
+                    ),
+                    children: /* @__PURE__ */ jsxRuntimeExports.jsx(X$1, {})
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  ChevronDown,
+                  {
+                    className: cn(
+                      "size-5 text-muted-foreground/50",
+                      (hideClearAllButton || disabled || selected.length >= 1 || selected.filter((s) => s.fixed).length !== selected.length) && "hidden"
+                    )
+                  }
+                )
+              ]
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "relative", children: open && /* @__PURE__ */ jsxRuntimeExports.jsx(
+            CommandList,
+            {
+              className: "absolute top-1 z-10 w-full rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in",
+              onMouseLeave: () => {
+                setOnScrollbar(false);
+              },
+              onMouseEnter: () => {
+                setOnScrollbar(true);
+              },
+              onMouseUp: () => {
+                var _a;
+                (_a = inputRef == null ? void 0 : inputRef.current) == null ? void 0 : _a.focus();
+              },
+              children: isLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx(jsxRuntimeExports.Fragment, { children: loadingIndicator }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                EmptyItem(),
+                CreatableItem(),
+                !selectFirstItem && /* @__PURE__ */ jsxRuntimeExports.jsx(CommandItem, { value: "-", className: "hidden" }),
+                Object.entries(selectables).map(([key, dropdowns]) => /* @__PURE__ */ jsxRuntimeExports.jsx(CommandGroup, { heading: key, className: "h-full overflow-auto", children: /* @__PURE__ */ jsxRuntimeExports.jsx(jsxRuntimeExports.Fragment, { children: dropdowns.map((option) => {
+                  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    CommandItem,
+                    {
+                      value: option.label,
+                      disabled: option.disable,
+                      onMouseDown: (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      },
+                      onSelect: () => {
+                        if (selected.length >= maxSelected) {
+                          onMaxSelected == null ? void 0 : onMaxSelected(selected.length);
+                          return;
+                        }
+                        setInputValue("");
+                        const newOptions = [...selected, option];
+                        setSelected(newOptions);
+                        onChange == null ? void 0 : onChange(newOptions);
+                      },
+                      className: cn(
+                        "cursor-pointer",
+                        option.disable && "cursor-default text-muted-foreground"
+                      ),
+                      children: option.label
+                    },
+                    option.value
+                  );
+                }) }) }, key))
+              ] })
+            }
+          ) })
+        ]
       }
     );
   }
 );
-Textarea.displayName = "Textarea";
+MultipleSelector.displayName = "MultipleSelector";
 function clamp$1(value, [min2, max2]) {
   return Math.min(max2, Math.max(min2, value));
 }
@@ -19325,7 +20144,7 @@ const arrow = (options, deps) => ({
   ...arrow$1(options),
   options: [options, deps]
 });
-var NAME$2 = "Arrow";
+var NAME$3 = "Arrow";
 var Arrow$1 = reactExports.forwardRef((props, forwardedRef) => {
   const { children, width = 10, height = 5, ...arrowProps } = props;
   return /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -19341,7 +20160,7 @@ var Arrow$1 = reactExports.forwardRef((props, forwardedRef) => {
     }
   );
 });
-Arrow$1.displayName = NAME$2;
+Arrow$1.displayName = NAME$3;
 var Root$2 = Arrow$1;
 function useSize(element) {
   const [size2, setSize] = reactExports.useState(void 0);
@@ -19671,7 +20490,7 @@ var VISUALLY_HIDDEN_STYLES = Object.freeze({
   whiteSpace: "nowrap",
   wordWrap: "normal"
 });
-var NAME$1 = "VisuallyHidden";
+var NAME$2 = "VisuallyHidden";
 var VisuallyHidden = reactExports.forwardRef(
   (props, forwardedRef) => {
     return /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -19684,7 +20503,7 @@ var VisuallyHidden = reactExports.forwardRef(
     );
   }
 );
-VisuallyHidden.displayName = NAME$1;
+VisuallyHidden.displayName = NAME$2;
 var OPEN_KEYS = [" ", "Enter", "ArrowUp", "ArrowDown"];
 var SELECTION_KEYS = [" ", "Enter"];
 var SELECT_NAME = "Select";
@@ -20819,7 +21638,7 @@ var Icon = SelectIcon;
 var Portal = SelectPortal;
 var Content2 = SelectContent$1;
 var Viewport = SelectViewport;
-var Label = SelectLabel$1;
+var Label$2 = SelectLabel$1;
 var Item$1 = SelectItem$1;
 var ItemText = SelectItemText;
 var ItemIndicator = SelectItemIndicator;
@@ -20899,14 +21718,14 @@ const SelectContent = reactExports.forwardRef(({ className, children, position =
 ) }));
 SelectContent.displayName = Content2.displayName;
 const SelectLabel = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-  Label,
+  Label$2,
   {
     ref,
     className: cn("py-1.5 pl-8 pr-2 text-sm font-semibold", className),
     ...props
   }
 ));
-SelectLabel.displayName = Label.displayName;
+SelectLabel.displayName = Label$2.displayName;
 const SelectItem = reactExports.forwardRef(({ className, children, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
   Item$1,
   {
@@ -20932,892 +21751,119 @@ const SelectSeparator = reactExports.forwardRef(({ className, ...props }, ref) =
   }
 ));
 SelectSeparator.displayName = Separator.displayName;
-var U = 1, Y$1 = 0.9, H = 0.8, J = 0.17, p = 0.1, u = 0.999, $ = 0.9999;
-var k$1 = 0.99, m = /[\\\/_+.#"@\[\(\{&]/, B$1 = /[\\\/_+.#"@\[\(\{&]/g, K$1 = /[\s-]/, X = /[\s-]/g;
-function G(_, C2, h, P2, A2, f2, O2) {
-  if (f2 === C2.length) return A2 === _.length ? U : k$1;
-  var T2 = `${A2},${f2}`;
-  if (O2[T2] !== void 0) return O2[T2];
-  for (var L2 = P2.charAt(f2), c = h.indexOf(L2, A2), S2 = 0, E2, N2, R2, M2; c >= 0; ) E2 = G(_, C2, h, P2, c + 1, f2 + 1, O2), E2 > S2 && (c === A2 ? E2 *= U : m.test(_.charAt(c - 1)) ? (E2 *= H, R2 = _.slice(A2, c - 1).match(B$1), R2 && A2 > 0 && (E2 *= Math.pow(u, R2.length))) : K$1.test(_.charAt(c - 1)) ? (E2 *= Y$1, M2 = _.slice(A2, c - 1).match(X), M2 && A2 > 0 && (E2 *= Math.pow(u, M2.length))) : (E2 *= J, A2 > 0 && (E2 *= Math.pow(u, c - A2))), _.charAt(c) !== C2.charAt(f2) && (E2 *= $)), (E2 < p && h.charAt(c - 1) === P2.charAt(f2 + 1) || P2.charAt(f2 + 1) === P2.charAt(f2) && h.charAt(c - 1) !== P2.charAt(f2)) && (N2 = G(_, C2, h, P2, c + 1, f2 + 2, O2), N2 * p > E2 && (E2 = N2 * p)), E2 > S2 && (S2 = E2), c = h.indexOf(L2, c + 1);
-  return O2[T2] = S2, S2;
-}
-function D(_) {
-  return _.toLowerCase().replace(X, " ");
-}
-function W(_, C2, h) {
-  return _ = h && h.length > 0 ? `${_ + " " + h.join(" ")}` : _, G(_, C2, D(_), D(C2), 0, 0, {});
-}
-var N = '[cmdk-group=""]', Y = '[cmdk-group-items=""]', be = '[cmdk-group-heading=""]', le = '[cmdk-item=""]', ce = `${le}:not([aria-disabled="true"])`, Z = "cmdk-item-select", T = "data-value", Re = (r2, o, n2) => W(r2, o, n2), ue = reactExports.createContext(void 0), K = () => reactExports.useContext(ue), de = reactExports.createContext(void 0), ee = () => reactExports.useContext(de), fe = reactExports.createContext(void 0), me = reactExports.forwardRef((r2, o) => {
-  let n2 = L(() => {
-    var e, a;
-    return { search: "", value: (a = (e = r2.value) != null ? e : r2.defaultValue) != null ? a : "", selectedItemId: void 0, filtered: { count: 0, items: /* @__PURE__ */ new Map(), groups: /* @__PURE__ */ new Set() } };
-  }), u2 = L(() => /* @__PURE__ */ new Set()), c = L(() => /* @__PURE__ */ new Map()), d = L(() => /* @__PURE__ */ new Map()), f2 = L(() => /* @__PURE__ */ new Set()), p2 = pe(r2), { label: b, children: m2, value: R2, onValueChange: x2, filter: C2, shouldFilter: S2, loop: A2, disablePointerSelection: ge2 = false, vimBindings: j = true, ...O2 } = r2, $2 = useId(), q2 = useId(), _ = useId(), I2 = reactExports.useRef(null), v2 = ke();
-  k(() => {
-    if (R2 !== void 0) {
-      let e = R2.trim();
-      n2.current.value = e, E2.emit();
-    }
-  }, [R2]), k(() => {
-    v2(6, ne2);
-  }, []);
-  let E2 = reactExports.useMemo(() => ({ subscribe: (e) => (f2.current.add(e), () => f2.current.delete(e)), snapshot: () => n2.current, setState: (e, a, s) => {
-    var i, l2, g, y2;
-    if (!Object.is(n2.current[e], a)) {
-      if (n2.current[e] = a, e === "search") J2(), z2(), v2(1, W2);
-      else if (e === "value") {
-        if (document.activeElement.hasAttribute("cmdk-input") || document.activeElement.hasAttribute("cmdk-root")) {
-          let h = document.getElementById(_);
-          h ? h.focus() : (i = document.getElementById($2)) == null || i.focus();
-        }
-        if (v2(7, () => {
-          var h;
-          n2.current.selectedItemId = (h = M2()) == null ? void 0 : h.id, E2.emit();
-        }), s || v2(5, ne2), ((l2 = p2.current) == null ? void 0 : l2.value) !== void 0) {
-          let h = a != null ? a : "";
-          (y2 = (g = p2.current).onValueChange) == null || y2.call(g, h);
-          return;
-        }
+const Input = reactExports.forwardRef(
+  ({ className, type, ...props }, ref) => {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "input",
+      {
+        type,
+        className: cn(
+          "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+          className
+        ),
+        ref,
+        ...props
       }
-      E2.emit();
-    }
-  }, emit: () => {
-    f2.current.forEach((e) => e());
-  } }), []), U2 = reactExports.useMemo(() => ({ value: (e, a, s) => {
-    var i;
-    a !== ((i = d.current.get(e)) == null ? void 0 : i.value) && (d.current.set(e, { value: a, keywords: s }), n2.current.filtered.items.set(e, te2(a, s)), v2(2, () => {
-      z2(), E2.emit();
-    }));
-  }, item: (e, a) => (u2.current.add(e), a && (c.current.has(a) ? c.current.get(a).add(e) : c.current.set(a, /* @__PURE__ */ new Set([e]))), v2(3, () => {
-    J2(), z2(), n2.current.value || W2(), E2.emit();
-  }), () => {
-    d.current.delete(e), u2.current.delete(e), n2.current.filtered.items.delete(e);
-    let s = M2();
-    v2(4, () => {
-      J2(), (s == null ? void 0 : s.getAttribute("id")) === e && W2(), E2.emit();
-    });
-  }), group: (e) => (c.current.has(e) || c.current.set(e, /* @__PURE__ */ new Set()), () => {
-    d.current.delete(e), c.current.delete(e);
-  }), filter: () => p2.current.shouldFilter, label: b || r2["aria-label"], getDisablePointerSelection: () => p2.current.disablePointerSelection, listId: $2, inputId: _, labelId: q2, listInnerRef: I2 }), []);
-  function te2(e, a) {
-    var i, l2;
-    let s = (l2 = (i = p2.current) == null ? void 0 : i.filter) != null ? l2 : Re;
-    return e ? s(e, n2.current.search, a) : 0;
-  }
-  function z2() {
-    if (!n2.current.search || p2.current.shouldFilter === false) return;
-    let e = n2.current.filtered.items, a = [];
-    n2.current.filtered.groups.forEach((i) => {
-      let l2 = c.current.get(i), g = 0;
-      l2.forEach((y2) => {
-        let h = e.get(y2);
-        g = Math.max(h, g);
-      }), a.push([i, g]);
-    });
-    let s = I2.current;
-    V2().sort((i, l2) => {
-      var h, F2;
-      let g = i.getAttribute("id"), y2 = l2.getAttribute("id");
-      return ((h = e.get(y2)) != null ? h : 0) - ((F2 = e.get(g)) != null ? F2 : 0);
-    }).forEach((i) => {
-      let l2 = i.closest(Y);
-      l2 ? l2.appendChild(i.parentElement === l2 ? i : i.closest(`${Y} > *`)) : s.appendChild(i.parentElement === s ? i : i.closest(`${Y} > *`));
-    }), a.sort((i, l2) => l2[1] - i[1]).forEach((i) => {
-      var g;
-      let l2 = (g = I2.current) == null ? void 0 : g.querySelector(`${N}[${T}="${encodeURIComponent(i[0])}"]`);
-      l2 == null || l2.parentElement.appendChild(l2);
-    });
-  }
-  function W2() {
-    let e = V2().find((s) => s.getAttribute("aria-disabled") !== "true"), a = e == null ? void 0 : e.getAttribute(T);
-    E2.setState("value", a || void 0);
-  }
-  function J2() {
-    var a, s, i, l2;
-    if (!n2.current.search || p2.current.shouldFilter === false) {
-      n2.current.filtered.count = u2.current.size;
-      return;
-    }
-    n2.current.filtered.groups = /* @__PURE__ */ new Set();
-    let e = 0;
-    for (let g of u2.current) {
-      let y2 = (s = (a = d.current.get(g)) == null ? void 0 : a.value) != null ? s : "", h = (l2 = (i = d.current.get(g)) == null ? void 0 : i.keywords) != null ? l2 : [], F2 = te2(y2, h);
-      n2.current.filtered.items.set(g, F2), F2 > 0 && e++;
-    }
-    for (let [g, y2] of c.current) for (let h of y2) if (n2.current.filtered.items.get(h) > 0) {
-      n2.current.filtered.groups.add(g);
-      break;
-    }
-    n2.current.filtered.count = e;
-  }
-  function ne2() {
-    var a, s, i;
-    let e = M2();
-    e && (((a = e.parentElement) == null ? void 0 : a.firstChild) === e && ((i = (s = e.closest(N)) == null ? void 0 : s.querySelector(be)) == null || i.scrollIntoView({ block: "nearest" })), e.scrollIntoView({ block: "nearest" }));
-  }
-  function M2() {
-    var e;
-    return (e = I2.current) == null ? void 0 : e.querySelector(`${le}[aria-selected="true"]`);
-  }
-  function V2() {
-    var e;
-    return Array.from(((e = I2.current) == null ? void 0 : e.querySelectorAll(ce)) || []);
-  }
-  function X2(e) {
-    let s = V2()[e];
-    s && E2.setState("value", s.getAttribute(T));
-  }
-  function Q2(e) {
-    var g;
-    let a = M2(), s = V2(), i = s.findIndex((y2) => y2 === a), l2 = s[i + e];
-    (g = p2.current) != null && g.loop && (l2 = i + e < 0 ? s[s.length - 1] : i + e === s.length ? s[0] : s[i + e]), l2 && E2.setState("value", l2.getAttribute(T));
-  }
-  function re2(e) {
-    let a = M2(), s = a == null ? void 0 : a.closest(N), i;
-    for (; s && !i; ) s = e > 0 ? we(s, N) : De(s, N), i = s == null ? void 0 : s.querySelector(ce);
-    i ? E2.setState("value", i.getAttribute(T)) : Q2(e);
-  }
-  let oe2 = () => X2(V2().length - 1), ie2 = (e) => {
-    e.preventDefault(), e.metaKey ? oe2() : e.altKey ? re2(1) : Q2(1);
-  }, se2 = (e) => {
-    e.preventDefault(), e.metaKey ? X2(0) : e.altKey ? re2(-1) : Q2(-1);
-  };
-  return reactExports.createElement(Primitive.div, { ref: o, tabIndex: -1, ...O2, "cmdk-root": "", onKeyDown: (e) => {
-    var s;
-    (s = O2.onKeyDown) == null || s.call(O2, e);
-    let a = e.nativeEvent.isComposing || e.keyCode === 229;
-    if (!(e.defaultPrevented || a)) switch (e.key) {
-      case "n":
-      case "j": {
-        j && e.ctrlKey && ie2(e);
-        break;
-      }
-      case "ArrowDown": {
-        ie2(e);
-        break;
-      }
-      case "p":
-      case "k": {
-        j && e.ctrlKey && se2(e);
-        break;
-      }
-      case "ArrowUp": {
-        se2(e);
-        break;
-      }
-      case "Home": {
-        e.preventDefault(), X2(0);
-        break;
-      }
-      case "End": {
-        e.preventDefault(), oe2();
-        break;
-      }
-      case "Enter": {
-        e.preventDefault();
-        let i = M2();
-        if (i) {
-          let l2 = new Event(Z);
-          i.dispatchEvent(l2);
-        }
-      }
-    }
-  } }, reactExports.createElement("label", { "cmdk-label": "", htmlFor: U2.inputId, id: U2.labelId, style: Te }, b), B(r2, (e) => reactExports.createElement(de.Provider, { value: E2 }, reactExports.createElement(ue.Provider, { value: U2 }, e))));
-}), he = reactExports.forwardRef((r2, o) => {
-  var _, I2;
-  let n2 = useId(), u2 = reactExports.useRef(null), c = reactExports.useContext(fe), d = K(), f2 = pe(r2), p2 = (I2 = (_ = f2.current) == null ? void 0 : _.forceMount) != null ? I2 : c == null ? void 0 : c.forceMount;
-  k(() => {
-    if (!p2) return d.item(n2, c == null ? void 0 : c.id);
-  }, [p2]);
-  let b = ve(n2, u2, [r2.value, r2.children, u2], r2.keywords), m2 = ee(), R2 = P((v2) => v2.value && v2.value === b.current), x2 = P((v2) => p2 || d.filter() === false ? true : v2.search ? v2.filtered.items.get(n2) > 0 : true);
-  reactExports.useEffect(() => {
-    let v2 = u2.current;
-    if (!(!v2 || r2.disabled)) return v2.addEventListener(Z, C2), () => v2.removeEventListener(Z, C2);
-  }, [x2, r2.onSelect, r2.disabled]);
-  function C2() {
-    var v2, E2;
-    S2(), (E2 = (v2 = f2.current).onSelect) == null || E2.call(v2, b.current);
-  }
-  function S2() {
-    m2.setState("value", b.current, true);
-  }
-  if (!x2) return null;
-  let { disabled: A2, value: ge2, onSelect: j, forceMount: O2, keywords: $2, ...q2 } = r2;
-  return reactExports.createElement(Primitive.div, { ref: composeRefs(u2, o), ...q2, id: n2, "cmdk-item": "", role: "option", "aria-disabled": !!A2, "aria-selected": !!R2, "data-disabled": !!A2, "data-selected": !!R2, onPointerMove: A2 || d.getDisablePointerSelection() ? void 0 : S2, onClick: A2 ? void 0 : C2 }, r2.children);
-}), Ee = reactExports.forwardRef((r2, o) => {
-  let { heading: n2, children: u2, forceMount: c, ...d } = r2, f2 = useId(), p2 = reactExports.useRef(null), b = reactExports.useRef(null), m2 = useId(), R2 = K(), x2 = P((S2) => c || R2.filter() === false ? true : S2.search ? S2.filtered.groups.has(f2) : true);
-  k(() => R2.group(f2), []), ve(f2, p2, [r2.value, r2.heading, b]);
-  let C2 = reactExports.useMemo(() => ({ id: f2, forceMount: c }), [c]);
-  return reactExports.createElement(Primitive.div, { ref: composeRefs(p2, o), ...d, "cmdk-group": "", role: "presentation", hidden: x2 ? void 0 : true }, n2 && reactExports.createElement("div", { ref: b, "cmdk-group-heading": "", "aria-hidden": true, id: m2 }, n2), B(r2, (S2) => reactExports.createElement("div", { "cmdk-group-items": "", role: "group", "aria-labelledby": n2 ? m2 : void 0 }, reactExports.createElement(fe.Provider, { value: C2 }, S2))));
-}), ye = reactExports.forwardRef((r2, o) => {
-  let { alwaysRender: n2, ...u2 } = r2, c = reactExports.useRef(null), d = P((f2) => !f2.search);
-  return !n2 && !d ? null : reactExports.createElement(Primitive.div, { ref: composeRefs(c, o), ...u2, "cmdk-separator": "", role: "separator" });
-}), Se = reactExports.forwardRef((r2, o) => {
-  let { onValueChange: n2, ...u2 } = r2, c = r2.value != null, d = ee(), f2 = P((m2) => m2.search), p2 = P((m2) => m2.selectedItemId), b = K();
-  return reactExports.useEffect(() => {
-    r2.value != null && d.setState("search", r2.value);
-  }, [r2.value]), reactExports.createElement(Primitive.input, { ref: o, ...u2, "cmdk-input": "", autoComplete: "off", autoCorrect: "off", spellCheck: false, "aria-autocomplete": "list", role: "combobox", "aria-expanded": true, "aria-controls": b.listId, "aria-labelledby": b.labelId, "aria-activedescendant": p2, id: b.inputId, type: "text", value: c ? r2.value : f2, onChange: (m2) => {
-    c || d.setState("search", m2.target.value), n2 == null || n2(m2.target.value);
-  } });
-}), Ce = reactExports.forwardRef((r2, o) => {
-  let { children: n2, label: u2 = "Suggestions", ...c } = r2, d = reactExports.useRef(null), f2 = reactExports.useRef(null), p2 = P((m2) => m2.selectedItemId), b = K();
-  return reactExports.useEffect(() => {
-    if (f2.current && d.current) {
-      let m2 = f2.current, R2 = d.current, x2, C2 = new ResizeObserver(() => {
-        x2 = requestAnimationFrame(() => {
-          let S2 = m2.offsetHeight;
-          R2.style.setProperty("--cmdk-list-height", S2.toFixed(1) + "px");
-        });
-      });
-      return C2.observe(m2), () => {
-        cancelAnimationFrame(x2), C2.unobserve(m2);
-      };
-    }
-  }, []), reactExports.createElement(Primitive.div, { ref: composeRefs(d, o), ...c, "cmdk-list": "", role: "listbox", tabIndex: -1, "aria-activedescendant": p2, "aria-label": u2, id: b.listId }, B(r2, (m2) => reactExports.createElement("div", { ref: composeRefs(f2, b.listInnerRef), "cmdk-list-sizer": "" }, m2)));
-}), xe = reactExports.forwardRef((r2, o) => {
-  let { open: n2, onOpenChange: u2, overlayClassName: c, contentClassName: d, container: f2, ...p2 } = r2;
-  return reactExports.createElement(Root$4, { open: n2, onOpenChange: u2 }, reactExports.createElement(Portal$1, { container: f2 }, reactExports.createElement(Overlay, { "cmdk-overlay": "", className: c }), reactExports.createElement(Content$1, { "aria-label": r2.label, "cmdk-dialog": "", className: d }, reactExports.createElement(me, { ref: o, ...p2 }))));
-}), Ie = reactExports.forwardRef((r2, o) => P((u2) => u2.filtered.count === 0) ? reactExports.createElement(Primitive.div, { ref: o, ...r2, "cmdk-empty": "", role: "presentation" }) : null), Pe = reactExports.forwardRef((r2, o) => {
-  let { progress: n2, children: u2, label: c = "Loading...", ...d } = r2;
-  return reactExports.createElement(Primitive.div, { ref: o, ...d, "cmdk-loading": "", role: "progressbar", "aria-valuenow": n2, "aria-valuemin": 0, "aria-valuemax": 100, "aria-label": c }, B(r2, (f2) => reactExports.createElement("div", { "aria-hidden": true }, f2)));
-}), _e = Object.assign(me, { List: Ce, Item: he, Input: Se, Group: Ee, Separator: ye, Dialog: xe, Empty: Ie, Loading: Pe });
-function we(r2, o) {
-  let n2 = r2.nextElementSibling;
-  for (; n2; ) {
-    if (n2.matches(o)) return n2;
-    n2 = n2.nextElementSibling;
-  }
-}
-function De(r2, o) {
-  let n2 = r2.previousElementSibling;
-  for (; n2; ) {
-    if (n2.matches(o)) return n2;
-    n2 = n2.previousElementSibling;
-  }
-}
-function pe(r2) {
-  let o = reactExports.useRef(r2);
-  return k(() => {
-    o.current = r2;
-  }), o;
-}
-var k = typeof window == "undefined" ? reactExports.useEffect : reactExports.useLayoutEffect;
-function L(r2) {
-  let o = reactExports.useRef();
-  return o.current === void 0 && (o.current = r2()), o;
-}
-function P(r2) {
-  let o = ee(), n2 = () => r2(o.snapshot());
-  return reactExports.useSyncExternalStore(o.subscribe, n2, n2);
-}
-function ve(r2, o, n2, u2 = []) {
-  let c = reactExports.useRef(), d = K();
-  return k(() => {
-    var b;
-    let f2 = (() => {
-      var m2;
-      for (let R2 of n2) {
-        if (typeof R2 == "string") return R2.trim();
-        if (typeof R2 == "object" && "current" in R2) return R2.current ? (m2 = R2.current.textContent) == null ? void 0 : m2.trim() : c.current;
-      }
-    })(), p2 = u2.map((m2) => m2.trim());
-    d.value(r2, f2, p2), (b = o.current) == null || b.setAttribute(T, f2), c.current = f2;
-  }), c;
-}
-var ke = () => {
-  let [r2, o] = reactExports.useState(), n2 = L(() => /* @__PURE__ */ new Map());
-  return k(() => {
-    n2.current.forEach((u2) => u2()), n2.current = /* @__PURE__ */ new Map();
-  }, [r2]), (u2, c) => {
-    n2.current.set(u2, c), o({});
-  };
-};
-function Me(r2) {
-  let o = r2.type;
-  return typeof o == "function" ? o(r2.props) : "render" in o ? o.render(r2.props) : r2;
-}
-function B({ asChild: r2, children: o }, n2) {
-  return r2 && reactExports.isValidElement(o) ? reactExports.cloneElement(Me(o), { ref: o.ref }, n2(o.props.children)) : n2(o);
-}
-var Te = { position: "absolute", width: "1px", height: "1px", padding: "0", margin: "-1px", overflow: "hidden", clip: "rect(0, 0, 0, 0)", whiteSpace: "nowrap", borderWidth: "0" };
-const badgeVariants = cva(
-  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-  {
-    variants: {
-      variant: {
-        default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
-        secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-        outline: "text-foreground"
-      }
-    },
-    defaultVariants: {
-      variant: "default"
-    }
+    );
   }
 );
-function Badge({ className, variant, ...props }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: cn(badgeVariants({ variant }), className), ...props });
-}
-const Command = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-  _e,
-  {
-    ref,
-    className: cn(
-      "flex h-full w-full flex-col overflow-hidden rounded-md bg-popover text-popover-foreground",
-      className
-    ),
-    ...props
-  }
-));
-Command.displayName = _e.displayName;
-const CommandInput = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center border-b px-3", "cmdk-input-wrapper": "", children: [
-  /* @__PURE__ */ jsxRuntimeExports.jsx(Search, { className: "mr-2 h-4 w-4 shrink-0 opacity-50" }),
-  /* @__PURE__ */ jsxRuntimeExports.jsx(
-    _e.Input,
-    {
-      ref,
-      className: cn(
-        "flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50",
-        className
-      ),
-      ...props
-    }
-  )
-] }));
-CommandInput.displayName = _e.Input.displayName;
-const CommandList = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-  _e.List,
-  {
-    ref,
-    className: cn("max-h-[300px] overflow-y-auto overflow-x-hidden", className),
-    ...props
-  }
-));
-CommandList.displayName = _e.List.displayName;
-const CommandEmpty$1 = reactExports.forwardRef((props, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-  _e.Empty,
-  {
-    ref,
-    className: "py-6 text-center text-sm",
-    ...props
-  }
-));
-CommandEmpty$1.displayName = _e.Empty.displayName;
-const CommandGroup = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-  _e.Group,
-  {
-    ref,
-    className: cn(
-      "overflow-hidden p-1 text-foreground [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground",
-      className
-    ),
-    ...props
-  }
-));
-CommandGroup.displayName = _e.Group.displayName;
-const CommandSeparator = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-  _e.Separator,
-  {
-    ref,
-    className: cn("-mx-1 h-px bg-border", className),
-    ...props
-  }
-));
-CommandSeparator.displayName = _e.Separator.displayName;
-const CommandItem = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-  _e.Item,
-  {
-    ref,
-    className: cn(
-      "relative flex cursor-default gap-2 select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected='true']:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
-      className
-    ),
-    ...props
-  }
-));
-CommandItem.displayName = _e.Item.displayName;
-function useDebounce(value, delay) {
-  const [debouncedValue, setDebouncedValue] = reactExports.useState(value);
-  reactExports.useEffect(() => {
-    const timer = setTimeout(() => setDebouncedValue(value), delay);
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [value, delay]);
-  return debouncedValue;
-}
-function transToGroupOption(options, groupBy) {
-  if (options.length === 0) {
-    return {};
-  }
-  if (!groupBy) {
-    return {
-      "": options
-    };
-  }
-  const groupOption = {};
-  options.forEach((option) => {
-    const key = option[groupBy] || "";
-    if (!groupOption[key]) {
-      groupOption[key] = [];
-    }
-    groupOption[key].push(option);
-  });
-  return groupOption;
-}
-function removePickedOption(groupOption, picked) {
-  const cloneOption = JSON.parse(JSON.stringify(groupOption));
-  for (const [key, value] of Object.entries(cloneOption)) {
-    cloneOption[key] = value.filter((val) => !picked.find((p2) => p2.value === val.value));
-  }
-  return cloneOption;
-}
-function isOptionsExist(groupOption, targetOption) {
-  for (const [, value] of Object.entries(groupOption)) {
-    if (value.some((option) => targetOption.find((p2) => p2.value === option.value))) {
-      return true;
-    }
-  }
-  return false;
-}
-const CommandEmpty = reactExports.forwardRef(({ className, ...props }, forwardedRef) => {
-  const render = P((state) => state.filtered.count === 0);
-  if (!render) return null;
+Input.displayName = "Input";
+var NAME$1 = "Label";
+var Label$1 = reactExports.forwardRef((props, forwardedRef) => {
   return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "div",
+    Primitive.label,
     {
+      ...props,
       ref: forwardedRef,
-      className: cn("py-6 text-center text-sm", className),
-      "cmdk-empty": "",
-      role: "presentation",
-      ...props
+      onMouseDown: (event) => {
+        var _a;
+        const target = event.target;
+        if (target.closest("button, input, select, textarea")) return;
+        (_a = props.onMouseDown) == null ? void 0 : _a.call(props, event);
+        if (!event.defaultPrevented && event.detail > 1) event.preventDefault();
+      }
     }
   );
 });
-CommandEmpty.displayName = "CommandEmpty";
-const MultipleSelector = reactExports.forwardRef(
-  ({
-    value,
-    onChange,
-    placeholder,
-    defaultOptions: arrayDefaultOptions = [],
-    options: arrayOptions,
-    delay,
-    onSearch,
-    onSearchSync,
-    loadingIndicator,
-    emptyIndicator,
-    maxSelected = Number.MAX_SAFE_INTEGER,
-    onMaxSelected,
-    hidePlaceholderWhenSelected,
-    disabled,
-    groupBy,
-    className,
-    badgeClassName,
-    selectFirstItem = true,
-    creatable = false,
-    triggerSearchOnFocus = false,
-    commandProps,
-    inputProps,
-    hideClearAllButton = false
-  }, ref) => {
-    const inputRef = reactExports.useRef(null);
-    const mountedRef = reactExports.useRef(false);
-    const [open, setOpen] = reactExports.useState(false);
-    const [onScrollbar, setOnScrollbar] = reactExports.useState(false);
-    const [isLoading, setIsLoading] = reactExports.useState(false);
-    const dropdownRef = reactExports.useRef(null);
-    reactExports.useEffect(() => {
-      mountedRef.current = true;
-      return () => {
-        mountedRef.current = false;
-      };
-    }, []);
-    const [selected, setSelected] = reactExports.useState(value || []);
-    const [options, setOptions] = reactExports.useState(
-      transToGroupOption(arrayDefaultOptions, groupBy)
-    );
-    const [inputValue, setInputValue] = reactExports.useState("");
-    const debouncedSearchTerm = useDebounce(inputValue, delay || 500);
-    reactExports.useImperativeHandle(
-      ref,
-      () => ({
-        selectedValue: [...selected],
-        input: inputRef.current,
-        focus: () => {
-          var _a;
-          return (_a = inputRef == null ? void 0 : inputRef.current) == null ? void 0 : _a.focus();
-        },
-        reset: () => setSelected([])
-      }),
-      [selected]
-    );
-    const handleClickOutside = (event) => {
-      if (!mountedRef.current) {
-        return;
-      }
-      const dropdown = dropdownRef.current;
-      const input = inputRef.current;
-      if (dropdown && !dropdown.contains(event.target) && input && !input.contains(event.target)) {
-        setOpen(false);
-        input.blur();
-      }
-    };
-    const handleUnselect = reactExports.useCallback(
-      (option) => {
-        const newOptions = selected.filter((s) => s.value !== option.value);
-        setSelected(newOptions);
-        onChange == null ? void 0 : onChange(newOptions);
-      },
-      [onChange, selected]
-    );
-    const handleKeyDown = reactExports.useCallback(
-      (e) => {
-        const input = inputRef.current;
-        if (input) {
-          if (e.key === "Delete" || e.key === "Backspace") {
-            if (input.value === "" && selected.length > 0) {
-              const lastSelectOption = selected[selected.length - 1];
-              if (lastSelectOption && !lastSelectOption.fixed) {
-                handleUnselect(lastSelectOption);
-              }
-            }
-          }
-          if (e.key === "Escape") {
-            input.blur();
-          }
-        }
-      },
-      [handleUnselect, selected]
-    );
-    reactExports.useEffect(() => {
-      if (open) {
-        document.addEventListener("mousedown", handleClickOutside);
-        document.addEventListener("touchend", handleClickOutside);
-      } else {
-        document.removeEventListener("mousedown", handleClickOutside);
-        document.removeEventListener("touchend", handleClickOutside);
-      }
-      return () => {
-        document.removeEventListener("mousedown", handleClickOutside);
-        document.removeEventListener("touchend", handleClickOutside);
-      };
-    }, [open]);
-    reactExports.useEffect(() => {
-      if (value) {
-        setSelected(value);
-      }
-    }, [value]);
-    reactExports.useEffect(() => {
-      if (!arrayOptions || onSearch) {
-        return;
-      }
-      const newOption = transToGroupOption(arrayOptions || [], groupBy);
-      if (JSON.stringify(newOption) !== JSON.stringify(options)) {
-        setOptions(newOption);
-      }
-    }, [arrayDefaultOptions, arrayOptions, groupBy, onSearch, options]);
-    reactExports.useEffect(() => {
-      const doSearchSync = () => {
-        const res = onSearchSync == null ? void 0 : onSearchSync(debouncedSearchTerm);
-        setOptions(transToGroupOption(res || [], groupBy));
-      };
-      const exec = async () => {
-        if (!onSearchSync || !open) return;
-        if (triggerSearchOnFocus) {
-          doSearchSync();
-        }
-        if (debouncedSearchTerm) {
-          doSearchSync();
-        }
-      };
-      void exec();
-    }, [debouncedSearchTerm, groupBy, open, triggerSearchOnFocus, onSearchSync]);
-    reactExports.useEffect(() => {
-      const doSearch = async () => {
-        setIsLoading(true);
-        const res = await (onSearch == null ? void 0 : onSearch(debouncedSearchTerm));
-        setOptions(transToGroupOption(res || [], groupBy));
-        setIsLoading(false);
-      };
-      const exec = async () => {
-        if (!onSearch || !open) return;
-        if (triggerSearchOnFocus) {
-          await doSearch();
-        }
-        if (debouncedSearchTerm) {
-          await doSearch();
-        }
-      };
-      void exec();
-    }, [debouncedSearchTerm, groupBy, open, triggerSearchOnFocus, onSearch]);
-    const CreatableItem = () => {
-      if (!creatable) return void 0;
-      if (isOptionsExist(options, [{ value: inputValue, label: inputValue }]) || selected.find((s) => s.value === inputValue)) {
-        return void 0;
-      }
-      const Item3 = /* @__PURE__ */ jsxRuntimeExports.jsx(
-        CommandItem,
-        {
-          value: inputValue,
-          className: "cursor-pointer",
-          onMouseDown: (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          },
-          onSelect: (value2) => {
-            if (selected.length >= maxSelected) {
-              onMaxSelected == null ? void 0 : onMaxSelected(selected.length);
-              return;
-            }
-            setInputValue("");
-            const newOptions = [...selected, { value: value2, label: value2 }];
-            setSelected(newOptions);
-            onChange == null ? void 0 : onChange(newOptions);
-          },
-          children: `Create "${inputValue}"`
-        }
-      );
-      if (!onSearch && inputValue.length > 0) {
-        return Item3;
-      }
-      if (onSearch && debouncedSearchTerm.length > 0 && !isLoading) {
-        return Item3;
-      }
-      return void 0;
-    };
-    const EmptyItem = reactExports.useCallback(() => {
-      if (!emptyIndicator) return void 0;
-      if (onSearch && !creatable && Object.keys(options).length === 0) {
-        return /* @__PURE__ */ jsxRuntimeExports.jsx(CommandItem, { value: "-", disabled: true, children: emptyIndicator });
-      }
-      return /* @__PURE__ */ jsxRuntimeExports.jsx(CommandEmpty, { children: emptyIndicator });
-    }, [creatable, emptyIndicator, onSearch, options]);
-    const selectables = reactExports.useMemo(
-      () => removePickedOption(options, selected),
-      [options, selected]
-    );
-    const commandFilter = reactExports.useCallback(() => {
-      if (commandProps == null ? void 0 : commandProps.filter) {
-        return commandProps.filter;
-      }
-      if (creatable) {
-        return (value2, search) => {
-          return value2.toLowerCase().includes(search.toLowerCase()) ? 1 : -1;
-        };
-      }
-      return void 0;
-    }, [creatable, commandProps == null ? void 0 : commandProps.filter]);
-    return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-      Command,
+Label$1.displayName = NAME$1;
+var Root$1 = Label$1;
+const labelVariants = cva(
+  "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+);
+const Label = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+  Root$1,
+  {
+    ref,
+    className: cn(labelVariants(), className),
+    ...props
+  }
+));
+Label.displayName = Root$1.displayName;
+const Textarea = reactExports.forwardRef(
+  ({ className, ...props }, ref) => {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "textarea",
       {
-        ref: dropdownRef,
-        ...commandProps,
-        onKeyDown: (e) => {
-          var _a;
-          handleKeyDown(e);
-          (_a = commandProps == null ? void 0 : commandProps.onKeyDown) == null ? void 0 : _a.call(commandProps, e);
-        },
-        className: cn("h-auto overflow-visible bg-transparent", commandProps == null ? void 0 : commandProps.className),
-        shouldFilter: (commandProps == null ? void 0 : commandProps.shouldFilter) !== void 0 ? commandProps.shouldFilter : !onSearch,
-        filter: commandFilter(),
-        children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            "div",
-            {
-              className: cn(
-                "flex items-start justify-between rounded-md border border-input px-3 py-2 text-base ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 md:text-sm",
-                {
-                  "cursor-text": !disabled && selected.length !== 0
-                },
-                className
-              ),
-              onClick: () => {
-                var _a;
-                if (disabled) return;
-                (_a = inputRef == null ? void 0 : inputRef.current) == null ? void 0 : _a.focus();
-              },
-              children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative flex flex-wrap gap-1", children: [
-                  selected.map((option) => {
-                    return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                      Badge,
-                      {
-                        className: cn(
-                          "data-[disabled]:bg-muted-foreground data-[disabled]:text-muted data-[disabled]:hover:bg-muted-foreground",
-                          "data-[fixed]:bg-muted-foreground data-[fixed]:text-muted data-[fixed]:hover:bg-muted-foreground",
-                          badgeClassName
-                        ),
-                        "data-fixed": option.fixed,
-                        "data-disabled": disabled || void 0,
-                        children: [
-                          option.label,
-                          /* @__PURE__ */ jsxRuntimeExports.jsx(
-                            "button",
-                            {
-                              type: "button",
-                              className: cn(
-                                "ml-1 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2",
-                                (disabled || option.fixed) && "hidden"
-                              ),
-                              onKeyDown: (e) => {
-                                if (e.key === "Enter") {
-                                  handleUnselect(option);
-                                }
-                              },
-                              onMouseDown: (e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                              },
-                              onClick: () => handleUnselect(option),
-                              children: /* @__PURE__ */ jsxRuntimeExports.jsx(X$1, { className: "h-3 w-3 text-muted-foreground hover:text-foreground" })
-                            }
-                          )
-                        ]
-                      },
-                      option.value
-                    );
-                  }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(
-                    _e.Input,
-                    {
-                      ...inputProps,
-                      ref: inputRef,
-                      value: inputValue,
-                      disabled,
-                      onValueChange: (value2) => {
-                        var _a;
-                        setInputValue(value2);
-                        (_a = inputProps == null ? void 0 : inputProps.onValueChange) == null ? void 0 : _a.call(inputProps, value2);
-                      },
-                      onBlur: (event) => {
-                        var _a;
-                        if (!onScrollbar) {
-                          setOpen(false);
-                        }
-                        (_a = inputProps == null ? void 0 : inputProps.onBlur) == null ? void 0 : _a.call(inputProps, event);
-                      },
-                      onFocus: (event) => {
-                        var _a;
-                        setOpen(true);
-                        (_a = inputProps == null ? void 0 : inputProps.onFocus) == null ? void 0 : _a.call(inputProps, event);
-                      },
-                      placeholder: hidePlaceholderWhenSelected && selected.length !== 0 ? "" : placeholder,
-                      className: cn(
-                        "flex-1 self-baseline bg-transparent outline-none placeholder:text-muted-foreground",
-                        {
-                          "w-full": hidePlaceholderWhenSelected,
-                          "ml-1": selected.length !== 0
-                        },
-                        inputProps == null ? void 0 : inputProps.className
-                      )
-                    }
-                  )
-                ] }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "button",
-                  {
-                    type: "button",
-                    onClick: () => {
-                      setSelected(selected.filter((s) => s.fixed));
-                      onChange == null ? void 0 : onChange(selected.filter((s) => s.fixed));
-                    },
-                    className: cn(
-                      "size-5",
-                      (hideClearAllButton || disabled || selected.length < 1 || selected.filter((s) => s.fixed).length === selected.length) && "hidden"
-                    ),
-                    children: /* @__PURE__ */ jsxRuntimeExports.jsx(X$1, {})
-                  }
-                ),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  ChevronDown,
-                  {
-                    className: cn(
-                      "size-5 text-muted-foreground/50",
-                      (hideClearAllButton || disabled || selected.length >= 1 || selected.filter((s) => s.fixed).length !== selected.length) && "hidden"
-                    )
-                  }
-                )
-              ]
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "relative", children: open && /* @__PURE__ */ jsxRuntimeExports.jsx(
-            CommandList,
-            {
-              className: "absolute top-1 z-10 w-full rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in",
-              onMouseLeave: () => {
-                setOnScrollbar(false);
-              },
-              onMouseEnter: () => {
-                setOnScrollbar(true);
-              },
-              onMouseUp: () => {
-                var _a;
-                (_a = inputRef == null ? void 0 : inputRef.current) == null ? void 0 : _a.focus();
-              },
-              children: isLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx(jsxRuntimeExports.Fragment, { children: loadingIndicator }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-                EmptyItem(),
-                CreatableItem(),
-                !selectFirstItem && /* @__PURE__ */ jsxRuntimeExports.jsx(CommandItem, { value: "-", className: "hidden" }),
-                Object.entries(selectables).map(([key, dropdowns]) => /* @__PURE__ */ jsxRuntimeExports.jsx(CommandGroup, { heading: key, className: "h-full overflow-auto", children: /* @__PURE__ */ jsxRuntimeExports.jsx(jsxRuntimeExports.Fragment, { children: dropdowns.map((option) => {
-                  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-                    CommandItem,
-                    {
-                      value: option.label,
-                      disabled: option.disable,
-                      onMouseDown: (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                      },
-                      onSelect: () => {
-                        if (selected.length >= maxSelected) {
-                          onMaxSelected == null ? void 0 : onMaxSelected(selected.length);
-                          return;
-                        }
-                        setInputValue("");
-                        const newOptions = [...selected, option];
-                        setSelected(newOptions);
-                        onChange == null ? void 0 : onChange(newOptions);
-                      },
-                      className: cn(
-                        "cursor-pointer",
-                        option.disable && "cursor-default text-muted-foreground"
-                      ),
-                      children: option.label
-                    },
-                    option.value
-                  );
-                }) }) }, key))
-              ] })
-            }
-          ) })
-        ]
+        className: cn(
+          "flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+          className
+        ),
+        ref,
+        ...props
       }
     );
   }
 );
-MultipleSelector.displayName = "MultipleSelector";
+Textarea.displayName = "Textarea";
 function getRequestToken$1() {
-  var _a;
   if (typeof document === "undefined") {
     return null;
   }
-  return (_a = document.querySelector('meta[name="requesttoken"]')) == null ? void 0 : _a.getAttribute("content");
+  const meta = document.querySelector('meta[name="requesttoken"]');
+  if (meta) return meta.getAttribute("content");
+  const head = document.querySelector("head[data-requesttoken]");
+  if (head) return head.getAttribute("data-requesttoken");
+  return null;
 }
 function AddBookmarkForm() {
+  console.log("AddBookmarkForm mounted");
   const router2 = useRouter();
-  const { collections, tags: allTags } = useRouteContext({ from: "__root__" }) || { collections: [], tags: [] };
+  const { collections, tags: allTags } = useLoaderData({ from: "__root__" }) || { collections: [], tags: [] };
   const availableCollections = collections || [];
   const availableTags = allTags || [];
   const [open, setOpen] = reactExports.useState(false);
   const [url, setUrl] = reactExports.useState("");
   const [title, setTitle] = reactExports.useState("");
   const [description, setDescription] = reactExports.useState("");
-  const [collectionId, setCollectionId] = reactExports.useState();
+  const [collectionId, setCollectionId] = reactExports.useState(void 0);
   const [selectedTags, setSelectedTags] = reactExports.useState([]);
   const [screenshot, setScreenshot] = reactExports.useState(null);
   const [isFetching, setIsFetching] = reactExports.useState(false);
+  const [isSaving, setIsSaving] = reactExports.useState(false);
+  const [saveError, setSaveError] = reactExports.useState(null);
+  const { setBookmarks } = useBookmarks();
   const tagOptions = availableTags.map((tag) => ({ label: tag.name, value: String(tag.id) }));
+  const handleCreateTag = async (label) => {
+    const requestToken = getRequestToken$1();
+    if (!requestToken) return { label, value: label };
+    try {
+      const response = await fetch("/apps/bookmarksmanager/api/v1/tags", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "requesttoken": requestToken
+        },
+        body: JSON.stringify({ name: label })
+      });
+      if (response.ok) {
+        const tag = await response.json();
+        await router2.invalidate();
+        return { label: tag.name, value: String(tag.id) };
+      }
+    } catch (e) {
+    }
+    return { label, value: label };
+  };
   const handleUrlBlur = async () => {
     if (!url || !url.startsWith("http")) return;
     setIsFetching(true);
@@ -21837,9 +21883,12 @@ function AddBookmarkForm() {
   };
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSaving(true);
+    setSaveError(null);
     const requestToken = getRequestToken$1();
     if (!requestToken) {
-      console.error("CSRF token not found!");
+      setSaveError("CSRF token not found!");
+      setIsSaving(false);
       return;
     }
     const bookmarkData = {
@@ -21853,19 +21902,26 @@ function AddBookmarkForm() {
       }),
       screenshot
     };
-    const response = await fetch("/apps/bookmarksmanager/api/v1/bookmarks", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "requesttoken": requestToken
-      },
-      body: JSON.stringify(bookmarkData)
-    });
-    if (response.ok) {
-      setOpen(false);
-      router2.invalidate();
-    } else {
-      console.error("Failed to create bookmark");
+    try {
+      const response = await fetch("/apps/bookmarksmanager/api/v1/bookmarks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "requesttoken": requestToken
+        },
+        body: JSON.stringify(bookmarkData)
+      });
+      if (response.ok) {
+        const newBookmark = await response.json();
+        setOpen(false);
+        setBookmarks((prev) => [newBookmark, ...prev]);
+      } else {
+        setSaveError("Failed to create bookmark");
+      }
+    } catch (err) {
+      setSaveError("Network error");
+    } finally {
+      setIsSaving(false);
     }
   };
   const handleOpenChange = (isOpen) => {
@@ -21885,33 +21941,49 @@ function AddBookmarkForm() {
       " ",
       t("Add Bookmark")
     ] }) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(DialogContent, { className: "sm:max-w-[425px]", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("form", { onSubmit: handleSubmit, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(DialogContent, { className: "sm:max-w-[600px] w-full max-w-2xl", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("form", { onSubmit: handleSubmit, className: "flex flex-col h-full min-h-[70vh]", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogHeader, { children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx(DialogTitle, { children: t("Add a new bookmark") }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(DialogDescription, { children: t("Enter the details of the bookmark you want to add.") })
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid gap-4 py-4", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex-1 flex flex-col gap-4 py-4", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 items-center gap-4", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Label$1, { htmlFor: "url", className: "text-right", children: t("URL") }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "url", className: "text-right", children: t("URL") }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { id: "url", value: url, onChange: (e) => setUrl(e.target.value), onBlur: handleUrlBlur, placeholder: t("https://example.com"), className: "col-span-3" })
         ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "col-span-4 flex justify-center items-center min-h-[80px]", id: "screenshot-debug-block", children: [
+          (() => {
+            console.log("RENDER screenshot block", { isFetching, screenshot });
+            return null;
+          })(),
+          isFetching ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-24 h-20 bg-muted animate-pulse rounded-md", "data-testid": "skeleton" }) : screenshot ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "img",
+            {
+              src: screenshot,
+              alt: "Website preview",
+              className: "w-24 h-20 object-cover rounded-md border",
+              style: { maxWidth: "100%", maxHeight: 80 },
+              "data-testid": "screenshot-img"
+            }
+          ) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-24 h-20 bg-muted/30 rounded-md flex items-center justify-center text-xs text-muted-foreground border border-dashed border-muted-foreground/30", "data-testid": "no-preview", children: t("No preview") })
+        ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 items-center gap-4", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Label$1, { htmlFor: "title", className: "text-right", children: t("Title") }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "title", className: "text-right", children: t("Title") }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { id: "title", value: title, onChange: (e) => setTitle(e.target.value), placeholder: isFetching ? t("Fetching title...") : t("A cool website"), className: "col-span-3" })
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 items-start gap-4", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Label$1, { htmlFor: "description", className: "text-right pt-2", children: t("Description") }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "description", className: "text-right pt-2", children: t("Description") }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(Textarea, { id: "description", value: description, onChange: (e) => setDescription(e.target.value), placeholder: t("A short description"), className: "col-span-3" })
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 items-center gap-4", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Label$1, { htmlFor: "collection", className: "text-right", children: t("Collection") }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "collection", className: "text-right", children: t("Collection") }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs(Select, { onValueChange: setCollectionId, value: collectionId, children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx(SelectTrigger, { className: "col-span-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectValue, { placeholder: t("Select a collection") }) }),
             /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContent, { children: availableCollections.map((collection) => /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: String(collection.id), children: collection.name }, collection.id)) })
           ] })
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 items-start gap-4", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Label$1, { htmlFor: "tags", className: "text-right mt-2", children: t("Tags") }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "tags", className: "text-right mt-2", children: t("Tags") }),
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "col-span-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
             MultipleSelector,
             {
@@ -21921,12 +21993,15 @@ function AddBookmarkForm() {
               placeholder: t("Select tags..."),
               emptyIndicator: t("No tags found."),
               creatable: true,
-              badgeClassName: "bg-primary text-primary-foreground"
+              badgeClassName: "bg-primary text-primary-foreground",
+              onCreateOption: handleCreateTag,
+              onSearchSync: (input) => tagOptions.filter((tag) => tag.label.toLowerCase().includes(input.toLowerCase()))
             }
           ) })
-        ] })
+        ] }),
+        saveError && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "col-span-4 text-red-600 text-sm text-center", children: saveError })
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(DialogFooter, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "submit", children: t("Save bookmark") }) })
+      /* @__PURE__ */ jsxRuntimeExports.jsx(DialogFooter, { className: "sticky bottom-0 bg-background pt-2 z-10", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "submit", className: "w-full md:w-auto", disabled: isSaving, children: isSaving ? t("Saving...") : t("Save bookmark") }) })
     ] }) })
   ] });
 }
@@ -21936,10 +22011,38 @@ function Header() {
     /* @__PURE__ */ jsxRuntimeExports.jsx(AddBookmarkForm, {})
   ] });
 }
+const Tags = () => {
+  const { tags } = useLoaderData({ from: "__root__" }) || { tags: [] };
+  const allTags = tags || [];
+  const { bookmarks: allBookmarks } = useBookmarks();
+  const getTagCount = (tagId) => {
+    return allBookmarks.filter((bookmark) => bookmark.tags.includes(tagId)).length;
+  };
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "p-4", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "text-lg font-semibold mb-4", children: t("Tags") }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-2", children: allTags.map((tag) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      Link,
+      {
+        to: "/tags/$tagId",
+        params: { tagId: String(tag.id) },
+        className: "flex justify-between items-center text-sm p-2 hover:bg-accent rounded-md cursor-pointer text-foreground",
+        activeProps: { className: "bg-accent" },
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
+            "# ",
+            tag.name
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "bg-muted-foreground/20 text-muted-foreground rounded-full px-2 py-0.5 text-xs", children: getTagCount(tag.id) })
+        ]
+      },
+      tag.id
+    )) })
+  ] });
+};
 const Layout = ({ children }) => {
   const [isFiltersOpen, setIsFiltersOpen] = reactExports.useState(true);
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex h-full bg-background", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("aside", { className: "w-64 border-r flex flex-col min-h-0", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("aside", { className: "w-64 border-r flex flex-col min-h-0", style: { backgroundColor: "var(--color-background-dark, #f5f5f5)", color: "var(--color-main-text, #000)" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "p-4 border-b", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
         Button,
         {
@@ -21964,7 +22067,10 @@ const Layout = ({ children }) => {
   ] });
 };
 const Route$5 = createRootRouteWithContext()({
-  component: () => /* @__PURE__ */ jsxRuntimeExports.jsx(Layout, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Outlet, {}) }),
+  component: () => {
+    const { bookmarks } = useLoaderData({ from: "__root__" });
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(BookmarkProvider, { initialBookmarks: bookmarks, children: /* @__PURE__ */ jsxRuntimeExports.jsx(Layout, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Outlet, {}) }) });
+  },
   loader: async () => {
     const fetchData = async (url) => {
       try {
@@ -21996,6 +22102,9 @@ const Route$5 = createRootRouteWithContext()({
       fetchData("/apps/bookmarksmanager/api/v1/tags"),
       fetchData("/apps/bookmarksmanager/api/v1/bookmarks")
     ]);
+    console.log("[__root__ loader] collections:", collections);
+    console.log("[__root__ loader] tags:", tags);
+    console.log("[__root__ loader] bookmarks:", bookmarks);
     return { collections, tags, bookmarks };
   }
 });
@@ -22005,6 +22114,510 @@ const Route$4 = createFileRoute("/tags")({
 const Route$3 = createFileRoute("/collections")({
   component: () => /* @__PURE__ */ jsxRuntimeExports.jsx(Outlet, {})
 });
+var ENTRY_FOCUS = "rovingFocusGroup.onEntryFocus";
+var EVENT_OPTIONS = { bubbles: false, cancelable: true };
+var GROUP_NAME = "RovingFocusGroup";
+var [Collection, useCollection, createCollectionScope] = createCollection(GROUP_NAME);
+var [createRovingFocusGroupContext, createRovingFocusGroupScope] = createContextScope(
+  GROUP_NAME,
+  [createCollectionScope]
+);
+var [RovingFocusProvider, useRovingFocusContext] = createRovingFocusGroupContext(GROUP_NAME);
+var RovingFocusGroup = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(Collection.Provider, { scope: props.__scopeRovingFocusGroup, children: /* @__PURE__ */ jsxRuntimeExports.jsx(Collection.Slot, { scope: props.__scopeRovingFocusGroup, children: /* @__PURE__ */ jsxRuntimeExports.jsx(RovingFocusGroupImpl, { ...props, ref: forwardedRef }) }) });
+  }
+);
+RovingFocusGroup.displayName = GROUP_NAME;
+var RovingFocusGroupImpl = reactExports.forwardRef((props, forwardedRef) => {
+  const {
+    __scopeRovingFocusGroup,
+    orientation,
+    loop = false,
+    dir,
+    currentTabStopId: currentTabStopIdProp,
+    defaultCurrentTabStopId,
+    onCurrentTabStopIdChange,
+    onEntryFocus,
+    preventScrollOnEntryFocus = false,
+    ...groupProps
+  } = props;
+  const ref = reactExports.useRef(null);
+  const composedRefs = useComposedRefs(forwardedRef, ref);
+  const direction = useDirection(dir);
+  const [currentTabStopId, setCurrentTabStopId] = useControllableState({
+    prop: currentTabStopIdProp,
+    defaultProp: defaultCurrentTabStopId ?? null,
+    onChange: onCurrentTabStopIdChange,
+    caller: GROUP_NAME
+  });
+  const [isTabbingBackOut, setIsTabbingBackOut] = reactExports.useState(false);
+  const handleEntryFocus = useCallbackRef$1(onEntryFocus);
+  const getItems = useCollection(__scopeRovingFocusGroup);
+  const isClickFocusRef = reactExports.useRef(false);
+  const [focusableItemsCount, setFocusableItemsCount] = reactExports.useState(0);
+  reactExports.useEffect(() => {
+    const node = ref.current;
+    if (node) {
+      node.addEventListener(ENTRY_FOCUS, handleEntryFocus);
+      return () => node.removeEventListener(ENTRY_FOCUS, handleEntryFocus);
+    }
+  }, [handleEntryFocus]);
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    RovingFocusProvider,
+    {
+      scope: __scopeRovingFocusGroup,
+      orientation,
+      dir: direction,
+      loop,
+      currentTabStopId,
+      onItemFocus: reactExports.useCallback(
+        (tabStopId) => setCurrentTabStopId(tabStopId),
+        [setCurrentTabStopId]
+      ),
+      onItemShiftTab: reactExports.useCallback(() => setIsTabbingBackOut(true), []),
+      onFocusableItemAdd: reactExports.useCallback(
+        () => setFocusableItemsCount((prevCount) => prevCount + 1),
+        []
+      ),
+      onFocusableItemRemove: reactExports.useCallback(
+        () => setFocusableItemsCount((prevCount) => prevCount - 1),
+        []
+      ),
+      children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+        Primitive.div,
+        {
+          tabIndex: isTabbingBackOut || focusableItemsCount === 0 ? -1 : 0,
+          "data-orientation": orientation,
+          ...groupProps,
+          ref: composedRefs,
+          style: { outline: "none", ...props.style },
+          onMouseDown: composeEventHandlers(props.onMouseDown, () => {
+            isClickFocusRef.current = true;
+          }),
+          onFocus: composeEventHandlers(props.onFocus, (event) => {
+            const isKeyboardFocus = !isClickFocusRef.current;
+            if (event.target === event.currentTarget && isKeyboardFocus && !isTabbingBackOut) {
+              const entryFocusEvent = new CustomEvent(ENTRY_FOCUS, EVENT_OPTIONS);
+              event.currentTarget.dispatchEvent(entryFocusEvent);
+              if (!entryFocusEvent.defaultPrevented) {
+                const items = getItems().filter((item) => item.focusable);
+                const activeItem = items.find((item) => item.active);
+                const currentItem = items.find((item) => item.id === currentTabStopId);
+                const candidateItems = [activeItem, currentItem, ...items].filter(
+                  Boolean
+                );
+                const candidateNodes = candidateItems.map((item) => item.ref.current);
+                focusFirst(candidateNodes, preventScrollOnEntryFocus);
+              }
+            }
+            isClickFocusRef.current = false;
+          }),
+          onBlur: composeEventHandlers(props.onBlur, () => setIsTabbingBackOut(false))
+        }
+      )
+    }
+  );
+});
+var ITEM_NAME$1 = "RovingFocusGroupItem";
+var RovingFocusGroupItem = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const {
+      __scopeRovingFocusGroup,
+      focusable = true,
+      active = false,
+      tabStopId,
+      children,
+      ...itemProps
+    } = props;
+    const autoId = useId();
+    const id2 = tabStopId || autoId;
+    const context = useRovingFocusContext(ITEM_NAME$1, __scopeRovingFocusGroup);
+    const isCurrentTabStop = context.currentTabStopId === id2;
+    const getItems = useCollection(__scopeRovingFocusGroup);
+    const { onFocusableItemAdd, onFocusableItemRemove, currentTabStopId } = context;
+    reactExports.useEffect(() => {
+      if (focusable) {
+        onFocusableItemAdd();
+        return () => onFocusableItemRemove();
+      }
+    }, [focusable, onFocusableItemAdd, onFocusableItemRemove]);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Collection.ItemSlot,
+      {
+        scope: __scopeRovingFocusGroup,
+        id: id2,
+        focusable,
+        active,
+        children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Primitive.span,
+          {
+            tabIndex: isCurrentTabStop ? 0 : -1,
+            "data-orientation": context.orientation,
+            ...itemProps,
+            ref: forwardedRef,
+            onMouseDown: composeEventHandlers(props.onMouseDown, (event) => {
+              if (!focusable) event.preventDefault();
+              else context.onItemFocus(id2);
+            }),
+            onFocus: composeEventHandlers(props.onFocus, () => context.onItemFocus(id2)),
+            onKeyDown: composeEventHandlers(props.onKeyDown, (event) => {
+              if (event.key === "Tab" && event.shiftKey) {
+                context.onItemShiftTab();
+                return;
+              }
+              if (event.target !== event.currentTarget) return;
+              const focusIntent = getFocusIntent(event, context.orientation, context.dir);
+              if (focusIntent !== void 0) {
+                if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
+                event.preventDefault();
+                const items = getItems().filter((item) => item.focusable);
+                let candidateNodes = items.map((item) => item.ref.current);
+                if (focusIntent === "last") candidateNodes.reverse();
+                else if (focusIntent === "prev" || focusIntent === "next") {
+                  if (focusIntent === "prev") candidateNodes.reverse();
+                  const currentIndex = candidateNodes.indexOf(event.currentTarget);
+                  candidateNodes = context.loop ? wrapArray(candidateNodes, currentIndex + 1) : candidateNodes.slice(currentIndex + 1);
+                }
+                setTimeout(() => focusFirst(candidateNodes));
+              }
+            }),
+            children: typeof children === "function" ? children({ isCurrentTabStop, hasTabStop: currentTabStopId != null }) : children
+          }
+        )
+      }
+    );
+  }
+);
+RovingFocusGroupItem.displayName = ITEM_NAME$1;
+var MAP_KEY_TO_FOCUS_INTENT = {
+  ArrowLeft: "prev",
+  ArrowUp: "prev",
+  ArrowRight: "next",
+  ArrowDown: "next",
+  PageUp: "first",
+  Home: "first",
+  PageDown: "last",
+  End: "last"
+};
+function getDirectionAwareKey(key, dir) {
+  if (dir !== "rtl") return key;
+  return key === "ArrowLeft" ? "ArrowRight" : key === "ArrowRight" ? "ArrowLeft" : key;
+}
+function getFocusIntent(event, orientation, dir) {
+  const key = getDirectionAwareKey(event.key, dir);
+  if (orientation === "vertical" && ["ArrowLeft", "ArrowRight"].includes(key)) return void 0;
+  if (orientation === "horizontal" && ["ArrowUp", "ArrowDown"].includes(key)) return void 0;
+  return MAP_KEY_TO_FOCUS_INTENT[key];
+}
+function focusFirst(candidates, preventScroll = false) {
+  const PREVIOUSLY_FOCUSED_ELEMENT = document.activeElement;
+  for (const candidate of candidates) {
+    if (candidate === PREVIOUSLY_FOCUSED_ELEMENT) return;
+    candidate.focus({ preventScroll });
+    if (document.activeElement !== PREVIOUSLY_FOCUSED_ELEMENT) return;
+  }
+}
+function wrapArray(array, startIndex) {
+  return array.map((_, index2) => array[(startIndex + index2) % array.length]);
+}
+var Root = RovingFocusGroup;
+var Item = RovingFocusGroupItem;
+var NAME = "Toggle";
+var Toggle = reactExports.forwardRef((props, forwardedRef) => {
+  const { pressed: pressedProp, defaultPressed, onPressedChange, ...buttonProps } = props;
+  const [pressed, setPressed] = useControllableState({
+    prop: pressedProp,
+    onChange: onPressedChange,
+    defaultProp: defaultPressed ?? false,
+    caller: NAME
+  });
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    Primitive.button,
+    {
+      type: "button",
+      "aria-pressed": pressed,
+      "data-state": pressed ? "on" : "off",
+      "data-disabled": props.disabled ? "" : void 0,
+      ...buttonProps,
+      ref: forwardedRef,
+      onClick: composeEventHandlers(props.onClick, () => {
+        if (!props.disabled) {
+          setPressed(!pressed);
+        }
+      })
+    }
+  );
+});
+Toggle.displayName = NAME;
+var TOGGLE_GROUP_NAME = "ToggleGroup";
+var [createToggleGroupContext] = createContextScope(TOGGLE_GROUP_NAME, [
+  createRovingFocusGroupScope
+]);
+var useRovingFocusGroupScope = createRovingFocusGroupScope();
+var ToggleGroup$1 = React$2.forwardRef((props, forwardedRef) => {
+  const { type, ...toggleGroupProps } = props;
+  if (type === "single") {
+    const singleProps = toggleGroupProps;
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(ToggleGroupImplSingle, { ...singleProps, ref: forwardedRef });
+  }
+  if (type === "multiple") {
+    const multipleProps = toggleGroupProps;
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(ToggleGroupImplMultiple, { ...multipleProps, ref: forwardedRef });
+  }
+  throw new Error(`Missing prop \`type\` expected on \`${TOGGLE_GROUP_NAME}\``);
+});
+ToggleGroup$1.displayName = TOGGLE_GROUP_NAME;
+var [ToggleGroupValueProvider, useToggleGroupValueContext] = createToggleGroupContext(TOGGLE_GROUP_NAME);
+var ToggleGroupImplSingle = React$2.forwardRef((props, forwardedRef) => {
+  const {
+    value: valueProp,
+    defaultValue,
+    onValueChange = () => {
+    },
+    ...toggleGroupSingleProps
+  } = props;
+  const [value, setValue] = useControllableState({
+    prop: valueProp,
+    defaultProp: defaultValue ?? "",
+    onChange: onValueChange,
+    caller: TOGGLE_GROUP_NAME
+  });
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    ToggleGroupValueProvider,
+    {
+      scope: props.__scopeToggleGroup,
+      type: "single",
+      value: React$2.useMemo(() => value ? [value] : [], [value]),
+      onItemActivate: setValue,
+      onItemDeactivate: React$2.useCallback(() => setValue(""), [setValue]),
+      children: /* @__PURE__ */ jsxRuntimeExports.jsx(ToggleGroupImpl, { ...toggleGroupSingleProps, ref: forwardedRef })
+    }
+  );
+});
+var ToggleGroupImplMultiple = React$2.forwardRef((props, forwardedRef) => {
+  const {
+    value: valueProp,
+    defaultValue,
+    onValueChange = () => {
+    },
+    ...toggleGroupMultipleProps
+  } = props;
+  const [value, setValue] = useControllableState({
+    prop: valueProp,
+    defaultProp: defaultValue ?? [],
+    onChange: onValueChange,
+    caller: TOGGLE_GROUP_NAME
+  });
+  const handleButtonActivate = React$2.useCallback(
+    (itemValue) => setValue((prevValue = []) => [...prevValue, itemValue]),
+    [setValue]
+  );
+  const handleButtonDeactivate = React$2.useCallback(
+    (itemValue) => setValue((prevValue = []) => prevValue.filter((value2) => value2 !== itemValue)),
+    [setValue]
+  );
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    ToggleGroupValueProvider,
+    {
+      scope: props.__scopeToggleGroup,
+      type: "multiple",
+      value,
+      onItemActivate: handleButtonActivate,
+      onItemDeactivate: handleButtonDeactivate,
+      children: /* @__PURE__ */ jsxRuntimeExports.jsx(ToggleGroupImpl, { ...toggleGroupMultipleProps, ref: forwardedRef })
+    }
+  );
+});
+ToggleGroup$1.displayName = TOGGLE_GROUP_NAME;
+var [ToggleGroupContext$1, useToggleGroupContext] = createToggleGroupContext(TOGGLE_GROUP_NAME);
+var ToggleGroupImpl = React$2.forwardRef(
+  (props, forwardedRef) => {
+    const {
+      __scopeToggleGroup,
+      disabled = false,
+      rovingFocus = true,
+      orientation,
+      dir,
+      loop = true,
+      ...toggleGroupProps
+    } = props;
+    const rovingFocusGroupScope = useRovingFocusGroupScope(__scopeToggleGroup);
+    const direction = useDirection(dir);
+    const commonProps = { role: "group", dir: direction, ...toggleGroupProps };
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(ToggleGroupContext$1, { scope: __scopeToggleGroup, rovingFocus, disabled, children: rovingFocus ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Root,
+      {
+        asChild: true,
+        ...rovingFocusGroupScope,
+        orientation,
+        dir: direction,
+        loop,
+        children: /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive.div, { ...commonProps, ref: forwardedRef })
+      }
+    ) : /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive.div, { ...commonProps, ref: forwardedRef }) });
+  }
+);
+var ITEM_NAME = "ToggleGroupItem";
+var ToggleGroupItem$1 = React$2.forwardRef(
+  (props, forwardedRef) => {
+    const valueContext = useToggleGroupValueContext(ITEM_NAME, props.__scopeToggleGroup);
+    const context = useToggleGroupContext(ITEM_NAME, props.__scopeToggleGroup);
+    const rovingFocusGroupScope = useRovingFocusGroupScope(props.__scopeToggleGroup);
+    const pressed = valueContext.value.includes(props.value);
+    const disabled = context.disabled || props.disabled;
+    const commonProps = { ...props, pressed, disabled };
+    const ref = React$2.useRef(null);
+    return context.rovingFocus ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Item,
+      {
+        asChild: true,
+        ...rovingFocusGroupScope,
+        focusable: !disabled,
+        active: pressed,
+        ref,
+        children: /* @__PURE__ */ jsxRuntimeExports.jsx(ToggleGroupItemImpl, { ...commonProps, ref: forwardedRef })
+      }
+    ) : /* @__PURE__ */ jsxRuntimeExports.jsx(ToggleGroupItemImpl, { ...commonProps, ref: forwardedRef });
+  }
+);
+ToggleGroupItem$1.displayName = ITEM_NAME;
+var ToggleGroupItemImpl = React$2.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeToggleGroup, value, ...itemProps } = props;
+    const valueContext = useToggleGroupValueContext(ITEM_NAME, __scopeToggleGroup);
+    const singleProps = { role: "radio", "aria-checked": props.pressed, "aria-pressed": void 0 };
+    const typeProps = valueContext.type === "single" ? singleProps : void 0;
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Toggle,
+      {
+        ...typeProps,
+        ...itemProps,
+        ref: forwardedRef,
+        onPressedChange: (pressed) => {
+          if (pressed) {
+            valueContext.onItemActivate(value);
+          } else {
+            valueContext.onItemDeactivate(value);
+          }
+        }
+      }
+    );
+  }
+);
+var Root2 = ToggleGroup$1;
+var Item2 = ToggleGroupItem$1;
+const toggleVariants = cva(
+  "inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors hover:bg-muted hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary border border-border [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 gap-2",
+  {
+    variants: {
+      variant: {
+        default: "bg-transparent",
+        outline: "border border-input bg-transparent hover:bg-accent hover:text-accent-foreground"
+      },
+      size: {
+        default: "h-10 px-3 min-w-10",
+        sm: "h-9 px-2.5 min-w-9",
+        lg: "h-11 px-5 min-w-11"
+      }
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default"
+    }
+  }
+);
+const ToggleGroupContext = reactExports.createContext({
+  size: "default",
+  variant: "default"
+});
+const ToggleGroup = reactExports.forwardRef(({ className, variant, size: size2, children, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+  Root2,
+  {
+    ref,
+    className: cn("flex items-center justify-center gap-1", className),
+    ...props,
+    children: /* @__PURE__ */ jsxRuntimeExports.jsx(ToggleGroupContext.Provider, { value: { variant, size: size2 }, children })
+  }
+));
+ToggleGroup.displayName = Root2.displayName;
+const ToggleGroupItem = reactExports.forwardRef(({ className, children, variant, size: size2, ...props }, ref) => {
+  const context = reactExports.useContext(ToggleGroupContext);
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    Item2,
+    {
+      ref,
+      className: cn(
+        toggleVariants({
+          variant: context.variant || variant,
+          size: context.size || size2
+        }),
+        className,
+        "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary",
+        "transition-colors",
+        "border",
+        "border-gray-300",
+        "dark:border-gray-700"
+      ),
+      ...props,
+      children
+    }
+  );
+});
+ToggleGroupItem.displayName = Item2.displayName;
+const Card = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+  "div",
+  {
+    ref,
+    className: cn(
+      "rounded-lg border bg-card text-card-foreground shadow-sm",
+      className
+    ),
+    ...props
+  }
+));
+Card.displayName = "Card";
+const CardHeader = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+  "div",
+  {
+    ref,
+    className: cn("flex flex-col space-y-1.5 p-6", className),
+    ...props
+  }
+));
+CardHeader.displayName = "CardHeader";
+const CardTitle = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+  "div",
+  {
+    ref,
+    className: cn(
+      "text-2xl font-semibold leading-none tracking-tight",
+      className
+    ),
+    ...props
+  }
+));
+CardTitle.displayName = "CardTitle";
+const CardDescription = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+  "div",
+  {
+    ref,
+    className: cn("text-sm text-muted-foreground", className),
+    ...props
+  }
+));
+CardDescription.displayName = "CardDescription";
+const CardContent = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { ref, className: cn("p-6 pt-0", className), ...props }));
+CardContent.displayName = "CardContent";
+const CardFooter = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+  "div",
+  {
+    ref,
+    className: cn("flex items-center p-6 pt-0", className),
+    ...props
+  }
+));
+CardFooter.displayName = "CardFooter";
 function warn() {
   if (console && console.warn) {
     for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
@@ -22236,582 +22849,186 @@ const useTranslation = function(ns) {
     }
   });
 };
-const Card = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-  "div",
-  {
-    ref,
-    className: cn(
-      "rounded-lg border bg-card text-card-foreground shadow-sm",
-      className
-    ),
-    ...props
-  }
-));
-Card.displayName = "Card";
-const CardHeader = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-  "div",
-  {
-    ref,
-    className: cn("flex flex-col space-y-1.5 p-6", className),
-    ...props
-  }
-));
-CardHeader.displayName = "CardHeader";
-const CardTitle = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-  "div",
-  {
-    ref,
-    className: cn(
-      "text-2xl font-semibold leading-none tracking-tight",
-      className
-    ),
-    ...props
-  }
-));
-CardTitle.displayName = "CardTitle";
-const CardDescription = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-  "div",
-  {
-    ref,
-    className: cn("text-sm text-muted-foreground", className),
-    ...props
-  }
-));
-CardDescription.displayName = "CardDescription";
-const CardContent = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { ref, className: cn("p-6 pt-0", className), ...props }));
-CardContent.displayName = "CardContent";
-const CardFooter = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-  "div",
-  {
-    ref,
-    className: cn("flex items-center p-6 pt-0", className),
-    ...props
-  }
-));
-CardFooter.displayName = "CardFooter";
-const BookmarkCard = ({ bookmark, showCollection = false, onClick }) => {
+const BookmarkCard = ({ bookmark, showCollection = false, onEdit, onDelete }) => {
   const { t: t2 } = useTranslation();
-  const { collections, tags: allTags } = useRouteContext({ from: "__root__" }) || { collections: [], tags: [] };
+  const { collections, tags: allTags } = useLoaderData({ from: "__root__" }) || { collections: [], tags: [] };
   const allCollections = collections || [];
   const tags = allTags || [];
   const domain = new URL(bookmark.url).hostname;
+  const [hovered, setHovered] = reactExports.useState(false);
   const bookmarkTags = tags.filter((tag) => bookmark.tags.includes(tag.id));
   const collection = allCollections.find((c) => c.id === bookmark.collectionId);
-  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { onClick, className: "cursor-pointer", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { className: "overflow-hidden flex flex-col h-full", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx(CardHeader, { className: "p-0", children: bookmark.screenshot ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: bookmark.screenshot, alt: bookmark.title, className: "aspect-video w-full object-cover" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "bg-muted aspect-video w-full flex items-center justify-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground text-sm", children: t2("bookmark.no_preview") }) }) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs(CardContent, { className: "p-4 flex-grow", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(CardTitle, { className: "text-lg font-semibold", children: bookmark.title }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground mt-1", children: bookmark.description || "" })
-    ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs(CardFooter, { className: "p-4 pt-0 flex flex-col items-start gap-2", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex flex-wrap gap-1", children: bookmarkTags.map((tag) => /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-xs bg-muted-foreground/20 text-muted-foreground rounded-full px-2 py-0.5", children: [
-        "#",
-        tag.name
-      ] }, tag.id)) }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center space-x-2 text-xs text-muted-foreground w-full", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "img",
-          {
-            src: `https://www.google.com/s2/favicons?domain=${domain}&sz=16`,
-            alt: `${domain} favicon`,
-            width: 16,
-            height: 16,
-            className: "rounded"
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: domain }),
-        showCollection && collection && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "mx-1", children: "·" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: collection.name })
-        ] })
-      ] })
-    ] })
-  ] }) });
-};
-const BookmarkListItem = ({ bookmark, onClick }) => {
-  const { tags: allTags } = useRouteContext({ from: "__root__" }) || { tags: [] };
-  const tags = allTags || [];
-  const domain = new URL(bookmark.url).hostname;
-  const bookmarkTags = tags.filter((tag) => bookmark.tags.includes(tag.id));
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { onClick, className: "flex items-center justify-between p-3 border-b last:border-b-0 hover:bg-accent cursor-pointer", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center space-x-4", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "img",
-        {
-          src: `https://www.google.com/s2/favicons?domain=${domain}&sz=16`,
-          alt: `${domain} favicon`,
-          width: 16,
-          height: 16,
-          className: "rounded"
-        }
-      ),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-semibold text-sm", children: bookmark.title }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground", children: domain })
-      ] })
-    ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex items-center space-x-2", children: bookmarkTags.map((tag) => /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-xs bg-muted-foreground/20 text-muted-foreground rounded-full px-2 py-0.5", children: [
-      "#",
-      tag.name
-    ] }, tag.id)) })
-  ] });
-};
-var ENTRY_FOCUS = "rovingFocusGroup.onEntryFocus";
-var EVENT_OPTIONS = { bubbles: false, cancelable: true };
-var GROUP_NAME = "RovingFocusGroup";
-var [Collection, useCollection, createCollectionScope] = createCollection(GROUP_NAME);
-var [createRovingFocusGroupContext, createRovingFocusGroupScope] = createContextScope(
-  GROUP_NAME,
-  [createCollectionScope]
-);
-var [RovingFocusProvider, useRovingFocusContext] = createRovingFocusGroupContext(GROUP_NAME);
-var RovingFocusGroup = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Collection.Provider, { scope: props.__scopeRovingFocusGroup, children: /* @__PURE__ */ jsxRuntimeExports.jsx(Collection.Slot, { scope: props.__scopeRovingFocusGroup, children: /* @__PURE__ */ jsxRuntimeExports.jsx(RovingFocusGroupImpl, { ...props, ref: forwardedRef }) }) });
-  }
-);
-RovingFocusGroup.displayName = GROUP_NAME;
-var RovingFocusGroupImpl = reactExports.forwardRef((props, forwardedRef) => {
-  const {
-    __scopeRovingFocusGroup,
-    orientation,
-    loop = false,
-    dir,
-    currentTabStopId: currentTabStopIdProp,
-    defaultCurrentTabStopId,
-    onCurrentTabStopIdChange,
-    onEntryFocus,
-    preventScrollOnEntryFocus = false,
-    ...groupProps
-  } = props;
-  const ref = reactExports.useRef(null);
-  const composedRefs = useComposedRefs(forwardedRef, ref);
-  const direction = useDirection(dir);
-  const [currentTabStopId, setCurrentTabStopId] = useControllableState({
-    prop: currentTabStopIdProp,
-    defaultProp: defaultCurrentTabStopId ?? null,
-    onChange: onCurrentTabStopIdChange,
-    caller: GROUP_NAME
-  });
-  const [isTabbingBackOut, setIsTabbingBackOut] = reactExports.useState(false);
-  const handleEntryFocus = useCallbackRef$1(onEntryFocus);
-  const getItems = useCollection(__scopeRovingFocusGroup);
-  const isClickFocusRef = reactExports.useRef(false);
-  const [focusableItemsCount, setFocusableItemsCount] = reactExports.useState(0);
-  reactExports.useEffect(() => {
-    const node = ref.current;
-    if (node) {
-      node.addEventListener(ENTRY_FOCUS, handleEntryFocus);
-      return () => node.removeEventListener(ENTRY_FOCUS, handleEntryFocus);
-    }
-  }, [handleEntryFocus]);
   return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    RovingFocusProvider,
+    "a",
     {
-      scope: __scopeRovingFocusGroup,
-      orientation,
-      dir: direction,
-      loop,
-      currentTabStopId,
-      onItemFocus: reactExports.useCallback(
-        (tabStopId) => setCurrentTabStopId(tabStopId),
-        [setCurrentTabStopId]
-      ),
-      onItemShiftTab: reactExports.useCallback(() => setIsTabbingBackOut(true), []),
-      onFocusableItemAdd: reactExports.useCallback(
-        () => setFocusableItemsCount((prevCount) => prevCount + 1),
-        []
-      ),
-      onFocusableItemRemove: reactExports.useCallback(
-        () => setFocusableItemsCount((prevCount) => prevCount - 1),
-        []
-      ),
-      children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-        Primitive.div,
+      href: bookmark.url,
+      target: "_blank",
+      rel: "noopener noreferrer",
+      className: "block group",
+      onMouseEnter: () => setHovered(true),
+      onMouseLeave: () => setHovered(false),
+      tabIndex: 0,
+      children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        Card,
         {
-          tabIndex: isTabbingBackOut || focusableItemsCount === 0 ? -1 : 0,
-          "data-orientation": orientation,
-          ...groupProps,
-          ref: composedRefs,
-          style: { outline: "none", ...props.style },
-          onMouseDown: composeEventHandlers(props.onMouseDown, () => {
-            isClickFocusRef.current = true;
-          }),
-          onFocus: composeEventHandlers(props.onFocus, (event) => {
-            const isKeyboardFocus = !isClickFocusRef.current;
-            if (event.target === event.currentTarget && isKeyboardFocus && !isTabbingBackOut) {
-              const entryFocusEvent = new CustomEvent(ENTRY_FOCUS, EVENT_OPTIONS);
-              event.currentTarget.dispatchEvent(entryFocusEvent);
-              if (!entryFocusEvent.defaultPrevented) {
-                const items = getItems().filter((item) => item.focusable);
-                const activeItem = items.find((item) => item.active);
-                const currentItem = items.find((item) => item.id === currentTabStopId);
-                const candidateItems = [activeItem, currentItem, ...items].filter(
-                  Boolean
-                );
-                const candidateNodes = candidateItems.map((item) => item.ref.current);
-                focusFirst(candidateNodes, preventScrollOnEntryFocus);
-              }
-            }
-            isClickFocusRef.current = false;
-          }),
-          onBlur: composeEventHandlers(props.onBlur, () => setIsTabbingBackOut(false))
+          className: `overflow-hidden flex flex-col h-full transition-colors ${hovered ? "border-primary" : "border-border"}`,
+          style: {
+            border: `1px solid ${hovered ? "var(--color-primary-element, #0099ff)" : "var(--color-border, #d0d7de)"}`,
+            borderRadius: "var(--border-radius-large, 8px)"
+          },
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(CardHeader, { className: "p-0 relative", children: [
+              bookmark.screenshot ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: bookmark.screenshot, alt: bookmark.title, className: "aspect-video w-full object-cover" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "bg-muted aspect-video w-full flex items-center justify-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground text-sm", children: t2("bookmark.no_preview") }) }),
+              hovered && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "absolute top-2 right-2 flex gap-2", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: (e) => {
+                      e.preventDefault();
+                      onEdit();
+                    },
+                    className: "bg-white/80 hover:bg-white rounded-full p-1 shadow",
+                    tabIndex: -1,
+                    title: "Modifier",
+                    children: /* @__PURE__ */ jsxRuntimeExports.jsx(Pencil2Icon, { className: "w-5 h-5 text-gray-700" })
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: (e) => {
+                      e.preventDefault();
+                      onDelete && onDelete();
+                    },
+                    className: "bg-white/80 hover:bg-white rounded-full p-1 shadow",
+                    tabIndex: -1,
+                    title: "Supprimer",
+                    children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { xmlns: "http://www.w3.org/2000/svg", className: "w-5 h-5 text-red-600", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2, children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M6 18L18 6M6 6l12 12" }) })
+                  }
+                )
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(CardContent, { className: "p-4 flex-grow", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(CardTitle, { className: "text-lg font-semibold", children: bookmark.title }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground mt-1", children: bookmark.description || "" })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(CardFooter, { className: "p-4 pt-0 flex flex-col items-start gap-2", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex flex-wrap gap-1", children: bookmarkTags.map((tag) => /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-xs bg-muted-foreground/20 text-muted-foreground rounded-full px-2 py-0.5", children: [
+                "#",
+                tag.name
+              ] }, tag.id)) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center space-x-2 text-xs text-muted-foreground w-full", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "img",
+                  {
+                    src: `https://www.google.com/s2/favicons?domain=${domain}&sz=16`,
+                    alt: `${domain} favicon`,
+                    width: 16,
+                    height: 16,
+                    className: "rounded"
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: domain }),
+                showCollection && collection && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "mx-1", children: "·" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: collection.name })
+                ] })
+              ] })
+            ] })
+          ]
         }
       )
     }
   );
-});
-var ITEM_NAME$1 = "RovingFocusGroupItem";
-var RovingFocusGroupItem = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const {
-      __scopeRovingFocusGroup,
-      focusable = true,
-      active = false,
-      tabStopId,
-      children,
-      ...itemProps
-    } = props;
-    const autoId = useId();
-    const id2 = tabStopId || autoId;
-    const context = useRovingFocusContext(ITEM_NAME$1, __scopeRovingFocusGroup);
-    const isCurrentTabStop = context.currentTabStopId === id2;
-    const getItems = useCollection(__scopeRovingFocusGroup);
-    const { onFocusableItemAdd, onFocusableItemRemove, currentTabStopId } = context;
-    reactExports.useEffect(() => {
-      if (focusable) {
-        onFocusableItemAdd();
-        return () => onFocusableItemRemove();
-      }
-    }, [focusable, onFocusableItemAdd, onFocusableItemRemove]);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Collection.ItemSlot,
-      {
-        scope: __scopeRovingFocusGroup,
-        id: id2,
-        focusable,
-        active,
-        children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-          Primitive.span,
-          {
-            tabIndex: isCurrentTabStop ? 0 : -1,
-            "data-orientation": context.orientation,
-            ...itemProps,
-            ref: forwardedRef,
-            onMouseDown: composeEventHandlers(props.onMouseDown, (event) => {
-              if (!focusable) event.preventDefault();
-              else context.onItemFocus(id2);
-            }),
-            onFocus: composeEventHandlers(props.onFocus, () => context.onItemFocus(id2)),
-            onKeyDown: composeEventHandlers(props.onKeyDown, (event) => {
-              if (event.key === "Tab" && event.shiftKey) {
-                context.onItemShiftTab();
-                return;
-              }
-              if (event.target !== event.currentTarget) return;
-              const focusIntent = getFocusIntent(event, context.orientation, context.dir);
-              if (focusIntent !== void 0) {
-                if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
-                event.preventDefault();
-                const items = getItems().filter((item) => item.focusable);
-                let candidateNodes = items.map((item) => item.ref.current);
-                if (focusIntent === "last") candidateNodes.reverse();
-                else if (focusIntent === "prev" || focusIntent === "next") {
-                  if (focusIntent === "prev") candidateNodes.reverse();
-                  const currentIndex = candidateNodes.indexOf(event.currentTarget);
-                  candidateNodes = context.loop ? wrapArray(candidateNodes, currentIndex + 1) : candidateNodes.slice(currentIndex + 1);
-                }
-                setTimeout(() => focusFirst(candidateNodes));
-              }
-            }),
-            children: typeof children === "function" ? children({ isCurrentTabStop, hasTabStop: currentTabStopId != null }) : children
-          }
-        )
-      }
-    );
-  }
-);
-RovingFocusGroupItem.displayName = ITEM_NAME$1;
-var MAP_KEY_TO_FOCUS_INTENT = {
-  ArrowLeft: "prev",
-  ArrowUp: "prev",
-  ArrowRight: "next",
-  ArrowDown: "next",
-  PageUp: "first",
-  Home: "first",
-  PageDown: "last",
-  End: "last"
 };
-function getDirectionAwareKey(key, dir) {
-  if (dir !== "rtl") return key;
-  return key === "ArrowLeft" ? "ArrowRight" : key === "ArrowRight" ? "ArrowLeft" : key;
-}
-function getFocusIntent(event, orientation, dir) {
-  const key = getDirectionAwareKey(event.key, dir);
-  if (orientation === "vertical" && ["ArrowLeft", "ArrowRight"].includes(key)) return void 0;
-  if (orientation === "horizontal" && ["ArrowUp", "ArrowDown"].includes(key)) return void 0;
-  return MAP_KEY_TO_FOCUS_INTENT[key];
-}
-function focusFirst(candidates, preventScroll = false) {
-  const PREVIOUSLY_FOCUSED_ELEMENT = document.activeElement;
-  for (const candidate of candidates) {
-    if (candidate === PREVIOUSLY_FOCUSED_ELEMENT) return;
-    candidate.focus({ preventScroll });
-    if (document.activeElement !== PREVIOUSLY_FOCUSED_ELEMENT) return;
-  }
-}
-function wrapArray(array, startIndex) {
-  return array.map((_, index2) => array[(startIndex + index2) % array.length]);
-}
-var Root$1 = RovingFocusGroup;
-var Item = RovingFocusGroupItem;
-var NAME = "Toggle";
-var Toggle$1 = reactExports.forwardRef((props, forwardedRef) => {
-  const { pressed: pressedProp, defaultPressed, onPressedChange, ...buttonProps } = props;
-  const [pressed, setPressed] = useControllableState({
-    prop: pressedProp,
-    onChange: onPressedChange,
-    defaultProp: defaultPressed ?? false,
-    caller: NAME
-  });
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Primitive.button,
+const BookmarkListItem = ({ bookmark, onEdit, onDelete }) => {
+  const { tags: allTags } = useLoaderData({ from: "__root__" }) || { tags: [] };
+  const tags = allTags || [];
+  const domain = new URL(bookmark.url).hostname;
+  const bookmarkTags = tags.filter((tag) => bookmark.tags.includes(tag.id));
+  const [hovered, setHovered] = reactExports.useState(false);
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    "a",
     {
-      type: "button",
-      "aria-pressed": pressed,
-      "data-state": pressed ? "on" : "off",
-      "data-disabled": props.disabled ? "" : void 0,
-      ...buttonProps,
-      ref: forwardedRef,
-      onClick: composeEventHandlers(props.onClick, () => {
-        if (!props.disabled) {
-          setPressed(!pressed);
-        }
-      })
-    }
-  );
-});
-Toggle$1.displayName = NAME;
-var Root = Toggle$1;
-var TOGGLE_GROUP_NAME = "ToggleGroup";
-var [createToggleGroupContext] = createContextScope(TOGGLE_GROUP_NAME, [
-  createRovingFocusGroupScope
-]);
-var useRovingFocusGroupScope = createRovingFocusGroupScope();
-var ToggleGroup$1 = React$2.forwardRef((props, forwardedRef) => {
-  const { type, ...toggleGroupProps } = props;
-  if (type === "single") {
-    const singleProps = toggleGroupProps;
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(ToggleGroupImplSingle, { ...singleProps, ref: forwardedRef });
-  }
-  if (type === "multiple") {
-    const multipleProps = toggleGroupProps;
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(ToggleGroupImplMultiple, { ...multipleProps, ref: forwardedRef });
-  }
-  throw new Error(`Missing prop \`type\` expected on \`${TOGGLE_GROUP_NAME}\``);
-});
-ToggleGroup$1.displayName = TOGGLE_GROUP_NAME;
-var [ToggleGroupValueProvider, useToggleGroupValueContext] = createToggleGroupContext(TOGGLE_GROUP_NAME);
-var ToggleGroupImplSingle = React$2.forwardRef((props, forwardedRef) => {
-  const {
-    value: valueProp,
-    defaultValue,
-    onValueChange = () => {
-    },
-    ...toggleGroupSingleProps
-  } = props;
-  const [value, setValue] = useControllableState({
-    prop: valueProp,
-    defaultProp: defaultValue ?? "",
-    onChange: onValueChange,
-    caller: TOGGLE_GROUP_NAME
-  });
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    ToggleGroupValueProvider,
-    {
-      scope: props.__scopeToggleGroup,
-      type: "single",
-      value: React$2.useMemo(() => value ? [value] : [], [value]),
-      onItemActivate: setValue,
-      onItemDeactivate: React$2.useCallback(() => setValue(""), [setValue]),
-      children: /* @__PURE__ */ jsxRuntimeExports.jsx(ToggleGroupImpl, { ...toggleGroupSingleProps, ref: forwardedRef })
-    }
-  );
-});
-var ToggleGroupImplMultiple = React$2.forwardRef((props, forwardedRef) => {
-  const {
-    value: valueProp,
-    defaultValue,
-    onValueChange = () => {
-    },
-    ...toggleGroupMultipleProps
-  } = props;
-  const [value, setValue] = useControllableState({
-    prop: valueProp,
-    defaultProp: defaultValue ?? [],
-    onChange: onValueChange,
-    caller: TOGGLE_GROUP_NAME
-  });
-  const handleButtonActivate = React$2.useCallback(
-    (itemValue) => setValue((prevValue = []) => [...prevValue, itemValue]),
-    [setValue]
-  );
-  const handleButtonDeactivate = React$2.useCallback(
-    (itemValue) => setValue((prevValue = []) => prevValue.filter((value2) => value2 !== itemValue)),
-    [setValue]
-  );
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    ToggleGroupValueProvider,
-    {
-      scope: props.__scopeToggleGroup,
-      type: "multiple",
-      value,
-      onItemActivate: handleButtonActivate,
-      onItemDeactivate: handleButtonDeactivate,
-      children: /* @__PURE__ */ jsxRuntimeExports.jsx(ToggleGroupImpl, { ...toggleGroupMultipleProps, ref: forwardedRef })
-    }
-  );
-});
-ToggleGroup$1.displayName = TOGGLE_GROUP_NAME;
-var [ToggleGroupContext$1, useToggleGroupContext] = createToggleGroupContext(TOGGLE_GROUP_NAME);
-var ToggleGroupImpl = React$2.forwardRef(
-  (props, forwardedRef) => {
-    const {
-      __scopeToggleGroup,
-      disabled = false,
-      rovingFocus = true,
-      orientation,
-      dir,
-      loop = true,
-      ...toggleGroupProps
-    } = props;
-    const rovingFocusGroupScope = useRovingFocusGroupScope(__scopeToggleGroup);
-    const direction = useDirection(dir);
-    const commonProps = { role: "group", dir: direction, ...toggleGroupProps };
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(ToggleGroupContext$1, { scope: __scopeToggleGroup, rovingFocus, disabled, children: rovingFocus ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Root$1,
-      {
-        asChild: true,
-        ...rovingFocusGroupScope,
-        orientation,
-        dir: direction,
-        loop,
-        children: /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive.div, { ...commonProps, ref: forwardedRef })
-      }
-    ) : /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive.div, { ...commonProps, ref: forwardedRef }) });
-  }
-);
-var ITEM_NAME = "ToggleGroupItem";
-var ToggleGroupItem$1 = React$2.forwardRef(
-  (props, forwardedRef) => {
-    const valueContext = useToggleGroupValueContext(ITEM_NAME, props.__scopeToggleGroup);
-    const context = useToggleGroupContext(ITEM_NAME, props.__scopeToggleGroup);
-    const rovingFocusGroupScope = useRovingFocusGroupScope(props.__scopeToggleGroup);
-    const pressed = valueContext.value.includes(props.value);
-    const disabled = context.disabled || props.disabled;
-    const commonProps = { ...props, pressed, disabled };
-    const ref = React$2.useRef(null);
-    return context.rovingFocus ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Item,
-      {
-        asChild: true,
-        ...rovingFocusGroupScope,
-        focusable: !disabled,
-        active: pressed,
-        ref,
-        children: /* @__PURE__ */ jsxRuntimeExports.jsx(ToggleGroupItemImpl, { ...commonProps, ref: forwardedRef })
-      }
-    ) : /* @__PURE__ */ jsxRuntimeExports.jsx(ToggleGroupItemImpl, { ...commonProps, ref: forwardedRef });
-  }
-);
-ToggleGroupItem$1.displayName = ITEM_NAME;
-var ToggleGroupItemImpl = React$2.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeToggleGroup, value, ...itemProps } = props;
-    const valueContext = useToggleGroupValueContext(ITEM_NAME, __scopeToggleGroup);
-    const singleProps = { role: "radio", "aria-checked": props.pressed, "aria-pressed": void 0 };
-    const typeProps = valueContext.type === "single" ? singleProps : void 0;
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Toggle$1,
-      {
-        ...typeProps,
-        ...itemProps,
-        ref: forwardedRef,
-        onPressedChange: (pressed) => {
-          if (pressed) {
-            valueContext.onItemActivate(value);
-          } else {
-            valueContext.onItemDeactivate(value);
-          }
-        }
-      }
-    );
-  }
-);
-var Root2 = ToggleGroup$1;
-var Item2 = ToggleGroupItem$1;
-const toggleVariants = cva(
-  "inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors hover:bg-muted hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=on]:bg-accent data-[state=on]:text-accent-foreground [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 gap-2",
-  {
-    variants: {
-      variant: {
-        default: "bg-transparent",
-        outline: "border border-input bg-transparent hover:bg-accent hover:text-accent-foreground"
+      href: bookmark.url,
+      target: "_blank",
+      rel: "noopener noreferrer",
+      className: `mt-10 flex items-center justify-between p-3 border-b last:border-b-0 cursor-pointer transition-colors rounded-lg ${hovered ? "border-primary" : "border-border"}`,
+      style: {
+        border: `1px solid ${hovered ? "var(--color-primary-element, #0099ff)" : "var(--color-border, #d0d7de)"}`,
+        borderRadius: "var(--border-radius, 6px)"
       },
-      size: {
-        default: "h-10 px-3 min-w-10",
-        sm: "h-9 px-2.5 min-w-9",
-        lg: "h-11 px-5 min-w-11"
-      }
-    },
-    defaultVariants: {
-      variant: "default",
-      size: "default"
-    }
-  }
-);
-const Toggle = reactExports.forwardRef(({ className, variant, size: size2, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-  Root,
-  {
-    ref,
-    className: cn(toggleVariants({ variant, size: size2, className })),
-    ...props
-  }
-));
-Toggle.displayName = Root.displayName;
-const ToggleGroupContext = reactExports.createContext({
-  size: "default",
-  variant: "default"
-});
-const ToggleGroup = reactExports.forwardRef(({ className, variant, size: size2, children, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-  Root2,
-  {
-    ref,
-    className: cn("flex items-center justify-center gap-1", className),
-    ...props,
-    children: /* @__PURE__ */ jsxRuntimeExports.jsx(ToggleGroupContext.Provider, { value: { variant, size: size2 }, children })
-  }
-));
-ToggleGroup.displayName = Root2.displayName;
-const ToggleGroupItem = reactExports.forwardRef(({ className, children, variant, size: size2, ...props }, ref) => {
-  const context = reactExports.useContext(ToggleGroupContext);
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Item2,
-    {
-      ref,
-      className: cn(
-        toggleVariants({
-          variant: context.variant || variant,
-          size: context.size || size2
-        }),
-        className
-      ),
-      ...props,
-      children
+      onMouseEnter: () => setHovered(true),
+      onMouseLeave: () => setHovered(false),
+      tabIndex: 0,
+      children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center space-x-4", children: [
+          bookmark.screenshot ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "img",
+            {
+              src: bookmark.screenshot,
+              alt: bookmark.title,
+              width: 64,
+              height: 64,
+              className: "rounded object-cover w-16 h-16 bg-muted"
+            }
+          ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "img",
+            {
+              src: `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
+              alt: `${domain} favicon`,
+              width: 64,
+              height: 64,
+              className: "rounded w-16 h-16 bg-muted"
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-semibold text-sm", children: bookmark.title }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground", children: domain })
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center space-x-2", children: [
+          bookmarkTags.map((tag) => /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-xs bg-muted-foreground/20 text-muted-foreground rounded-full px-2 py-0.5", children: [
+            "#",
+            tag.name
+          ] }, tag.id)),
+          hovered && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                type: "button",
+                onClick: (e) => {
+                  e.preventDefault();
+                  onEdit();
+                },
+                className: "ml-2 bg-white/80 hover:bg-white rounded-full p-1 shadow",
+                tabIndex: -1,
+                title: "Modifier",
+                children: /* @__PURE__ */ jsxRuntimeExports.jsx(Pencil2Icon, { className: "w-5 h-5 text-gray-700" })
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                type: "button",
+                onClick: (e) => {
+                  e.preventDefault();
+                  onDelete && onDelete();
+                },
+                className: "ml-2 bg-white/80 hover:bg-white rounded-full p-1 shadow",
+                tabIndex: -1,
+                title: "Supprimer",
+                children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { xmlns: "http://www.w3.org/2000/svg", className: "w-5 h-5 text-red-600", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2, children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M6 18L18 6M6 6l12 12" }) })
+              }
+            )
+          ] })
+        ] })
+      ]
     }
   );
-});
-ToggleGroupItem.displayName = Item2.displayName;
+};
 function getRequestToken() {
   var _a;
   if (typeof document === "undefined") {
@@ -22905,26 +23122,26 @@ function EditBookmarkForm({ bookmark, isOpen, onOpenChange }) {
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid gap-4 py-4", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 items-center gap-4", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Label$1, { htmlFor: "url", className: "text-right", children: t2("bookmark.url") }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "url", className: "text-right", children: t2("bookmark.url") }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { id: "url", value: url, onChange: (e) => setUrl(e.target.value), className: "col-span-3" })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 items-center gap-4", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Label$1, { htmlFor: "title", className: "text-right", children: t2("bookmark.title") }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "title", className: "text-right", children: t2("bookmark.title") }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { id: "title", value: title, onChange: (e) => setTitle(e.target.value), className: "col-span-3" })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 items-center gap-4", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Label$1, { htmlFor: "description", className: "text-right", children: t2("bookmark.description") }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "description", className: "text-right", children: t2("bookmark.description") }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { id: "description", value: description, onChange: (e) => setDescription(e.target.value), className: "col-span-3" })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 items-center gap-4", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Label$1, { htmlFor: "collection", className: "text-right", children: t2("bookmark.collection") }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "collection", className: "text-right", children: t2("bookmark.collection") }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs(Select, { value: collectionId, onValueChange: setCollectionId, children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx(SelectTrigger, { className: "col-span-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectValue, { placeholder: t2("bookmark.select_collection") }) }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContent, { children: availableCollections.map((collection) => /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: String(collection.id), children: collection.name }, collection.id)) })
         ] })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 items-start gap-4", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Label$1, { htmlFor: "tags", className: "text-right mt-2", children: t2("bookmark.tags") }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "tags", className: "text-right mt-2", children: t2("bookmark.tags") }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "col-span-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
           MultipleSelector,
           {
@@ -22932,7 +23149,8 @@ function EditBookmarkForm({ bookmark, isOpen, onOpenChange }) {
             onChange: setSelectedTags,
             options: tagOptions,
             placeholder: t2("bookmark.select_tags"),
-            emptyIndicator: "No tags found."
+            emptyIndicator: t2("bookmark.no_tags_found"),
+            onSearchSync: (input) => tagOptions.filter((tag) => tag.label.toLowerCase().includes(input.toLowerCase()))
           }
         ) })
       ] })
@@ -22950,9 +23168,28 @@ const BookmarkList = ({ bookmarks = [], showCollection = false }) => {
   const [viewMode, setViewMode] = reactExports.useState("grid");
   const [isEditModalOpen, setIsEditModalOpen] = reactExports.useState(false);
   const [selectedBookmark, setSelectedBookmark] = reactExports.useState(null);
-  const handleBookmarkClick = (bookmark) => {
+  const { bookmarks: bookmarkList, setBookmarks } = useBookmarks();
+  const handleBookmarkEdit = (bookmark) => {
     setSelectedBookmark(bookmark);
     setIsEditModalOpen(true);
+  };
+  const handleBookmarkDelete = async (bookmark) => {
+    var _a, _b;
+    if (!window.confirm("Are you sure you want to delete this bookmark?")) return;
+    const requestToken = ((_a = window.OC) == null ? void 0 : _a.requestToken) || ((_b = document.querySelector('head meta[name="requesttoken"]')) == null ? void 0 : _b.getAttribute("content"));
+    if (!requestToken) {
+      alert("CSRF token missing");
+      return;
+    }
+    const response = await fetch(`/apps/bookmarksmanager/api/v1/bookmarks/${bookmark.id}`, {
+      method: "DELETE",
+      headers: { "requesttoken": requestToken }
+    });
+    if (response.ok) {
+      setBookmarks((prev) => prev.filter((b) => b.id !== bookmark.id));
+    } else {
+      alert("Error while deleting");
+    }
   };
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex justify-end mb-4", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
@@ -22969,19 +23206,21 @@ const BookmarkList = ({ bookmarks = [], showCollection = false }) => {
         ]
       }
     ) }),
-    viewMode === "grid" ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6", children: bookmarks.map((bookmark) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+    viewMode === "grid" ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6", children: bookmarkList.map((bookmark) => /* @__PURE__ */ jsxRuntimeExports.jsx(
       BookmarkCard,
       {
         bookmark,
         showCollection,
-        onClick: () => handleBookmarkClick(bookmark)
+        onEdit: () => handleBookmarkEdit(bookmark),
+        onDelete: () => handleBookmarkDelete(bookmark)
       },
       bookmark.id
-    )) }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "border rounded-md", children: bookmarks.map((bookmark) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+    )) }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "border rounded-md", children: bookmarkList.map((bookmark) => /* @__PURE__ */ jsxRuntimeExports.jsx(
       BookmarkListItem,
       {
         bookmark,
-        onClick: () => handleBookmarkClick(bookmark)
+        onEdit: () => handleBookmarkEdit(bookmark),
+        onDelete: () => handleBookmarkDelete(bookmark)
       },
       bookmark.id
     )) }),
@@ -22999,7 +23238,8 @@ const Route$2 = createFileRoute("/")({
   component: Index
 });
 function Index() {
-  const { bookmarks = [] } = useRouteContext({ from: "__root__" }) || {};
+  const { bookmarks = [] } = useLoaderData({ from: "__root__" }) || {};
+  console.log("[Index route] bookmarks:", bookmarks);
   return /* @__PURE__ */ jsxRuntimeExports.jsx(BookmarkList, { bookmarks, showCollection: true });
 }
 const Route$1 = createFileRoute("/tags/$tagId")({
@@ -23007,15 +23247,15 @@ const Route$1 = createFileRoute("/tags/$tagId")({
 });
 function TagComponent() {
   const { tagId } = Route$1.useParams();
-  const { tags, bookmarks } = useRouteContext({ from: "__root__" });
+  const { tags = [], bookmarks = [] } = useLoaderData({ from: "__root__" }) || {};
   const numericTagId = parseInt(tagId, 10);
   const tag = tags.find((t2) => t2.id === numericTagId);
-  const taggedBookmarks = bookmarks.filter((b) => b.tags.includes(numericTagId));
+  const taggedBookmarks = bookmarks.filter((b) => b.tags && b.tags.includes(numericTagId));
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex justify-between items-center mb-6", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("h1", { className: "text-2xl font-semibold", children: [
         "# ",
-        tag == null ? void 0 : tag.name
+        (tag == null ? void 0 : tag.name) || "Unknown tag"
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsx(AddBookmarkForm, {})
     ] }),
@@ -23080,15 +23320,10 @@ const rootRouteChildren = {
   TagsRoute: TagsRouteWithChildren
 };
 const routeTree = Route$5._addFileChildren(rootRouteChildren)._addFileTypes();
-const defaultContext = {
-  collections: [],
-  tags: [],
-  bookmarks: []
-};
 const router = createRouter({
   routeTree,
   basepath: "/apps/bookmarksmanager",
-  context: defaultContext
+  context: {}
 });
 function initializeApp() {
   const initializeWhenReady = () => {

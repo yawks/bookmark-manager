@@ -1,22 +1,34 @@
-import { createRootRouteWithContext, Outlet } from '@tanstack/react-router'
-import React from 'react'
-import Layout from '../components/layout/Layout'
-import { Collection, Tag, Bookmark } from '../types'
+import { Bookmark, Collection, Tag } from '../types'
+import { Outlet, createRootRouteWithContext, useLoaderData } from '@tanstack/react-router'
 
-declare const OC: any;
+import { BookmarkProvider } from '../lib/BookmarkContext';
+import Layout from '../components/layout/Layout'
+import React from 'react'
+
+// OC is provided globally by Nextcloud
+declare global {
+  // eslint-disable-next-line no-var
+  var OC: any;
+}
 
 interface RouterContext {
-  collections: Collection[]
-  tags: Tag[]
-  bookmarks: Bookmark[]
+  collections: Collection[];
+  tags: Tag[];
+  bookmarks: Bookmark[];
 }
 
 export const Route = createRootRouteWithContext<RouterContext>()({
-  component: () => (
-    <Layout>
-      <Outlet />
-    </Layout>
-  ),
+  component: () => {
+    // Get the loader data for the root route
+    const { bookmarks } = useLoaderData({ from: '__root__' }) as RouterContext;
+    return (
+      <BookmarkProvider initialBookmarks={bookmarks}>
+        <Layout>
+          <Outlet />
+        </Layout>
+      </BookmarkProvider>
+    );
+  },
   loader: async () => {
     const fetchData = async (url: string): Promise<any[]> => {
       try {
@@ -49,7 +61,9 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       fetchData('/apps/bookmarksmanager/api/v1/tags'),
       fetchData('/apps/bookmarksmanager/api/v1/bookmarks'),
     ]);
-
+    console.log('[__root__ loader] collections:', collections);
+    console.log('[__root__ loader] tags:', tags);
+    console.log('[__root__ loader] bookmarks:', bookmarks);
     return { collections, tags, bookmarks };
-  },
-})
+  }
+});

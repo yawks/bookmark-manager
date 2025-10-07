@@ -1,6 +1,3 @@
-import React, { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -9,8 +6,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import MultipleSelector, { Option } from '@/components/ui/multi-select';
+import React, { useEffect, useState } from 'react';
 import {
   Select,
   SelectContent,
@@ -18,10 +15,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import MultipleSelector, { Option } from '@/components/ui/multi-select';
-import { Bookmark } from '../../types';
 import { useRouteContext, useRouter } from '@tanstack/react-router';
+
+import { Bookmark } from '../../types';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { TrashIcon } from '@radix-ui/react-icons';
+import { useTranslation } from 'react-i18next';
 
 // Helper to get Nextcloud's request token
 function getRequestToken() {
@@ -184,12 +185,13 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
               </Label>
               <div className="col-span-3">
                 <MultipleSelector
-                  value={selectedTags}
-                  onChange={setSelectedTags}
-                  options={tagOptions}
-                  placeholder={t('bookmark.select_tags')}
-                  emptyIndicator="No tags found."
-                />
+                    value={selectedTags}
+                    onChange={setSelectedTags}
+                    options={tagOptions}
+                    placeholder={t('bookmark.select_tags')}
+                    emptyIndicator={t('bookmark.no_tags_found')}
+                    onSearchSync={input => tagOptions.filter(tag => tag.label.toLowerCase().includes(input.toLowerCase()))}
+                  />
               </div>
             </div>
           </div>

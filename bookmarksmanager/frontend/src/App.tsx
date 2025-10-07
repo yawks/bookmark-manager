@@ -63,7 +63,7 @@ function App() {
         <div className="text-muted-foreground">Loading...</div>
       </div>
     }>
-      <div id="app-bookmarksmanager-content" className="p-4">
+  <div id="app-bookmarksmanager-content" className="p-4 min-h-screen">
         <Layout>
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-semibold text-foreground">
