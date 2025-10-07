@@ -6,7 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import MultipleSelector, { Option } from '@/components/ui/multi-select';
+import { Tag, TagSelector } from '@/components/ui/tag-selector';
 import React, { useEffect, useState } from 'react';
 import {
   Select,
@@ -49,10 +49,33 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [collectionId, setCollectionId] = useState<string | undefined>();
-  const [selectedTags, setSelectedTags] = useState<Option[]>([]);
+  const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [screenshot, setScreenshot] = useState<string | null>(null);
 
-  const tagOptions: Option[] = availableTags.map(tag => ({ label: tag.name, value: String(tag.id) }));
+  const tagOptions: Tag[] = availableTags.map(tag => ({ label: tag.name, value: String(tag.id) }));
+
+  const handleCreateTag = async (label: string): Promise<Tag> => {
+    const requestToken = getRequestToken();
+    if (!requestToken) return { label, value: label };
+    try {
+      const response = await fetch('/apps/bookmarksmanager/api/v1/tags', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'requesttoken': requestToken,
+        },
+        body: JSON.stringify({ name: label }),
+      });
+      if (response.ok) {
+        const tag = await response.json();
+        await router.invalidate();
+        return { label: tag.name, value: String(tag.id) };
+      }
+    } catch (e) {
+      // fallback
+    }
+    return { label, value: label };
+  };
 
   useEffect(() => {
     if (bookmark) {
@@ -84,7 +107,10 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
       title,
       description,
       collectionId: collectionId ? parseInt(collectionId, 10) : null,
-      tags: selectedTags.map(tag => parseInt(tag.value, 10)),
+      tags: selectedTags.map(tag => {
+        const id = parseInt(tag.value, 10);
+        return isNaN(id) ? tag.label : id;
+      }),
       screenshot,
     };
 
@@ -184,14 +210,15 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
                 {t('bookmark.tags')}
               </Label>
               <div className="col-span-3">
-                <MultipleSelector
-                    value={selectedTags}
-                    onChange={setSelectedTags}
-                    options={tagOptions}
-                    placeholder={t('bookmark.select_tags')}
-                    emptyIndicator={t('bookmark.no_tags_found')}
-                    onSearchSync={input => tagOptions.filter(tag => tag.label.toLowerCase().includes(input.toLowerCase()))}
-                  />
+                <TagSelector
+                  value={selectedTags}
+                  onChange={setSelectedTags}
+                  options={tagOptions}
+                  placeholder={t('bookmark.select_tags')}
+                  emptyIndicator={t('bookmark.no_tags_found')}
+                  creatable
+                  onCreateOption={handleCreateTag}
+                />
               </div>
             </div>
           </div>

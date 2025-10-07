@@ -7,7 +7,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import MultipleSelector, { Option } from '@/components/ui/multi-select';
+import { Tag, TagSelector } from '@/components/ui/tag-selector';
 import React, { useState } from 'react';
 import {
   Select,
@@ -52,7 +52,7 @@ export function AddBookmarkForm() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [collectionId, setCollectionId] = useState<string | undefined>(undefined);
-  const [selectedTags, setSelectedTags] = useState<Option[]>([]);
+  const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   // Screenshot URL for the bookmark
   const [screenshot, setScreenshot] = useState<string | null>(null);
   // Loading state for fetching page info
@@ -62,10 +62,10 @@ export function AddBookmarkForm() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const { setBookmarks } = useBookmarks();
 
-  const tagOptions: Option[] = availableTags.map(tag => ({ label: tag.name, value: String(tag.id) }));
+  const tagOptions: Tag[] = availableTags.map(tag => ({ label: tag.name, value: String(tag.id) }));
 
   // Async tag creation handler
-  const handleCreateTag = async (label: string): Promise<Option> => {
+  const handleCreateTag = async (label: string): Promise<Tag> => {
     const requestToken = getRequestToken();
     if (!requestToken) return { label, value: label };
     try {
@@ -242,20 +242,18 @@ export function AddBookmarkForm() {
             </div>
             {/* Tags multi-select */}
             <div className="grid grid-cols-4 items-start gap-4">
-              <Label htmlFor="tags" className="text-right mt-2">
+              <Label htmlFor="tags" className="text-right pt-2">
                 {t('Tags')}
               </Label>
               <div className="col-span-3">
-                <MultipleSelector
+                <TagSelector
                   value={selectedTags}
                   onChange={setSelectedTags}
                   options={tagOptions}
-                  placeholder={t('Select tags...')}
+                  placeholder={t('Add tags...')}
                   emptyIndicator={t('No tags found.')}
                   creatable
-                  badgeClassName="bg-primary text-primary-foreground"
                   onCreateOption={handleCreateTag}
-                  onSearchSync={input => tagOptions.filter(tag => tag.label.toLowerCase().includes(input.toLowerCase()))}
                 />
               </div>
             </div>
