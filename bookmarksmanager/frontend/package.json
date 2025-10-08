@@ -22,6 +22,7 @@
     "@radix-ui/react-toggle-group": "^1.1.11",
     "@tanstack/react-router": "^1.132.21",
     "class-variance-authority": "^0.7.0",
+    "lucide-react": "^0.378.0",
     "clsx": "^2.1.0",
     "cmdk": "^1.1.1",
     "lucide-react": "^0.379.0",

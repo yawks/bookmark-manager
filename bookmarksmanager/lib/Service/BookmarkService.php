@@ -32,11 +32,11 @@ class BookmarkService {
 
         $tagIds = [];
         foreach ($tags as $tag) {
-            if (is_string($tag)) {
+            if (!is_numeric($tag)) {
                 $newTag = $this->tagService->create($tag);
                 $tagIds[] = $newTag->getId();
             } else {
-                $tagIds[] = $tag;
+                $tagIds[] = (int)$tag;
             }
         }
 
@@ -66,8 +66,18 @@ class BookmarkService {
         $bookmark->setCollectionId($collectionId);
         $bookmark->setScreenshot($screenshot);
 
+        $tagIds = [];
+        foreach ($tags as $tag) {
+            if (!is_numeric($tag)) {
+                $newTag = $this->tagService->create(trim($tag));
+                $tagIds[] = $newTag->getId();
+            } else {
+                $tagIds[] = (int)$tag;
+            }
+        }
+
         $updatedBookmark = $this->mapper->update($bookmark);
-        $this->mapper->setTags($updatedBookmark->getId(), $tags);
+        $this->mapper->setTags($updatedBookmark->getId(), $tagIds);
 
         return $this->find($updatedBookmark->getId());
     }

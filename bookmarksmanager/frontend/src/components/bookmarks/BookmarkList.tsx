@@ -4,7 +4,10 @@ import BookmarkCard from './BookmarkCard';
 import BookmarkListItem from './BookmarkListItem';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { ViewGridIcon, ViewHorizontalIcon } from '@radix-ui/react-icons';
+import { t } from '../../lib/l10n';
+import { EmptyState } from '../layout/EmptyState';
 import { EditBookmarkForm } from './EditBookmarkForm';
+import { BookmarkIcon } from 'lucide-react';
 
 type ViewMode = 'grid' | 'list';
 
@@ -22,6 +25,16 @@ const BookmarkList = ({ bookmarks = [], showCollection = false }: BookmarkListPr
     setSelectedBookmark(bookmark);
     setIsEditModalOpen(true);
   };
+
+  if (!bookmarks || bookmarks.length === 0) {
+    return (
+      <EmptyState
+        icon={<BookmarkIcon className="w-12 h-12" />}
+        title={t('No Bookmarks Yet')}
+        description={t('Start by adding a new bookmark to your collection.')}
+      />
+    );
+  }
 
   return (
     <div>

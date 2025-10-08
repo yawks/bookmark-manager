@@ -29,7 +29,7 @@ class BookmarkController extends Controller {
      */
     public function create(string $url, string $title, ?string $description, ?int $collectionId, array $tags = [], ?string $screenshot = null): DataResponse {
         $bookmark = $this->service->create($url, $title, $description, $collectionId, $tags, $screenshot);
-        return new DataResponse($bookmark);
+        return new DataResponse($bookmark, 201);
     }
 
     /**
