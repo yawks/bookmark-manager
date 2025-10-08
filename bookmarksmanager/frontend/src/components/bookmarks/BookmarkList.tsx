@@ -8,7 +8,7 @@ import BookmarkCardSkeleton from './BookmarkCardSkeleton';
 import BookmarkListItem from './BookmarkListItem';
 import BookmarkListItemSkeleton from './BookmarkListItemSkeleton';
 import { EditBookmarkForm } from './EditBookmarkForm';
-import { t } from '../lib/l10n';
+import { t } from '../../lib/l10n';
 import { useBookmarks } from '@/lib/BookmarkContext';
 
 type ViewMode = 'grid' | 'list';
