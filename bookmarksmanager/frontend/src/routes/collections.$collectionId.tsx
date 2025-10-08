@@ -1,4 +1,4 @@
-import { createFileRoute, useRouteContext } from '@tanstack/react-router'
+import { createFileRoute, useRouteContext, useRouterState } from '@tanstack/react-router'
 import React from 'react'
 import BookmarkList from '../components/bookmarks/BookmarkList'
 import { AddBookmarkForm } from '../components/bookmarks/AddBookmarkForm'
@@ -10,18 +10,13 @@ export const Route = createFileRoute('/collections/$collectionId')({
 
 function CollectionComponent() {
   const { collectionId } = Route.useParams()
-  const context = useRouteContext({ from: '__root__' })
-
-  if (!context || !context.collections) {
-    return <div>{t('Loading...')}</div>
-  }
-
-  const { collections, bookmarks } = context
+  const { collections, bookmarks } = useRouteContext({ from: '__root__' }) || { collections: [], bookmarks: [] }
+  const isLoading = useRouterState({ select: (s) => s.status === 'pending' })
 
   const numericCollectionId = parseInt(collectionId, 10)
   const collection = collections.find(c => c.id === numericCollectionId)
 
-  if (!collection) {
+  if (!collection && !isLoading) {
     return <div>{t('Collection not found.')}</div>
   }
 
@@ -30,10 +25,10 @@ function CollectionComponent() {
   return (
     <>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold">{collection.name}</h1>
+        <h1 className="text-2xl font-semibold">{collection ? collection.name : t('Loading...')}</h1>
         <AddBookmarkForm />
       </div>
-      <BookmarkList bookmarks={collectionBookmarks} />
+      <BookmarkList bookmarks={collectionBookmarks} isLoading={isLoading} />
     </>
   )
 }
