@@ -534,33 +534,25 @@ video {
 
   /* Dark mode with Nextcloud variables */
   .dark, [data-theme="dark"] {
-    --background: var(--color-main-background, hsl(222.2, 84%, 4.9%));
-    --foreground: var(--color-main-text, hsl(210, 40%, 98%));
-
-    --card: var(--color-main-background, hsl(222.2, 84%, 4.9%));
-    --card-foreground: var(--color-main-text, hsl(210, 40%, 98%));
-
-    --popover: var(--color-main-background, hsl(222.2, 84%, 4.9%));
-    --popover-foreground: var(--color-main-text, hsl(210, 40%, 98%));
-
-    --primary: var(--color-primary, hsl(210, 40%, 98%));
-    --primary-foreground: var(--color-primary-text, hsl(222.2, 47.4%, 11.2%));
-
-    --secondary: var(--color-background-hover, hsl(217.2, 32.6%, 17.5%));
-    --secondary-foreground: var(--color-main-text, hsl(210, 40%, 98%));
-
-    --muted: var(--color-background-dark, hsl(217.2, 32.6%, 17.5%));
-    --muted-foreground: var(--color-text-lighter, hsl(215, 20.2%, 65.1%));
-
-    --accent: var(--color-background-hover, hsl(217.2, 32.6%, 17.5%));
-    --accent-foreground: var(--color-main-text, hsl(210, 40%, 98%));
-
-    --destructive: var(--color-error, hsl(0, 62.8%, 30.6%));
-    --destructive-foreground: hsl(210, 40%, 98%);
-
-    --border: var(--color-border, hsl(217.2, 32.6%, 17.5%));
-    --input: var(--color-border, hsl(217.2, 32.6%, 17.5%));
-    --ring: var(--color-primary, hsl(212.7, 26.8%, 83.9%));
+    --background: #23272e;
+    --foreground: #f3f6fa;
+    --card: #2c313a;
+    --card-foreground: #f3f6fa;
+    --popover: #2c313a;
+    --popover-foreground: #f3f6fa;
+    --primary: #0099ff;
+    --primary-foreground: #fff;
+    --secondary: #23272e;
+    --secondary-foreground: #f3f6fa;
+    --muted: #2c313a;
+    --muted-foreground: #b0b8c1;
+    --accent: #2c313a;
+    --accent-foreground: #f3f6fa;
+    --destructive: #e5484d;
+    --destructive-foreground: #fff;
+    --border: #181c20;
+    --input: #181c20;
+    --ring: #0099ff;
   }
   * {
   border-color: var(--color-border);

@@ -1,6 +1,3 @@
-import React, { useState } from 'react';
-import { t } from '../../lib/l10n';
-import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -10,11 +7,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Skeleton } from '@/components/ui/skeleton';
-import { PlusIcon } from '@radix-ui/react-icons';
+import MultipleSelector, { Option } from '@/components/ui/multi-select';
+import React, { useState } from 'react';
 import {
   Select,
   SelectContent,
@@ -22,20 +16,34 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import MultipleSelector, { Option } from '@/components/ui/multi-select';
-import { useRouteContext, useRouter } from '@tanstack/react-router';
+import { useLoaderData, useRouter } from '@tanstack/react-router';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { PlusIcon } from '@radix-ui/react-icons';
+import { Textarea } from '@/components/ui/textarea';
+import { t } from '../../lib/l10n';
+import { useBookmarks } from '@/lib/BookmarkContext';
 
 // Helper to get Nextcloud's request token
 function getRequestToken() {
   if (typeof document === 'undefined') {
     return null;
   }
-  return document.querySelector('meta[name="requesttoken"]')?.getAttribute('content');
+  // Try meta tag first
+  const meta = document.querySelector('meta[name="requesttoken"]');
+  if (meta) return meta.getAttribute('content');
+  // Fallback: try <head data-requesttoken="...">
+  const head = document.querySelector('head[data-requesttoken]');
+  if (head) return head.getAttribute('data-requesttoken');
+  return null;
 }
 
 export function AddBookmarkForm() {
+  console.log('AddBookmarkForm mounted');
   const router = useRouter();
-  const { collections, tags: allTags } = useRouteContext({ from: '__root__' }) || { collections: [], tags: [] };
+  const { collections, tags: allTags } = useLoaderData({ from: '__root__' }) || { collections: [], tags: [] };
   const availableCollections = collections || [];
   const availableTags = allTags || [];
 
@@ -43,37 +51,58 @@ export function AddBookmarkForm() {
   const [url, setUrl] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [collectionId, setCollectionId] = useState<string | undefined>();
+  const [collectionId, setCollectionId] = useState<string | undefined>(undefined);
   const [selectedTags, setSelectedTags] = useState<Option[]>([]);
+  // Screenshot URL for the bookmark
   const [screenshot, setScreenshot] = useState<string | null>(null);
+  // Loading state for fetching page info
   const [isFetching, setIsFetching] = useState(false);
-  const [isScreenshotLoading, setIsScreenshotLoading] = useState(false);
+  // Loading and error state for saving bookmark
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const { setBookmarks } = useBookmarks();
 
   const tagOptions: Option[] = availableTags.map(tag => ({ label: tag.name, value: String(tag.id) }));
 
+  // Async tag creation handler
+  const handleCreateTag = async (label: string): Promise<Option> => {
+    const requestToken = getRequestToken();
+    if (!requestToken) return { label, value: label };
+    try {
+      const response = await fetch('/apps/bookmarksmanager/api/v1/tags', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'requesttoken': requestToken,
+        },
+        body: JSON.stringify({ name: label }),
+      });
+      if (response.ok) {
+        const tag = await response.json();
+        // Invalidate root context to refresh tags in sidebar
+        await router.invalidate();
+        return { label: tag.name, value: String(tag.id) };
+      }
+    } catch (e) {
+      // fallback: just return local
+    }
+    return { label, value: label };
+  };
+
+  // Fetch page info (title, description, image) from backend when URL is entered
   const handleUrlBlur = async () => {
     if (!url || !url.startsWith('http')) return;
-
     setIsFetching(true);
-    setIsScreenshotLoading(true);
-    setScreenshot(null); // Reset screenshot on new URL
     try {
       const response = await fetch(`/apps/bookmarksmanager/api/v1/page-info?url=${encodeURIComponent(url)}`);
       if (response.ok) {
         const data = await response.json();
         if (data.title) setTitle(data.title);
         if (data.description) setDescription(data.description);
-        if (data.image) {
-          setScreenshot(data.image);
-        } else {
-          setIsScreenshotLoading(false); // No image, stop loading
-        }
-      } else {
-        setIsScreenshotLoading(false); // Error, stop loading
+        if (data.image) setScreenshot(data.image);
       }
     } catch (error) {
       console.error('Failed to fetch page info', error);
-      setIsScreenshotLoading(false); // Error, stop loading
     } finally {
       setIsFetching(false);
     }
@@ -81,37 +110,48 @@ export function AddBookmarkForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSaving(true);
+    setSaveError(null);
     const requestToken = getRequestToken();
     if (!requestToken) {
-      console.error('CSRF token not found!');
+      setSaveError('CSRF token not found!');
+      setIsSaving(false);
       return;
     }
 
-    const params = new URLSearchParams();
-    params.append('url', url);
-    params.append('title', title);
-    if (description) params.append('description', description);
-    if (collectionId) params.append('collectionId', collectionId);
-    if (screenshot) params.append('screenshot', screenshot);
+    const bookmarkData = {
+      url,
+      title,
+      description,
+      collectionId: collectionId ? parseInt(collectionId, 10) : null,
+      tags: selectedTags.map(tag => {
+        const id = parseInt(tag.value, 10);
+        return isNaN(id) ? tag.value : id;
+      }),
+      screenshot,
+    };
 
-    selectedTags.forEach(tag => {
-      params.append('tags[]', tag.value);
-    });
+    try {
+      const response = await fetch('/apps/bookmarksmanager/api/v1/bookmarks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'requesttoken': requestToken,
+        },
+        body: JSON.stringify(bookmarkData),
+      });
 
-    const response = await fetch('/apps/bookmarksmanager/api/v1/bookmarks', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-        'requesttoken': requestToken,
-      },
-      body: params.toString(),
-    });
-
-    if (response.ok) {
-      setOpen(false);
-      router.invalidate();
-    } else {
-      console.error('Failed to create bookmark');
+      if (response.ok) {
+        const newBookmark = await response.json();
+        setOpen(false);
+        setBookmarks(prev => [newBookmark, ...prev]);
+      } else {
+        setSaveError('Failed to create bookmark');
+      }
+    } catch (err) {
+      setSaveError('Network error');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -125,7 +165,6 @@ export function AddBookmarkForm() {
       setCollectionId(undefined);
       setSelectedTags([]);
       setScreenshot(null);
-      setIsScreenshotLoading(false);
     }
   };
 
@@ -136,58 +175,56 @@ export function AddBookmarkForm() {
           <PlusIcon className="mr-2 h-4 w-4" /> {t('Add Bookmark')}
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
-        <form onSubmit={handleSubmit}>
+      <DialogContent className="sm:max-w-[600px] w-full max-w-2xl">
+  <form onSubmit={handleSubmit} className="flex flex-col h-full min-h-[70vh]">
           <DialogHeader>
             <DialogTitle>{t('Add a new bookmark')}</DialogTitle>
             <DialogDescription>
               {t('Enter the details of the bookmark you want to add.')}
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
+          <div className="flex-1 flex flex-col gap-4 py-4">
+            {/* URL input */}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="url" className="text-right">
                 {t('URL')}
               </Label>
               <Input id="url" value={url} onChange={e => setUrl(e.target.value)} onBlur={handleUrlBlur} placeholder={t('https://example.com')} className="col-span-3" />
             </div>
+            {/* Screenshot preview with skeleton - always rendered, even if no URL */}
+            <div className="col-span-4 flex justify-center items-center min-h-[80px]" id="screenshot-debug-block">
+              {(() => { console.log('RENDER screenshot block', { isFetching, screenshot }); return null; })()}
+              {isFetching ? (
+                <div className="w-24 h-20 bg-muted animate-pulse rounded-md" data-testid="skeleton" />
+              ) : screenshot ? (
+                <img
+                  src={screenshot}
+                  alt="Website preview"
+                  className="w-24 h-20 object-cover rounded-md border"
+                  style={{ maxWidth: '100%', maxHeight: 80 }}
+                  data-testid="screenshot-img"
+                />
+              ) : (
+                <div className="w-24 h-20 bg-muted/30 rounded-md flex items-center justify-center text-xs text-muted-foreground border border-dashed border-muted-foreground/30" data-testid="no-preview">
+                  {t('No preview')}
+                </div>
+              )}
+            </div>
+            {/* Title input */}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="title" className="text-right">
                 {t('Title')}
               </Label>
               <Input id="title" value={title} onChange={e => setTitle(e.target.value)} placeholder={isFetching ? t('Fetching title...') : t('A cool website')} className="col-span-3" />
             </div>
+            {/* Description input */}
             <div className="grid grid-cols-4 items-start gap-4">
               <Label htmlFor="description" className="text-right pt-2">
                 {t('Description')}
               </Label>
               <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder={t('A short description')} className="col-span-3" />
             </div>
-            <div className="grid grid-cols-4 items-start gap-4">
-              <Label htmlFor="screenshot" className="text-right pt-2">
-                {t('Screenshot')}
-              </Label>
-              <div className="col-span-3">
-                {isFetching && <Skeleton className="w-full h-[150px] rounded-lg" />}
-                {!isFetching && screenshot && (
-                  <>
-                    {isScreenshotLoading && <Skeleton className="w-full h-[150px] rounded-lg" />}
-                    <img
-                      src={screenshot}
-                      alt={t('Screenshot preview')}
-                      className={`w-full h-auto rounded-lg ${isScreenshotLoading ? 'hidden' : 'block'}`}
-                      onLoad={() => setIsScreenshotLoading(false)}
-                      onError={() => setIsScreenshotLoading(false)} // Also hide on error
-                    />
-                  </>
-                )}
-                {!isFetching && !screenshot && (
-                  <div className="w-full h-[150px] rounded-lg bg-muted flex items-center justify-center">
-                    <span className="text-muted-foreground text-sm">{t('No preview available')}</span>
-                  </div>
-                )}
-              </div>
-            </div>
+            {/* Collection select */}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="collection" className="text-right">
                 {t('Collection')}
@@ -203,6 +240,7 @@ export function AddBookmarkForm() {
                 </SelectContent>
               </Select>
             </div>
+            {/* Tags multi-select */}
             <div className="grid grid-cols-4 items-start gap-4">
               <Label htmlFor="tags" className="text-right mt-2">
                 {t('Tags')}
@@ -216,12 +254,20 @@ export function AddBookmarkForm() {
                   emptyIndicator={t('No tags found.')}
                   creatable
                   badgeClassName="bg-primary text-primary-foreground"
+                  onCreateOption={handleCreateTag}
+                  onSearchSync={input => tagOptions.filter(tag => tag.label.toLowerCase().includes(input.toLowerCase()))}
                 />
               </div>
             </div>
+            {/* Error message for save */}
+            {saveError && (
+              <div className="col-span-4 text-red-600 text-sm text-center">{saveError}</div>
+            )}
           </div>
-          <DialogFooter>
-            <Button type="submit">{t('Save bookmark')}</Button>
+          <DialogFooter className="sticky bottom-0 bg-background pt-2 z-10">
+            <Button type="submit" className="w-full md:w-auto" disabled={isSaving}>
+              {isSaving ? t('Saving...') : t('Save bookmark')}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
