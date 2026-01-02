@@ -1,12 +1,27 @@
-import { ArchiveIcon, CodeIcon, DashboardIcon, DrawingPinIcon, PersonIcon, PlusIcon, VercelLogoIcon } from '@radix-ui/react-icons';
+import { ArchiveIcon, CodeIcon, DashboardIcon, DotsHorizontalIcon, DrawingPinIcon, PersonIcon, PlusIcon, VercelLogoIcon } from '@radix-ui/react-icons';
+import { Bookmark, Collection } from '../../types';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '../ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../ui/dropdown-menu';
 import { Link, useLoaderData, useRouter } from '@tanstack/react-router';
 import React, { useEffect, useRef, useState } from 'react';
 
 import { Button } from '../ui/button';
-import { Collection } from '../../types';
-import { Input } from '../ui/input';
 import { t } from '../../lib/l10n';
-import { useBookmarks } from '@/lib/BookmarkContext';
 
 // Helper to get Nextcloud's request token
 function getRequestToken() {
@@ -22,30 +37,64 @@ function getRequestToken() {
   return null;
 }
 
-const iconMap: { [key: string]: React.ElementType } = {
+const iconMap = {
   briefcase: ArchiveIcon,
   user: PersonIcon,
   figma: DrawingPinIcon,
   code: CodeIcon,
-  'chef-hat': VercelLogoIcon, // Placeholder
+  'chef-hat': VercelLogoIcon,
 };
 
-const CollectionItem = ({ collection }: { collection: Collection }) => {
-  const Icon = collection.icon ? iconMap[collection.icon] : VercelLogoIcon;
-  const { bookmarks } = useBookmarks();
-  // Returns the number of bookmarks in this collection
-  const count = bookmarks.filter(b => b.collectionId === collection.id).length;
+interface CollectionItemProps {
+  collection: Collection;
+  bookmarks: Bookmark[];
+  onRename: (collection: Collection) => void;
+  onDelete: (collection: Collection) => void;
+  onCreateNested: (collection: Collection) => void;
+}
+
+const CollectionItem: React.FC<CollectionItemProps> = ({
+  collection,
+  bookmarks,
+  onRename,
+  onDelete,
+  onCreateNested,
+}) => {
+  const iconKey = collection.icon as keyof typeof iconMap;
+  const Icon = collection.icon && iconMap[iconKey] ? iconMap[iconKey] : VercelLogoIcon;
+  const count = bookmarks.filter((b: Bookmark) => b.collectionId === collection.id).length;
+  const [menuOpen, setMenuOpen] = useState(false);
   return (
-    <Link
-      to="/collections/$collectionId"
-      params={{ collectionId: String(collection.id) }}
-      className="flex items-center space-x-2 p-2 hover:bg-accent rounded-md cursor-pointer text-foreground"
-      activeProps={{ className: 'bg-accent' }}
-    >
-      <Icon className="h-4 w-4" />
-      <span>{collection.name}</span>
-      <span className="ml-auto bg-muted-foreground/20 text-muted-foreground rounded-full px-2 py-0.5 text-xs">{count}</span>
-    </Link>
+    <div className="relative group flex items-center">
+      <Link
+        to="/collections/$collectionId"
+        params={{ collectionId: String(collection.id) }}
+        className="flex items-center space-x-2 p-2 hover:bg-accent rounded-md cursor-pointer text-foreground flex-1"
+        activeProps={{ className: 'bg-accent' }}
+      >
+        <Icon className="h-4 w-4" />
+        <span>{collection.name}</span>
+        <span className="ml-auto bg-muted-foreground/20 text-muted-foreground rounded-full px-2 py-0.5 text-xs">{count}</span>
+      </Link>
+      <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+        <DropdownMenuTrigger asChild>
+          <button
+            className="ml-2 p-1 rounded hover:bg-accent opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+            tabIndex={0}
+            aria-label="Collection menu"
+            onClick={e => { e.stopPropagation(); e.preventDefault(); setMenuOpen(v => !v); }}
+          >
+            <DotsHorizontalIcon className="h-4 w-4" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onSelect={() => { setMenuOpen(false); onRename(collection); }}>{t('collection.rename')}</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => { setMenuOpen(false); onDelete(collection); }}>{t('collection.delete')}</DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onSelect={() => { setMenuOpen(false); onCreateNested(collection); }}>{t('collection.create_nested_collection')}</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 };
 
@@ -54,20 +103,33 @@ const Collections = () => {
   const allCollections = collections || [];
   const topLevelCollections = allCollections.filter(c => !c.parentId);
 
-  const { bookmarks } = useBookmarks();
+  const { bookmarks } = useLoaderData({ from: '__root__' }) || { bookmarks: [] };
   const allCount = bookmarks.length;
 
   const [isCreating, setIsCreating] = useState(false);
   const [newCollectionName, setNewCollectionName] = useState('');
-  const [isHovered, setIsHovered] = useState(false);
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [collectionToRename, setCollectionToRename] = useState<Collection | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [collectionToDelete, setCollectionToDelete] = useState<Collection | null>(null);
+  const [creatingNestedFor, setCreatingNestedFor] = useState<number | null>(null);
+  const [nestedCollectionName, setNestedCollectionName] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  const nestedInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   useEffect(() => {
-    if (isCreating) {
-      inputRef.current?.focus();
+    if (isCreating && inputRef.current) {
+      inputRef.current.focus();
     }
-  }, [isCreating]);
+  });
+
+  useEffect(() => {
+    if (creatingNestedFor !== null && nestedInputRef.current) {
+      nestedInputRef.current.focus();
+    }
+  }, [creatingNestedFor]);
 
   const handleCreateCollection = async () => {
     if (!newCollectionName.trim()) return;
@@ -101,9 +163,7 @@ const Collections = () => {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      handleCreateCollection();
-    } else if (e.key === 'Escape') {
+    if (e.key === 'Escape') {
       setNewCollectionName('');
       setIsCreating(false);
     }
@@ -115,12 +175,137 @@ const Collections = () => {
     }
   };
 
+  const handleRename = (collection: Collection) => {
+    setCollectionToRename(collection);
+    setRenameValue(collection.name);
+    setRenameDialogOpen(true);
+  };
+
+  const handleRenameSubmit = async () => {
+    if (!collectionToRename || !renameValue.trim()) return;
+
+    const requestToken = getRequestToken();
+    if (!requestToken) {
+      console.error('CSRF token not found!');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/apps/bookmarksmanager/api/v1/collections/${collectionToRename.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'requesttoken': requestToken,
+        },
+        body: JSON.stringify({ name: renameValue.trim() }),
+      });
+
+      if (response.ok) {
+        setRenameDialogOpen(false);
+        setCollectionToRename(null);
+        setRenameValue('');
+        await router.invalidate();
+      } else {
+        console.error('Failed to rename collection');
+      }
+    } catch (error) {
+      console.error('Error renaming collection:', error);
+    }
+  };
+
+  const handleDelete = (collection: Collection) => {
+    setCollectionToDelete(collection);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!collectionToDelete) return;
+
+    const requestToken = getRequestToken();
+    if (!requestToken) {
+      console.error('CSRF token not found!');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/apps/bookmarksmanager/api/v1/collections/${collectionToDelete.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'requesttoken': requestToken,
+        },
+      });
+
+      if (response.ok) {
+        setDeleteDialogOpen(false);
+        setCollectionToDelete(null);
+        await router.invalidate();
+      } else {
+        console.error('Failed to delete collection');
+      }
+    } catch (error) {
+      console.error('Error deleting collection:', error);
+    }
+  };
+
+  const handleCreateNested = (collection: Collection) => {
+    setCreatingNestedFor(collection.id);
+    setNestedCollectionName('');
+  };
+
+  const handleCreateNestedSubmit = async () => {
+    if (creatingNestedFor === null || !nestedCollectionName.trim()) return;
+
+    const requestToken = getRequestToken();
+    if (!requestToken) {
+      console.error('CSRF token not found!');
+      return;
+    }
+
+    try {
+      const response = await fetch('/apps/bookmarksmanager/api/v1/collections', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'requesttoken': requestToken,
+        },
+        body: JSON.stringify({ 
+          name: nestedCollectionName.trim(),
+          parentId: creatingNestedFor 
+        }),
+      });
+
+      if (response.ok) {
+        setCreatingNestedFor(null);
+        setNestedCollectionName('');
+        await router.invalidate();
+      } else {
+        console.error('Failed to create nested collection');
+      }
+    } catch (error) {
+      console.error('Error creating nested collection:', error);
+    }
+  };
+
+  const handleNestedKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleCreateNestedSubmit();
+    } else if (e.key === 'Escape') {
+      setCreatingNestedFor(null);
+      setNestedCollectionName('');
+    }
+  };
+
+  const handleNestedBlur = () => {
+    if (!nestedCollectionName.trim()) {
+      setCreatingNestedFor(null);
+    }
+  };
+
   return (
     <div className="p-4">
       <div
         className="flex items-center justify-between mb-2 group"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
       >
         <h2 className="text-lg font-semibold">{t('Collections')}</h2>
         <Button
@@ -135,18 +320,22 @@ const Collections = () => {
       </div>
 
       {isCreating && (
-        <div className="mb-2">
-          <Input
+        <form
+          className="mb-2"
+          onSubmit={e => { e.preventDefault(); handleCreateCollection(); }}
+        >
+          <input
             ref={inputRef}
             type="text"
             placeholder={t('New collection name')}
             value={newCollectionName}
-            onChange={(e) => setNewCollectionName(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewCollectionName(e.target.value)}
             onKeyDown={handleKeyDown}
             onBlur={handleBlur}
-            className="h-8"
+            className="h-8 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            autoFocus
           />
-        </div>
+        </form>
       )}
 
       <div className="space-y-1">
@@ -161,15 +350,93 @@ const Collections = () => {
         </Link>
         {topLevelCollections.map(collection => (
           <div key={collection.id}>
-            <CollectionItem collection={collection} />
+            <CollectionItem
+              collection={collection}
+              bookmarks={bookmarks}
+              onRename={handleRename}
+              onDelete={handleDelete}
+              onCreateNested={handleCreateNested}
+            />
+            {creatingNestedFor === collection.id && (
+              <div className="ml-4 mt-1 mb-2">
+                <input
+                  ref={nestedInputRef}
+                  type="text"
+                  placeholder={t('collection.new_nested_collection_name')}
+                  value={nestedCollectionName}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNestedCollectionName(e.target.value)}
+                  onKeyDown={handleNestedKeyDown}
+                  onBlur={handleNestedBlur}
+                  className="h-8 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                />
+              </div>
+            )}
             <div className="ml-4 mt-1 space-y-1">
               {allCollections.filter(c => c.parentId === collection.id).map(child => (
-                <CollectionItem key={child.id} collection={child} />
+                <CollectionItem
+                  key={child.id}
+                  collection={child}
+                  bookmarks={bookmarks}
+                  onRename={handleRename}
+                  onDelete={handleDelete}
+                  onCreateNested={handleCreateNested}
+                />
               ))}
             </div>
           </div>
         ))}
       </div>
+
+      {/* Rename Dialog */}
+      <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('collection.rename_collection')}</DialogTitle>
+            <DialogDescription>
+              {t('collection.enter_new_name')}
+            </DialogDescription>
+          </DialogHeader>
+          <input
+            type="text"
+            value={renameValue}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRenameValue(e.target.value)}
+            onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+              if (e.key === 'Enter') handleRenameSubmit();
+            }}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            placeholder={t('collection.collection_name')}
+            autoFocus
+          />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setRenameDialogOpen(false)}>
+              {t('collection.cancel')}
+            </Button>
+            <Button onClick={handleRenameSubmit}>
+              {t('collection.rename')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('collection.delete_collection')}</DialogTitle>
+            <DialogDescription>
+              {t('collection.confirm_delete')}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDeleteDialogOpen(false)}>
+              {t('collection.cancel')}
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteConfirm}>
+              {t('collection.delete')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

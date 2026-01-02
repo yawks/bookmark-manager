@@ -9,10 +9,12 @@ class CollectionService {
 
     private CollectionMapper $mapper;
     private IUserSession $userSession;
+    private \OCA\BookmarksManager\Service\BookmarkService $bookmarkService;
 
-    public function __construct(CollectionMapper $mapper, IUserSession $userSession) {
+    public function __construct(CollectionMapper $mapper, IUserSession $userSession, \OCA\BookmarksManager\Service\BookmarkService $bookmarkService) {
         $this->mapper = $mapper;
         $this->userSession = $userSession;
+        $this->bookmarkService = $bookmarkService;
     }
 
     public function findAll(): array {
@@ -53,6 +55,8 @@ class CollectionService {
         if ($collection === null) {
             throw new \Exception('Collection not found');
         }
+        // Delete all bookmarks in this collection first
+        $this->bookmarkService->deleteByCollectionId($id);
         return $this->mapper->delete($collection);
     }
 }

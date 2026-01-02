@@ -1,7 +1,8 @@
 import { createFileRoute, useRouteContext, useRouterState } from '@tanstack/react-router'
-import React from 'react'
-import BookmarkList from '../components/bookmarks/BookmarkList'
+
 import { AddBookmarkForm } from '../components/bookmarks/AddBookmarkForm'
+import BookmarkList from '../components/bookmarks/BookmarkList'
+import React from 'react'
 import { t } from '../lib/l10n'
 
 export const Route = createFileRoute('/collections/$collectionId')({
@@ -10,7 +11,9 @@ export const Route = createFileRoute('/collections/$collectionId')({
 
 function CollectionComponent() {
   const { collectionId } = Route.useParams()
-  const { collections, bookmarks } = useRouteContext({ from: '__root__' }) || { collections: [], bookmarks: [] }
+  const routeContext = useRouteContext({ from: '__root__' }) || {};
+  const collections = routeContext.collections || [];
+  const bookmarks = routeContext.bookmarks || [];
   const isLoading = useRouterState({ select: (s) => s.status === 'pending' })
 
   const numericCollectionId = parseInt(collectionId, 10)

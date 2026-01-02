@@ -1,7 +1,6 @@
 import { Bookmark, Collection, Tag } from '../types'
 import { Outlet, createRootRouteWithContext, useLoaderData } from '@tanstack/react-router'
 
-import { BookmarkProvider } from '../lib/BookmarkContext';
 import Layout from '../components/layout/Layout'
 import React from 'react'
 
@@ -20,21 +19,19 @@ interface RouterContext {
 export const Route = createRootRouteWithContext<RouterContext>()({
   component: () => {
     // Get the loader data for the root route
-    const { bookmarks } = useLoaderData({ from: '__root__' }) as RouterContext;
     return (
-      <BookmarkProvider initialBookmarks={bookmarks}>
-        <Layout>
-          <Outlet />
-        </Layout>
-      </BookmarkProvider>
+      <Layout>
+        <Outlet />
+      </Layout>
     );
   },
   loader: async () => {
     const fetchData = async (url: string): Promise<any[]> => {
       try {
         const headers: HeadersInit = {};
-        if (typeof OC !== 'undefined' && OC.requestToken) {
-          headers['requesttoken'] = OC.requestToken;
+        const oc = (globalThis as any).OC;
+        if (oc && oc.requestToken) {
+          headers['requesttoken'] = oc.requestToken;
         }
         const res = await fetch(url, { headers });
         if (!res.ok) {

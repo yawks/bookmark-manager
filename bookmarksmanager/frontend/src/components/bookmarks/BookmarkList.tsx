@@ -9,7 +9,8 @@ import BookmarkListItem from './BookmarkListItem';
 import BookmarkListItemSkeleton from './BookmarkListItemSkeleton';
 import { EditBookmarkForm } from './EditBookmarkForm';
 import { t } from '../../lib/l10n';
-import { useBookmarks } from '@/lib/BookmarkContext';
+ 
+import { useRouter } from '@tanstack/react-router';
 
 type ViewMode = 'grid' | 'list';
 
@@ -23,7 +24,8 @@ const BookmarkList = ({ bookmarks = [], isLoading = false, showCollection = fals
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedBookmark, setSelectedBookmark] = useState<Bookmark | null>(null);
-  const { setBookmarks } = useBookmarks();
+  
+  const router = useRouter();
 
   const handleBookmarkEdit = (bookmark: Bookmark) => {
     setSelectedBookmark(bookmark);
@@ -42,7 +44,7 @@ const BookmarkList = ({ bookmarks = [], isLoading = false, showCollection = fals
       headers: { 'requesttoken': requestToken },
     });
     if (response.ok) {
-      setBookmarks(prev => prev.filter(b => b.id !== bookmark.id));
+      await router.invalidate();
     } else {
       alert('Error while deleting');
     }

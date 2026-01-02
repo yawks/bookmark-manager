@@ -2,6 +2,7 @@ import { TanStackRouterVite } from '@tanstack/router-vite-plugin'
 import { defineConfig } from "vite"
 import path from "path"
 import react from "@vitejs/plugin-react"
+import buildIdPlugin from './vite-plugin-build-id.js'
 
 export default defineConfig({
   server: {
@@ -15,6 +16,7 @@ export default defineConfig({
   plugins: [
     react(),
     TanStackRouterVite(),
+    buildIdPlugin(),
   ],
   resolve: {
     alias: {

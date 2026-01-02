@@ -32,14 +32,34 @@ class PageInfoService {
 
     private function extractImage(DOMDocument $doc, string $baseUrl): string {
         $xpath = new DOMXPath($doc);
+        // 1. Try Open Graph image
         $metaNodes = $xpath->query('//meta[@property="og:image"]');
-
         if ($metaNodes->length > 0) {
             $imageUrl = $metaNodes->item(0)->getAttribute('content');
-            return $this->resolveUrl($imageUrl, $baseUrl);
+            if (!empty($imageUrl)) {
+                return $this->resolveUrl($imageUrl, $baseUrl);
+            }
         }
 
-        // Fallback to find the first large image if no og:image is found
+        // 2. Try Apple Touch Icon
+        $linkNodes = $xpath->query('//link[@rel="apple-touch-icon"]');
+        if ($linkNodes->length > 0) {
+            $imageUrl = $linkNodes->item(0)->getAttribute('href');
+            if (!empty($imageUrl)) {
+                return $this->resolveUrl($imageUrl, $baseUrl);
+            }
+        }
+
+        // 3. Try standard Icon
+        $linkNodes = $xpath->query('//link[@rel="icon" or @rel="shortcut icon"]');
+        if ($linkNodes->length > 0) {
+            $imageUrl = $linkNodes->item(0)->getAttribute('href');
+            if (!empty($imageUrl)) {
+                return $this->resolveUrl($imageUrl, $baseUrl);
+            }
+        }
+
+        // 4. Fallback to find the first large image
         $imageNodes = $doc->getElementsByTagName('img');
         if ($imageNodes->length > 0) {
             $firstImage = $imageNodes->item(0);

@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "postbuild": "mkdir -p ../js ../css && cp dist/main.js ../js/main.js && cp dist/style.css ../css/style.css",
+    "postbuild": "mkdir -p ../js ../css ../locales && cp dist/main.js ../js/main.js && cp dist/style.css ../css/style.css && cp dist/build-id.js ../js/build-id.js 2>/dev/null || true && cp src/locales/*.json ../locales/ 2>/dev/null || true",
     "lint": "eslint .",
     "preview": "vite preview",
     "generate-routes": "tsr generate"
@@ -48,6 +48,7 @@
     "tailwindcss": "^3.4.3",
     "terser": "^5.44.0",
     "typescript": "^5.2.2",
+    "typescript-eslint": "^8.46.1",
     "vite": "^5.2.0"
   }
 }

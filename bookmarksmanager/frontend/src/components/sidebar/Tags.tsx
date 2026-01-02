@@ -2,12 +2,11 @@ import { Link, useLoaderData } from '@tanstack/react-router';
 
 import React from 'react';
 import { t } from '../../lib/l10n';
-import { useBookmarks } from '@/lib/BookmarkContext';
 
 const Tags = () => {
   const { tags } = useLoaderData({ from: '__root__' }) || { tags: [] };
   const allTags = tags || [];
-  const { bookmarks: allBookmarks } = useBookmarks();
+  const { bookmarks: allBookmarks } = useLoaderData({ from: '__root__' }) || { bookmarks: [] };
 
   // Returns the number of bookmarks for a given tag
   const getTagCount = (tagId: number) => {

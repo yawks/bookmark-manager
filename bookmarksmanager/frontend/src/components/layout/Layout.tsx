@@ -1,7 +1,7 @@
-import React from 'react';
-
 import Collections from '../sidebar/Collections';
 import Header from './Header';
+import React from 'react';
+import SettingsButton from '../sidebar/SettingsButton';
 import Tags from '../sidebar/Tags';
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
@@ -14,6 +14,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             <Tags />
           </div>
         </div>
+        <SettingsButton />
       </aside>
       <div className="flex-1 flex flex-col min-h-0">
         <Header />

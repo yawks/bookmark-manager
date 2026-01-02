@@ -10,7 +10,9 @@ export const Route = createFileRoute('/tags/$tagId')({
 
 function TagComponent() {
   const { tagId } = Route.useParams()
-  const { tags = [], bookmarks = [] } = useLoaderData({ from: '__root__' }) || {}
+  const routeContext = useLoaderData({ from: '__root__' }) || {}
+  const tags = routeContext.tags || []
+  const bookmarks = routeContext.bookmarks || []
 
   const numericTagId = parseInt(tagId, 10)
   const tag = tags.find(t => t.id === numericTagId)

@@ -1,8 +1,8 @@
 <?php
-
 namespace OCA\BookmarksManager\Service;
 
 use OCA\BookmarksManager\Db\BookmarkMapper;
+use OCA\BookmarksManager\Service\TagService;
 use OCP\IUserSession;
 
 class BookmarkService {
@@ -49,9 +49,12 @@ class BookmarkService {
         $bookmark->setScreenshot($screenshot);
 
         $newBookmark = $this->mapper->insert($bookmark);
+        
         $this->mapper->setTags($newBookmark->getId(), $tagIds);
-
-        return $this->find($newBookmark->getId());
+        
+        // Avoid dirty read by manually setting the tags we just saved and returning the object directly
+        $newBookmark->setTags($tagIds);
+        return $newBookmark;
     }
 
     public function update(int $id, string $url, string $title, ?string $description, ?int $collectionId, array $tags = [], ?string $screenshot = null) {
@@ -60,16 +63,15 @@ class BookmarkService {
         if ($bookmark === null) {
             throw new \Exception('Bookmark not found');
         }
-        $bookmark->setUrl($url);
-        $bookmark->setTitle($title);
-        $bookmark->setDescription($description);
-        $bookmark->setCollectionId($collectionId);
-        $bookmark->setScreenshot($screenshot);
+    $bookmark->setUrl($url);
+    $bookmark->setTitle($title);
+    $bookmark->setDescription($description);
+    $bookmark->setCollectionId($collectionId);
+    $bookmark->setScreenshot($screenshot);
 
-        $updatedBookmark = $this->mapper->update($bookmark);
-        $this->mapper->setTags($updatedBookmark->getId(), $tags);
-
-        return $this->find($updatedBookmark->getId());
+    $updatedBookmark = $this->mapper->update($bookmark);
+    $this->mapper->setTags($updatedBookmark->getId(), $tags);
+    return $this->find($updatedBookmark->getId());
     }
 
     public function delete(int $id) {
@@ -78,6 +80,13 @@ class BookmarkService {
         if ($bookmark === null) {
             throw new \Exception('Bookmark not found');
         }
-        return $this->mapper->delete($bookmark);
+    return $this->mapper->delete($bookmark);
+    }
+
+    /**
+     * Supprime tous les bookmarks d'une collection donnée
+     */
+    public function deleteByCollectionId(int $collectionId): void {
+        $this->mapper->deleteByCollectionId($collectionId);
     }
 }

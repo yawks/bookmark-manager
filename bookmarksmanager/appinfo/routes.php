@@ -25,5 +25,11 @@ return [
 
         // Page Info
         ['name' => 'page_info#getPageInfo', 'url' => '/api/v1/page-info', 'verb' => 'GET'],
+
+        // Import
+        ['name' => 'import#raindrop', 'url' => '/api/v1/import/raindrop', 'verb' => 'POST'],
+
+        // Locales
+        ['name' => 'locale#getLocale', 'url' => '/locales/{locale}', 'verb' => 'GET'],
     ]
 ];

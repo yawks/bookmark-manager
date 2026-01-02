@@ -7,6 +7,8 @@ use OCA\BookmarksManager\Controller\CollectionController;
 use OCA\BookmarksManager\Controller\PageController;
 use OCA\BookmarksManager\Controller\TagController;
 use OCA\BookmarksManager\Controller\PageInfoController;
+use OCA\BookmarksManager\Controller\ImportController;
+use OCA\BookmarksManager\Controller\LocaleController;
 use OCA\BookmarksManager\Db\BookmarkMapper;
 use OCA\BookmarksManager\Db\CollectionMapper;
 use OCA\BookmarksManager\Db\TagMapper;
@@ -14,6 +16,7 @@ use OCA\BookmarksManager\Service\BookmarkService;
 use OCA\BookmarksManager\Service\CollectionService;
 use OCA\BookmarksManager\Service\TagService;
 use OCA\BookmarksManager\Service\PageInfoService;
+use OCA\BookmarksManager\Service\ImportService;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
@@ -45,7 +48,8 @@ class Application extends App implements IBootstrap {
         $context->registerService('CollectionService', function ($c) {
             return new CollectionService(
                 $c->get('CollectionMapper'),
-                $c->get(IUserSession::class)
+                $c->get(IUserSession::class),
+                $c->get('BookmarkService')
             );
         });
         $context->registerService('CollectionController', function ($c) {
@@ -99,6 +103,29 @@ class Application extends App implements IBootstrap {
                 $c->get('AppName'),
                 $c->get('Request'),
                 $c->get('PageInfoService')
+            );
+        });
+
+        $context->registerService('ImportService', function ($c) {
+            return new ImportService(
+                $c->get('CollectionService'),
+                $c->get('BookmarkService'),
+                $c->get('TagService'),
+                $c->get(IUserSession::class)
+            );
+        });
+        $context->registerService('ImportController', function ($c) {
+            return new ImportController(
+                $c->get('AppName'),
+                $c->get('Request'),
+                $c->get('ImportService')
+            );
+        });
+
+        $context->registerService('LocaleController', function ($c) {
+            return new LocaleController(
+                $c->get('AppName'),
+                $c->get('Request')
             );
         });
     }

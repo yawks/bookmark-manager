@@ -5,6 +5,7 @@ import { RouterProvider, createRouter } from '@tanstack/react-router'
 import ReactDOM from 'react-dom/client'
 import type { RouterContext } from './lib/context'
 import { StrictMode } from 'react'
+import { BookmarkProvider } from './lib/BookmarkContext'
 // Import the generated route tree
 import { routeTree } from './routeTree.gen'
 
@@ -37,12 +38,42 @@ function initializeApp() {
       // Clear any existing content to avoid conflicts
       rootElement.innerHTML = ''
       
-      const root = ReactDOM.createRoot(rootElement)
-      root.render(
-        <StrictMode>
-          <RouterProvider router={router} />
-        </StrictMode>,
-      )
+      // Get initial bookmarks from the router loader data
+      // We need to fetch the loader data for the root route
+      // This is a workaround since TanStack Router doesn't expose a direct API for this outside of a route
+      // We'll fetch the data manually for initial state
+      fetch('/apps/bookmarksmanager/api/v1/bookmarks', {
+        headers: {
+          ...(window.OC?.requestToken ? { 'requesttoken': window.OC.requestToken } : {})
+        }
+      })
+        .then(async (res) => {
+          if (!res.ok) return [];
+          const data = await res.json();
+          if (Array.isArray(data)) return data;
+          if (data && data.data && Array.isArray(data.data)) return data.data;
+          return [];
+        })
+        .then((initialBookmarks) => {
+          const root = ReactDOM.createRoot(rootElement)
+          root.render(
+            <StrictMode>
+              <BookmarkProvider initialBookmarks={initialBookmarks}>
+                <RouterProvider router={router} />
+              </BookmarkProvider>
+            </StrictMode>,
+          )
+        })
+        .catch(() => {
+          const root = ReactDOM.createRoot(rootElement)
+          root.render(
+            <StrictMode>
+              <BookmarkProvider initialBookmarks={[]}>
+                <RouterProvider router={router} />
+              </BookmarkProvider>
+            </StrictMode>,
+          )
+        })
       
       console.log('BookmarksManager: Application initialized successfully')
     } catch (error) {

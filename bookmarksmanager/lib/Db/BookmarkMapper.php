@@ -1,5 +1,4 @@
 <?php
-
 namespace OCA\BookmarksManager\Db;
 
 use OCP\AppFramework\Db\QBMapper;
@@ -7,6 +6,7 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 class BookmarkMapper extends QBMapper {
+
 
     public function __construct(IDBConnection $db) {
         parent::__construct($db, 'bkmr_bookmarks', Bookmark::class);
@@ -90,5 +90,12 @@ class BookmarkMapper extends QBMapper {
                ])
                ->execute();
         }
+    }
+
+    public function deleteByCollectionId(int $collectionId): void {
+        $qb = $this->db->getQueryBuilder();
+        $qb->delete($this->tableName)
+           ->where($qb->expr()->eq('collection_id', $qb->createNamedParameter($collectionId, \PDO::PARAM_INT)))
+           ->execute();
     }
 }

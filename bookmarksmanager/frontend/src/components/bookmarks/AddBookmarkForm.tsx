@@ -7,7 +7,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Tag, TagSelector } from '@/components/ui/tag-selector';
 import React, { useState } from 'react';
 import {
   Select,
@@ -16,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Tag, TagSelector } from '@/components/ui/tag-selector';
 import { useLoaderData, useRouter } from '@tanstack/react-router';
 
 import { Button } from '@/components/ui/button';
@@ -142,9 +142,8 @@ export function AddBookmarkForm() {
       });
 
       if (response.ok) {
-        const newBookmark = await response.json();
-        setOpen(false);
-        setBookmarks(prev => [newBookmark, ...prev]);
+  setOpen(false);
+  await router.invalidate();
       } else {
         setSaveError('Failed to create bookmark');
       }
@@ -176,14 +175,14 @@ export function AddBookmarkForm() {
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px] w-full max-w-lg">
-  <form onSubmit={handleSubmit} className="flex flex-col h-full">
+        <form onSubmit={handleSubmit} className="flex flex-col">
           <DialogHeader>
             <DialogTitle>{t('Add a new bookmark')}</DialogTitle>
             <DialogDescription>
               {t('Enter the details of the bookmark you want to add.')}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex-1 flex flex-col gap-4 py-4">
+          <div className="flex flex-col gap-4 py-4 flex-grow">
             {/* URL input */}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="url" className="text-right">
