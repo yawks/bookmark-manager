@@ -1,8 +1,8 @@
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
 import React, { useCallback, useRef, useState } from 'react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
 import { XIcon } from 'lucide-react';
 
 export interface Tag {
@@ -38,6 +38,7 @@ export function TagSelector({
       onChange([...value, tag]);
     }
     setInputValue('');
+    setOpen(false);
     inputRef.current?.focus();
   }, [value, onChange]);
 
@@ -53,22 +54,25 @@ export function TagSelector({
     onChange(value.filter(tag => tag.value !== tagToRemove.value));
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
+      // Prevent form submission
       e.preventDefault();
-      if (filteredOptions.length > 0) {
-        // Find the first highlighted item and select it
-        const highlighted = document.querySelector('[aria-selected="true"]');
-        const firstOption = options.find(opt => opt.label === highlighted?.textContent);
-        if (firstOption) {
-          handleSelect(firstOption);
+
+      if (inputValue.trim()) {
+        // Check if it matches an existing option exactly
+        const exactMatch = options.find(opt => opt.label.toLowerCase() === inputValue.trim().toLowerCase());
+        if (exactMatch && !value.some(v => v.value === exactMatch.value)) {
+          handleSelect(exactMatch);
+        } else if (creatable) {
+          handleCreate();
         }
-      } else {
-        handleCreate();
       }
     } else if (e.key === 'Backspace' && inputValue === '') {
       e.preventDefault();
-      handleRemove(value[value.length - 1]);
+      if (value.length > 0) {
+        handleRemove(value[value.length - 1]);
+      }
     }
   };
 
@@ -79,52 +83,62 @@ export function TagSelector({
   );
 
   return (
-    <Command onKeyDown={handleKeyDown} className="overflow-visible bg-transparent">
-      <div className="group rounded-md border border-input px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
-        <div className="flex flex-wrap gap-1">
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <div
+          onClick={() => inputRef.current?.focus()}
+          className="group rounded-md border border-input px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 cursor-text flex flex-wrap gap-1 min-h-[40px]"
+        >
           {value.map((tag) => (
-            <Badge key={tag.value} variant="secondary" className="pl-2 pr-1">
+            <Badge key={tag.value} variant="secondary" className="pl-2 pr-1 h-7">
               {tag.label}
               <button
                 type="button"
-                className="ml-1 rounded-full p-0.5 hover:bg-destructive/50"
-                onClick={() => handleRemove(tag)}
+                className="ml-1 rounded-full p-0.5 hover:bg-destructive/50 outline-none"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRemove(tag);
+                }}
               >
                 <XIcon className="h-3 w-3" />
               </button>
             </Badge>
           ))}
-          <CommandInput
+          <input
             ref={inputRef}
+            type="text"
             value={inputValue}
-            onValueChange={setInputValue}
-            onBlur={() => setOpen(false)}
+            onChange={(e) => {
+              setInputValue(e.target.value);
+              setOpen(true);
+            }}
             onFocus={() => setOpen(true)}
-            placeholder={placeholder}
-            className="ml-2 flex-1 bg-transparent p-0 outline-none placeholder:text-muted-foreground"
+            onKeyDown={handleKeyDown}
+            placeholder={value.length === 0 ? placeholder : ''}
+            className="ml-1 flex-1 bg-transparent outline-none placeholder:text-muted-foreground min-w-[120px]"
           />
         </div>
-      </div>
-      <div className="relative mt-2">
-        {open && (filteredOptions.length > 0 || (creatable && inputValue)) ? (
-          <div className="absolute top-0 z-10 w-full rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in">
-            <CommandList>
-              <CommandEmpty>
-                {creatable && inputValue.trim() ? (
-                  <CommandItem
-                    onSelect={handleCreate}
-                    className="cursor-pointer"
-                  >
-                    Create "{inputValue}"
-                  </CommandItem>
-                ) : (
-                  <span className="p-2 text-center text-sm">{emptyIndicator}</span>
-                )}
-              </CommandEmpty>
+      </PopoverTrigger>
+
+      <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]" align="start" onOpenAutoFocus={(e: Event) => e.preventDefault()}>
+        <Command>
+          <CommandList className="max-h-[200px] overflow-y-auto">
+            <CommandEmpty>
+              {creatable && inputValue.trim() ? (
+                <CommandItem value={inputValue} onSelect={handleCreate} className="cursor-pointer">
+                  Create "{inputValue}"
+                </CommandItem>
+              ) : (
+                <span className="p-2 text-center text-sm block text-muted-foreground">{emptyIndicator}</span>
+              )}
+            </CommandEmpty>
+
+            {(filteredOptions.length > 0) && (
               <CommandGroup>
                 {filteredOptions.map((option) => (
                   <CommandItem
                     key={option.value}
+                    value={option.label}
                     onSelect={() => handleSelect(option)}
                     className="cursor-pointer"
                   >
@@ -132,10 +146,10 @@ export function TagSelector({
                   </CommandItem>
                 ))}
               </CommandGroup>
-            </CommandList>
-          </div>
-        ) : null}
-      </div>
-    </Command>
+            )}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }

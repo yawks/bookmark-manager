@@ -623,14 +623,8 @@ h1, h2, h3, h4, h5, h6, p {
 .relative {
   position: relative;
 }
-.sticky {
-  position: sticky;
-}
 .inset-0 {
   inset: 0px;
-}
-.bottom-0 {
-  bottom: 0px;
 }
 .left-2 {
   left: 0.5rem;
@@ -643,9 +637,6 @@ h1, h2, h3, h4, h5, h6, p {
 }
 .right-4 {
   right: 1rem;
-}
-.top-0 {
-  top: 0px;
 }
 .top-2 {
   top: 0.5rem;
@@ -661,6 +652,9 @@ h1, h2, h3, h4, h5, h6, p {
 }
 .z-50 {
   z-index: 50;
+}
+.z-\[99999\] {
+  z-index: 99999;
 }
 .col-span-3 {
   grid-column: span 3 / span 3;
@@ -761,6 +755,9 @@ h1, h2, h3, h4, h5, h6, p {
 .h-6 {
   height: 1.5rem;
 }
+.h-7 {
+  height: 1.75rem;
+}
 .h-8 {
   height: 2rem;
 }
@@ -779,8 +776,14 @@ h1, h2, h3, h4, h5, h6, p {
 .max-h-\[--radix-select-content-available-height\] {
   max-height: var(--radix-select-content-available-height);
 }
+.max-h-\[200px\] {
+  max-height: 200px;
+}
 .max-h-\[300px\] {
   max-height: 300px;
+}
+.max-h-\[90vh\] {
+  max-height: 90vh;
 }
 .max-h-\[var\(--radix-dropdown-menu-content-available-height\)\] {
   max-height: var(--radix-dropdown-menu-content-available-height);
@@ -790,6 +793,9 @@ h1, h2, h3, h4, h5, h6, p {
 }
 .min-h-32 {
   min-height: 8rem;
+}
+.min-h-\[40px\] {
+  min-height: 40px;
 }
 .min-h-\[80px\] {
   min-height: 80px;
@@ -848,8 +854,14 @@ h1, h2, h3, h4, h5, h6, p {
 .w-72 {
   width: 18rem;
 }
+.w-\[var\(--radix-popover-trigger-width\)\] {
+  width: var(--radix-popover-trigger-width);
+}
 .w-full {
   width: 100%;
+}
+.min-w-\[120px\] {
+  min-width: 120px;
 }
 .min-w-\[8rem\] {
   min-width: 8rem;
@@ -901,6 +913,9 @@ h1, h2, h3, h4, h5, h6, p {
 .cursor-pointer {
   cursor: pointer;
 }
+.cursor-text {
+  cursor: text;
+}
 .select-none {
   -webkit-user-select: none;
      -moz-user-select: none;
@@ -938,6 +953,9 @@ h1, h2, h3, h4, h5, h6, p {
 }
 .justify-between {
   justify-content: space-between;
+}
+.gap-0 {
+  gap: 0px;
 }
 .gap-1 {
   gap: 0.25rem;
@@ -983,9 +1001,6 @@ h1, h2, h3, h4, h5, h6, p {
 }
 .overflow-hidden {
   overflow: hidden;
-}
-.overflow-visible {
-  overflow: visible;
 }
 .overflow-y-auto {
   overflow-y: auto;
@@ -1158,6 +1173,9 @@ h1, h2, h3, h4, h5, h6, p {
   padding-top: 1.5rem;
   padding-bottom: 1.5rem;
 }
+.pb-2 {
+  padding-bottom: 0.5rem;
+}
 .pl-2 {
   padding-left: 0.5rem;
 }
@@ -1329,15 +1347,6 @@ h1, h2, h3, h4, h5, h6, p {
     opacity: var(--tw-exit-opacity, 1);
     transform: translate3d(var(--tw-exit-translate-x, 0), var(--tw-exit-translate-y, 0), 0) scale3d(var(--tw-exit-scale, 1), var(--tw-exit-scale, 1), var(--tw-exit-scale, 1)) rotate(var(--tw-exit-rotate, 0));
   }
-}
-.animate-in {
-  animation-name: enter;
-  animation-duration: 150ms;
-  --tw-enter-opacity: initial;
-  --tw-enter-scale: initial;
-  --tw-enter-rotate: initial;
-  --tw-enter-translate-x: initial;
-  --tw-enter-translate-y: initial;
 }
 .duration-200 {
   animation-duration: 200ms;

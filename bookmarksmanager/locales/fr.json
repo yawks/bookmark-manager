@@ -3,7 +3,9 @@
     "app": {
       "title": "Gestionnaire de favoris",
       "all_bookmarks": "Tous les favoris",
-      "all": "Tous"
+      "all": "Tous",
+      "saving": "Enregistrement...",
+      "loading": "Chargement..."
     },
     "sidebar": {
       "collections": "Collections",
@@ -29,7 +31,8 @@
       "edit_description": "Modifiez votre favori ici. Cliquez sur enregistrer lorsque vous avez terminé.",
       "delete": "Supprimer",
       "confirm_delete": "Voulez-vous vraiment supprimer ce favori ?",
-      "no_tags_found": "Aucun tag trouvé."
+      "no_tags_found": "Aucun tag trouvé.",
+      "no_preview": "Aucune preview disponible."
     },
     "collection": {
       "rename": "Renommer",

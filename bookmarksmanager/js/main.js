@@ -23600,416 +23600,6 @@ const CommandItem = reactExports.forwardRef(({ className, ...props }, ref) => /*
   }
 ));
 CommandItem.displayName = _e.Item.displayName;
-const badgeVariants = cva(
-  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-  {
-    variants: {
-      variant: {
-        default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
-        secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-        outline: "text-foreground"
-      }
-    },
-    defaultVariants: {
-      variant: "default"
-    }
-  }
-);
-function Badge({ className, variant, ...props }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: cn(badgeVariants({ variant }), className), ...props });
-}
-function TagSelector({
-  value,
-  onChange,
-  options,
-  placeholder = "Select tags...",
-  emptyIndicator = "No tags found.",
-  creatable = false,
-  onCreateOption
-}) {
-  const inputRef = reactExports.useRef(null);
-  const [open, setOpen] = reactExports.useState(false);
-  const [inputValue, setInputValue] = reactExports.useState("");
-  const handleSelect = reactExports.useCallback((tag) => {
-    var _a;
-    if (!value.some((t2) => t2.value === tag.value)) {
-      onChange([...value, tag]);
-    }
-    setInputValue("");
-    (_a = inputRef.current) == null ? void 0 : _a.focus();
-  }, [value, onChange]);
-  const handleCreate = async () => {
-    if (!creatable || !inputValue.trim() || !onCreateOption) return;
-    const newTag = await onCreateOption(inputValue.trim());
-    if (newTag) {
-      handleSelect(newTag);
-    }
-  };
-  const handleRemove = (tagToRemove) => {
-    onChange(value.filter((tag) => tag.value !== tagToRemove.value));
-  };
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      if (filteredOptions.length > 0) {
-        const highlighted = document.querySelector('[aria-selected="true"]');
-        const firstOption = options.find((opt) => opt.label === (highlighted == null ? void 0 : highlighted.textContent));
-        if (firstOption) {
-          handleSelect(firstOption);
-        }
-      } else {
-        handleCreate();
-      }
-    } else if (e.key === "Backspace" && inputValue === "") {
-      e.preventDefault();
-      handleRemove(value[value.length - 1]);
-    }
-  };
-  const filteredOptions = options.filter(
-    (option) => option.label.toLowerCase().includes(inputValue.toLowerCase()) && !value.some((v2) => v2.value === option.value)
-  );
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(Command, { onKeyDown: handleKeyDown, className: "overflow-visible bg-transparent", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "group rounded-md border border-input px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-wrap gap-1", children: [
-      value.map((tag) => /* @__PURE__ */ jsxRuntimeExports.jsxs(Badge, { variant: "secondary", className: "pl-2 pr-1", children: [
-        tag.label,
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "button",
-          {
-            type: "button",
-            className: "ml-1 rounded-full p-0.5 hover:bg-destructive/50",
-            onClick: () => handleRemove(tag),
-            children: /* @__PURE__ */ jsxRuntimeExports.jsx(X$1, { className: "h-3 w-3" })
-          }
-        )
-      ] }, tag.value)),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
-        CommandInput,
-        {
-          ref: inputRef,
-          value: inputValue,
-          onValueChange: setInputValue,
-          onBlur: () => setOpen(false),
-          onFocus: () => setOpen(true),
-          placeholder,
-          className: "ml-2 flex-1 bg-transparent p-0 outline-none placeholder:text-muted-foreground"
-        }
-      )
-    ] }) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "relative mt-2", children: open && (filteredOptions.length > 0 || creatable && inputValue) ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute top-0 z-10 w-full rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(CommandList, { children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(CommandEmpty, { children: creatable && inputValue.trim() ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        CommandItem,
-        {
-          onSelect: handleCreate,
-          className: "cursor-pointer",
-          children: [
-            'Create "',
-            inputValue,
-            '"'
-          ]
-        }
-      ) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "p-2 text-center text-sm", children: emptyIndicator }) }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(CommandGroup, { children: filteredOptions.map((option) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-        CommandItem,
-        {
-          onSelect: () => handleSelect(option),
-          className: "cursor-pointer",
-          children: option.label
-        },
-        option.value
-      )) })
-    ] }) }) : null })
-  ] });
-}
-const Input = reactExports.forwardRef(
-  ({ className, type, ...props }, ref) => {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "input",
-      {
-        type,
-        className: cn(
-          "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
-          className
-        ),
-        ref,
-        ...props
-      }
-    );
-  }
-);
-Input.displayName = "Input";
-var NODES = [
-  "a",
-  "button",
-  "div",
-  "form",
-  "h2",
-  "h3",
-  "img",
-  "input",
-  "label",
-  "li",
-  "nav",
-  "ol",
-  "p",
-  "select",
-  "span",
-  "svg",
-  "ul"
-];
-var Primitive = NODES.reduce((primitive, node) => {
-  const Slot2 = /* @__PURE__ */ createSlot$2(`Primitive.${node}`);
-  const Node2 = reactExports.forwardRef((props, forwardedRef) => {
-    const { asChild, ...primitiveProps } = props;
-    const Comp = asChild ? Slot2 : node;
-    if (typeof window !== "undefined") {
-      window[Symbol.for("radix-ui")] = true;
-    }
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Comp, { ...primitiveProps, ref: forwardedRef });
-  });
-  Node2.displayName = `Primitive.${node}`;
-  return { ...primitive, [node]: Node2 };
-}, {});
-var NAME$1 = "Label";
-var Label$1 = reactExports.forwardRef((props, forwardedRef) => {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Primitive.label,
-    {
-      ...props,
-      ref: forwardedRef,
-      onMouseDown: (event) => {
-        var _a;
-        const target = event.target;
-        if (target.closest("button, input, select, textarea")) return;
-        (_a = props.onMouseDown) == null ? void 0 : _a.call(props, event);
-        if (!event.defaultPrevented && event.detail > 1) event.preventDefault();
-      }
-    }
-  );
-});
-Label$1.displayName = NAME$1;
-var Root = Label$1;
-const labelVariants = cva(
-  "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-);
-const Label = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-  Root,
-  {
-    ref,
-    className: cn(labelVariants(), className),
-    ...props
-  }
-));
-Label.displayName = Root.displayName;
-const Textarea = reactExports.forwardRef(
-  ({ className, ...props }, ref) => {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "textarea",
-      {
-        className: cn(
-          "flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
-          className
-        ),
-        ref,
-        ...props
-      }
-    );
-  }
-);
-Textarea.displayName = "Textarea";
-function getRequestToken$2() {
-  if (typeof document === "undefined") {
-    return null;
-  }
-  const meta = document.querySelector('meta[name="requesttoken"]');
-  if (meta) return meta.getAttribute("content");
-  const head = document.querySelector("head[data-requesttoken]");
-  if (head) return head.getAttribute("data-requesttoken");
-  return null;
-}
-function AddBookmarkForm() {
-  console.log("AddBookmarkForm mounted");
-  const router2 = useRouter();
-  const { collections, tags: allTags } = useLoaderData({ from: "__root__" }) || { collections: [], tags: [] };
-  const availableCollections = collections || [];
-  const availableTags = allTags || [];
-  const [open, setOpen] = reactExports.useState(false);
-  const [url, setUrl] = reactExports.useState("");
-  const [title, setTitle] = reactExports.useState("");
-  const [description, setDescription] = reactExports.useState("");
-  const [collectionId, setCollectionId] = reactExports.useState(void 0);
-  const [selectedTags, setSelectedTags] = reactExports.useState([]);
-  const [screenshot, setScreenshot] = reactExports.useState(null);
-  const [isFetching, setIsFetching] = reactExports.useState(false);
-  const [isSaving, setIsSaving] = reactExports.useState(false);
-  const [saveError, setSaveError] = reactExports.useState(null);
-  const { setBookmarks } = useBookmarks();
-  const tagOptions = availableTags.map((tag) => ({ label: tag.name, value: String(tag.id) }));
-  const handleCreateTag = async (label) => {
-    const requestToken = getRequestToken$2();
-    if (!requestToken) return { label, value: label };
-    try {
-      const response = await fetch("/apps/bookmarksmanager/api/v1/tags", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "requesttoken": requestToken
-        },
-        body: JSON.stringify({ name: label })
-      });
-      if (response.ok) {
-        const tag = await response.json();
-        await router2.invalidate();
-        return { label: tag.name, value: String(tag.id) };
-      }
-    } catch (e) {
-    }
-    return { label, value: label };
-  };
-  const handleUrlBlur = async () => {
-    if (!url || !url.startsWith("http")) return;
-    setIsFetching(true);
-    try {
-      const response = await fetch(`/apps/bookmarksmanager/api/v1/page-info?url=${encodeURIComponent(url)}`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.title) setTitle(data.title);
-        if (data.description) setDescription(data.description);
-        if (data.image) setScreenshot(data.image);
-      }
-    } catch (error) {
-      console.error("Failed to fetch page info", error);
-    } finally {
-      setIsFetching(false);
-    }
-  };
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSaving(true);
-    setSaveError(null);
-    const requestToken = getRequestToken$2();
-    if (!requestToken) {
-      setSaveError("CSRF token not found!");
-      setIsSaving(false);
-      return;
-    }
-    const bookmarkData = {
-      url,
-      title,
-      description,
-      collectionId: collectionId ? parseInt(collectionId, 10) : null,
-      tags: selectedTags.map((tag) => {
-        const id2 = parseInt(tag.value, 10);
-        return isNaN(id2) ? tag.value : id2;
-      }),
-      screenshot
-    };
-    try {
-      const response = await fetch("/apps/bookmarksmanager/api/v1/bookmarks", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "requesttoken": requestToken
-        },
-        body: JSON.stringify(bookmarkData)
-      });
-      if (response.ok) {
-        setOpen(false);
-        await router2.invalidate();
-      } else {
-        setSaveError("Failed to create bookmark");
-      }
-    } catch (err) {
-      setSaveError("Network error");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-  const handleOpenChange = (isOpen) => {
-    setOpen(isOpen);
-    if (!isOpen) {
-      setUrl("");
-      setTitle("");
-      setDescription("");
-      setCollectionId(void 0);
-      setSelectedTags([]);
-      setScreenshot(null);
-    }
-  };
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(Dialog, { open, onOpenChange: handleOpenChange, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx(DialogTrigger, { asChild: true, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Button, { children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(PlusIcon, { className: "mr-2 h-4 w-4" }),
-      " ",
-      t("Add Bookmark")
-    ] }) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(DialogContent, { className: "sm:max-w-[425px] w-full max-w-lg", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("form", { onSubmit: handleSubmit, className: "flex flex-col", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogHeader, { children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(DialogTitle, { children: t("Add a new bookmark") }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(DialogDescription, { children: t("Enter the details of the bookmark you want to add.") })
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-4 py-4 flex-grow", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 items-center gap-4", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "url", className: "text-right", children: t("URL") }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { id: "url", value: url, onChange: (e) => setUrl(e.target.value), onBlur: handleUrlBlur, placeholder: t("https://example.com"), className: "col-span-3" })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "col-span-4 flex justify-center items-center min-h-[80px]", id: "screenshot-debug-block", children: [
-          (() => {
-            console.log("RENDER screenshot block", { isFetching, screenshot });
-            return null;
-          })(),
-          isFetching ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-24 h-20 bg-muted animate-pulse rounded-md", "data-testid": "skeleton" }) : screenshot ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "img",
-            {
-              src: screenshot,
-              alt: "Website preview",
-              className: "w-24 h-20 object-cover rounded-md border",
-              style: { maxWidth: "100%", maxHeight: 80 },
-              "data-testid": "screenshot-img"
-            }
-          ) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-24 h-20 bg-muted/30 rounded-md flex items-center justify-center text-xs text-muted-foreground border border-dashed border-muted-foreground/30", "data-testid": "no-preview", children: t("No preview") })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 items-center gap-4", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "title", className: "text-right", children: t("Title") }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { id: "title", value: title, onChange: (e) => setTitle(e.target.value), placeholder: isFetching ? t("Fetching title...") : t("A cool website"), className: "col-span-3" })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 items-start gap-4", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "description", className: "text-right pt-2", children: t("Description") }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Textarea, { id: "description", value: description, onChange: (e) => setDescription(e.target.value), placeholder: t("A short description"), className: "col-span-3" })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 items-center gap-4", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "collection", className: "text-right", children: t("Collection") }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs(Select, { onValueChange: setCollectionId, value: collectionId, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(SelectTrigger, { className: "col-span-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectValue, { placeholder: t("Select a collection") }) }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContent, { children: availableCollections.map((collection) => /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: String(collection.id), children: collection.name }, collection.id)) })
-          ] })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 items-start gap-4", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "tags", className: "text-right pt-2", children: t("Tags") }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "col-span-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-            TagSelector,
-            {
-              value: selectedTags,
-              onChange: setSelectedTags,
-              options: tagOptions,
-              placeholder: t("Add tags..."),
-              emptyIndicator: t("No tags found."),
-              creatable: true,
-              onCreateOption: handleCreateTag
-            }
-          ) })
-        ] }),
-        saveError && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "col-span-4 text-red-600 text-sm text-center", children: saveError })
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(DialogFooter, { className: "sticky bottom-0 bg-background pt-2 z-10", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "submit", className: "w-full md:w-auto", disabled: isSaving, children: isSaving ? t("Saving...") : t("Save bookmark") }) })
-    ] }) })
-  ] });
-}
-function Header() {
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "flex justify-between items-center p-4 border-b", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { className: "text-2xl font-semibold", children: t("Bookmarks") }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(AddBookmarkForm, {})
-  ] });
-}
 // @__NO_SIDE_EFFECTS__
 function createSlot(ownerName) {
   const SlotClone = /* @__PURE__ */ createSlotClone(ownerName);
@@ -24383,13 +23973,436 @@ const PopoverContent = reactExports.forwardRef(({ className, align = "center", s
     align,
     sideOffset,
     className: cn(
-      "z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-[--radix-popover-content-transform-origin]",
+      "z-[99999] w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-[--radix-popover-content-transform-origin]",
       className
     ),
     ...props
   }
 ) }));
 PopoverContent.displayName = Content2.displayName;
+const badgeVariants = cva(
+  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  {
+    variants: {
+      variant: {
+        default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
+        secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
+        outline: "text-foreground"
+      }
+    },
+    defaultVariants: {
+      variant: "default"
+    }
+  }
+);
+function Badge({ className, variant, ...props }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: cn(badgeVariants({ variant }), className), ...props });
+}
+function TagSelector({
+  value,
+  onChange,
+  options,
+  placeholder = "Select tags...",
+  emptyIndicator = "No tags found.",
+  creatable = false,
+  onCreateOption
+}) {
+  const inputRef = reactExports.useRef(null);
+  const [open, setOpen] = reactExports.useState(false);
+  const [inputValue, setInputValue] = reactExports.useState("");
+  const handleSelect = reactExports.useCallback((tag) => {
+    var _a;
+    if (!value.some((t2) => t2.value === tag.value)) {
+      onChange([...value, tag]);
+    }
+    setInputValue("");
+    setOpen(false);
+    (_a = inputRef.current) == null ? void 0 : _a.focus();
+  }, [value, onChange]);
+  const handleCreate = async () => {
+    if (!creatable || !inputValue.trim() || !onCreateOption) return;
+    const newTag = await onCreateOption(inputValue.trim());
+    if (newTag) {
+      handleSelect(newTag);
+    }
+  };
+  const handleRemove = (tagToRemove) => {
+    onChange(value.filter((tag) => tag.value !== tagToRemove.value));
+  };
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (inputValue.trim()) {
+        const exactMatch = options.find((opt) => opt.label.toLowerCase() === inputValue.trim().toLowerCase());
+        if (exactMatch && !value.some((v2) => v2.value === exactMatch.value)) {
+          handleSelect(exactMatch);
+        } else if (creatable) {
+          handleCreate();
+        }
+      }
+    } else if (e.key === "Backspace" && inputValue === "") {
+      e.preventDefault();
+      if (value.length > 0) {
+        handleRemove(value[value.length - 1]);
+      }
+    }
+  };
+  const filteredOptions = options.filter(
+    (option) => option.label.toLowerCase().includes(inputValue.toLowerCase()) && !value.some((v2) => v2.value === option.value)
+  );
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(Popover, { open, onOpenChange: setOpen, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(PopoverTrigger, { asChild: true, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "div",
+      {
+        onClick: () => {
+          var _a;
+          return (_a = inputRef.current) == null ? void 0 : _a.focus();
+        },
+        className: "group rounded-md border border-input px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 cursor-text flex flex-wrap gap-1 min-h-[40px]",
+        children: [
+          value.map((tag) => /* @__PURE__ */ jsxRuntimeExports.jsxs(Badge, { variant: "secondary", className: "pl-2 pr-1 h-7", children: [
+            tag.label,
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                type: "button",
+                className: "ml-1 rounded-full p-0.5 hover:bg-destructive/50 outline-none",
+                onClick: (e) => {
+                  e.stopPropagation();
+                  handleRemove(tag);
+                },
+                children: /* @__PURE__ */ jsxRuntimeExports.jsx(X$1, { className: "h-3 w-3" })
+              }
+            )
+          ] }, tag.value)),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "input",
+            {
+              ref: inputRef,
+              type: "text",
+              value: inputValue,
+              onChange: (e) => {
+                setInputValue(e.target.value);
+                setOpen(true);
+              },
+              onFocus: () => setOpen(true),
+              onKeyDown: handleKeyDown,
+              placeholder: value.length === 0 ? placeholder : "",
+              className: "ml-1 flex-1 bg-transparent outline-none placeholder:text-muted-foreground min-w-[120px]"
+            }
+          )
+        ]
+      }
+    ) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(PopoverContent, { className: "p-0 w-[var(--radix-popover-trigger-width)]", align: "start", onOpenAutoFocus: (e) => e.preventDefault(), children: /* @__PURE__ */ jsxRuntimeExports.jsx(Command, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(CommandList, { className: "max-h-[200px] overflow-y-auto", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(CommandEmpty, { children: creatable && inputValue.trim() ? /* @__PURE__ */ jsxRuntimeExports.jsxs(CommandItem, { value: inputValue, onSelect: handleCreate, className: "cursor-pointer", children: [
+        'Create "',
+        inputValue,
+        '"'
+      ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "p-2 text-center text-sm block text-muted-foreground", children: emptyIndicator }) }),
+      filteredOptions.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(CommandGroup, { children: filteredOptions.map((option) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+        CommandItem,
+        {
+          value: option.label,
+          onSelect: () => handleSelect(option),
+          className: "cursor-pointer",
+          children: option.label
+        },
+        option.value
+      )) })
+    ] }) }) })
+  ] });
+}
+const Input = reactExports.forwardRef(
+  ({ className, type, ...props }, ref) => {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "input",
+      {
+        type,
+        className: cn(
+          "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+          className
+        ),
+        ref,
+        ...props
+      }
+    );
+  }
+);
+Input.displayName = "Input";
+var NODES = [
+  "a",
+  "button",
+  "div",
+  "form",
+  "h2",
+  "h3",
+  "img",
+  "input",
+  "label",
+  "li",
+  "nav",
+  "ol",
+  "p",
+  "select",
+  "span",
+  "svg",
+  "ul"
+];
+var Primitive = NODES.reduce((primitive, node) => {
+  const Slot2 = /* @__PURE__ */ createSlot$2(`Primitive.${node}`);
+  const Node2 = reactExports.forwardRef((props, forwardedRef) => {
+    const { asChild, ...primitiveProps } = props;
+    const Comp = asChild ? Slot2 : node;
+    if (typeof window !== "undefined") {
+      window[Symbol.for("radix-ui")] = true;
+    }
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(Comp, { ...primitiveProps, ref: forwardedRef });
+  });
+  Node2.displayName = `Primitive.${node}`;
+  return { ...primitive, [node]: Node2 };
+}, {});
+var NAME$1 = "Label";
+var Label$1 = reactExports.forwardRef((props, forwardedRef) => {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    Primitive.label,
+    {
+      ...props,
+      ref: forwardedRef,
+      onMouseDown: (event) => {
+        var _a;
+        const target = event.target;
+        if (target.closest("button, input, select, textarea")) return;
+        (_a = props.onMouseDown) == null ? void 0 : _a.call(props, event);
+        if (!event.defaultPrevented && event.detail > 1) event.preventDefault();
+      }
+    }
+  );
+});
+Label$1.displayName = NAME$1;
+var Root = Label$1;
+const labelVariants = cva(
+  "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+);
+const Label = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+  Root,
+  {
+    ref,
+    className: cn(labelVariants(), className),
+    ...props
+  }
+));
+Label.displayName = Root.displayName;
+const Textarea = reactExports.forwardRef(
+  ({ className, ...props }, ref) => {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "textarea",
+      {
+        className: cn(
+          "flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+          className
+        ),
+        ref,
+        ...props
+      }
+    );
+  }
+);
+Textarea.displayName = "Textarea";
+function getRequestToken$2() {
+  if (typeof document === "undefined") {
+    return null;
+  }
+  const meta = document.querySelector('meta[name="requesttoken"]');
+  if (meta) return meta.getAttribute("content");
+  const head = document.querySelector("head[data-requesttoken]");
+  if (head) return head.getAttribute("data-requesttoken");
+  return null;
+}
+function AddBookmarkForm() {
+  console.log("AddBookmarkForm mounted");
+  const router2 = useRouter();
+  const { collections, tags: allTags } = useLoaderData({ from: "__root__" }) || { collections: [], tags: [] };
+  const availableCollections = collections || [];
+  const availableTags = allTags || [];
+  const [open, setOpen] = reactExports.useState(false);
+  const [url, setUrl] = reactExports.useState("");
+  const [title, setTitle] = reactExports.useState("");
+  const [description, setDescription] = reactExports.useState("");
+  const [collectionId, setCollectionId] = reactExports.useState(void 0);
+  const [selectedTags, setSelectedTags] = reactExports.useState([]);
+  const [screenshot, setScreenshot] = reactExports.useState(null);
+  const [isFetching, setIsFetching] = reactExports.useState(false);
+  const [isSaving, setIsSaving] = reactExports.useState(false);
+  const [saveError, setSaveError] = reactExports.useState(null);
+  const { setBookmarks } = useBookmarks();
+  const tagOptions = availableTags.map((tag) => ({ label: tag.name, value: String(tag.id) }));
+  const handleCreateTag = async (label) => {
+    const requestToken = getRequestToken$2();
+    if (!requestToken) return { label, value: label };
+    try {
+      const response = await fetch("/apps/bookmarksmanager/api/v1/tags", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "requesttoken": requestToken
+        },
+        body: JSON.stringify({ name: label })
+      });
+      if (response.ok) {
+        const tag = await response.json();
+        await router2.invalidate();
+        return { label: tag.name, value: String(tag.id) };
+      }
+    } catch (e) {
+    }
+    return { label, value: label };
+  };
+  const handleUrlBlur = async () => {
+    if (!url || !url.startsWith("http")) return;
+    setIsFetching(true);
+    try {
+      const response = await fetch(`/apps/bookmarksmanager/api/v1/page-info?url=${encodeURIComponent(url)}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.title) setTitle(data.title);
+        if (data.description) setDescription(data.description);
+        if (data.image) setScreenshot(data.image);
+      }
+    } catch (error) {
+      console.error("Failed to fetch page info", error);
+    } finally {
+      setIsFetching(false);
+    }
+  };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSaving(true);
+    setSaveError(null);
+    const requestToken = getRequestToken$2();
+    if (!requestToken) {
+      setSaveError("CSRF token not found!");
+      setIsSaving(false);
+      return;
+    }
+    const bookmarkData = {
+      url,
+      title,
+      description,
+      collectionId: collectionId ? parseInt(collectionId, 10) : null,
+      tags: selectedTags.map((tag) => {
+        const id2 = parseInt(tag.value, 10);
+        return isNaN(id2) ? tag.value : id2;
+      }),
+      screenshot
+    };
+    try {
+      const response = await fetch("/apps/bookmarksmanager/api/v1/bookmarks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "requesttoken": requestToken
+        },
+        body: JSON.stringify(bookmarkData)
+      });
+      if (response.ok) {
+        setOpen(false);
+        await router2.invalidate();
+      } else {
+        setSaveError("Failed to create bookmark");
+      }
+    } catch (err) {
+      setSaveError("Network error");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+  const handleOpenChange = (isOpen) => {
+    setOpen(isOpen);
+    if (!isOpen) {
+      setUrl("");
+      setTitle("");
+      setDescription("");
+      setCollectionId(void 0);
+      setSelectedTags([]);
+      setScreenshot(null);
+    }
+  };
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(Dialog, { open, onOpenChange: handleOpenChange, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(DialogTrigger, { asChild: true, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Button, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(PlusIcon, { className: "mr-2 h-4 w-4" }),
+      " ",
+      t("bookmark.add")
+    ] }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(DialogContent, { className: "sm:max-w-[425px] w-full max-w-lg max-h-[90vh] flex flex-col p-0 gap-0", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("form", { onSubmit: handleSubmit, className: "flex flex-col h-full overflow-hidden", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogHeader, { className: "p-6 pb-2", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(DialogTitle, { children: t("bookmark.add_new") }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(DialogDescription, { children: t("bookmark.add_description") })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex-1 overflow-y-auto p-6 pt-2 gap-4 flex flex-col", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 items-center gap-4", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "url", className: "text-right", children: t("bookmark.url") }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { id: "url", value: url, onChange: (e) => setUrl(e.target.value), onBlur: handleUrlBlur, placeholder: t("bookmark.placeholder_url"), className: "col-span-3" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "col-span-4 flex justify-center items-center min-h-[80px]", id: "screenshot-debug-block", children: [
+          (() => {
+            console.log("RENDER screenshot block", { isFetching, screenshot });
+            return null;
+          })(),
+          isFetching ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-24 h-20 bg-muted animate-pulse rounded-md", "data-testid": "skeleton" }) : screenshot ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "img",
+            {
+              src: screenshot,
+              alt: "Website preview",
+              className: "w-24 h-20 object-cover rounded-md border",
+              style: { maxWidth: "100%", maxHeight: 80 },
+              "data-testid": "screenshot-img"
+            }
+          ) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-24 h-20 bg-muted/30 rounded-md flex items-center justify-center text-xs text-muted-foreground border border-dashed border-muted-foreground/30", "data-testid": "no-preview", children: t("bookmark.no_preview") })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 items-center gap-4", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "title", className: "text-right", children: t("bookmark.title") }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { id: "title", value: title, onChange: (e) => setTitle(e.target.value), placeholder: isFetching ? t("app.loading") : t("bookmark.placeholder_title"), className: "col-span-3" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 items-start gap-4", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "description", className: "text-right pt-2", children: t("bookmark.description") }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Textarea, { id: "description", value: description, onChange: (e) => setDescription(e.target.value), placeholder: t("bookmark.placeholder_description"), className: "col-span-3" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 items-center gap-4", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "collection", className: "text-right", children: t("bookmark.collection") }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(Select, { onValueChange: setCollectionId, value: collectionId, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(SelectTrigger, { className: "col-span-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectValue, { placeholder: t("bookmark.select_collection") }) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContent, { children: availableCollections.map((collection) => /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: String(collection.id), children: collection.name }, collection.id)) })
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 items-start gap-4", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "tags", className: "text-right pt-2", children: t("bookmark.tags") }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "col-span-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+            TagSelector,
+            {
+              value: selectedTags,
+              onChange: setSelectedTags,
+              options: tagOptions,
+              placeholder: t("bookmark.select_tags"),
+              emptyIndicator: t("bookmark.no_tags_found"),
+              creatable: true,
+              onCreateOption: handleCreateTag
+            }
+          ) })
+        ] }),
+        saveError && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "col-span-4 text-red-600 text-sm text-center", children: saveError })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(DialogFooter, { className: "p-6 pt-2 bg-background z-10 border-t", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "submit", className: "w-full md:w-auto", disabled: isSaving, children: isSaving ? t("app.saving") : t("bookmark.save") }) })
+    ] }) })
+  ] });
+}
+function Header() {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "flex justify-between items-center p-4 border-b", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { className: "text-2xl font-semibold", children: t("Bookmarks") }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(AddBookmarkForm, {})
+  ] });
+}
 function getRequestToken$1() {
   if (typeof document === "undefined") {
     return null;

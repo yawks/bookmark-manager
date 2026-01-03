@@ -3,7 +3,9 @@
     "app": {
       "title": "Bookmark Manager",
       "all_bookmarks": "All Bookmarks",
-      "all": "All"
+      "all": "All",
+      "saving": "Saving...",
+      "loading": "Loading..."
     },
     "sidebar": {
       "collections": "Collections",
@@ -29,7 +31,8 @@
       "edit_description": "Make changes to your bookmark here. Click save when you're done.",
       "delete": "Delete",
       "confirm_delete": "Are you sure you want to delete this bookmark?",
-      "no_tags_found": "No tags found."
+      "no_tags_found": "No tags found.",
+      "no_preview": "No preview available."
     },
     "collection": {
       "rename": "Rename",

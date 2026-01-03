@@ -22,6 +22,7 @@ class Bookmark extends Entity implements JsonSerializable {
 
     public function setUserId(string $userId): void {
         $this->userId = $userId;
+        $this->markFieldUpdated('userId');
     }
 
     public function getUserId(): string {
@@ -30,6 +31,7 @@ class Bookmark extends Entity implements JsonSerializable {
 
     public function setUrl(string $url): void {
         $this->url = $url;
+        $this->markFieldUpdated('url');
     }
 
     public function getUrl(): string {
@@ -38,6 +40,7 @@ class Bookmark extends Entity implements JsonSerializable {
 
     public function setTitle(string $title): void {
         $this->title = $title;
+        $this->markFieldUpdated('title');
     }
 
     public function getTitle(): string {
@@ -46,6 +49,7 @@ class Bookmark extends Entity implements JsonSerializable {
 
     public function setDescription(?string $description): void {
         $this->description = $description;
+        $this->markFieldUpdated('description');
     }
 
     public function getDescription(): ?string {
@@ -54,6 +58,7 @@ class Bookmark extends Entity implements JsonSerializable {
 
     public function setCollectionId(?int $collectionId): void {
         $this->collectionId = $collectionId;
+        $this->markFieldUpdated('collectionId');
     }
 
     public function getCollectionId(): ?int {
@@ -62,6 +67,7 @@ class Bookmark extends Entity implements JsonSerializable {
 
     public function setScreenshot(?string $screenshot): void {
         $this->screenshot = $screenshot;
+        $this->markFieldUpdated('screenshot');
     }
 
     public function getScreenshot(): ?string {

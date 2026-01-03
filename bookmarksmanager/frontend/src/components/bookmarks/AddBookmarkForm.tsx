@@ -142,8 +142,8 @@ export function AddBookmarkForm() {
       });
 
       if (response.ok) {
-  setOpen(false);
-  await router.invalidate();
+        setOpen(false);
+        await router.invalidate();
       } else {
         setSaveError('Failed to create bookmark');
       }
@@ -171,24 +171,25 @@ export function AddBookmarkForm() {
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button>
-          <PlusIcon className="mr-2 h-4 w-4" /> {t('Add Bookmark')}
+          <PlusIcon className="mr-2 h-4 w-4" /> {t('bookmark.add')}
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] w-full max-w-lg">
-        <form onSubmit={handleSubmit} className="flex flex-col">
-          <DialogHeader>
-            <DialogTitle>{t('Add a new bookmark')}</DialogTitle>
+      <DialogContent className="sm:max-w-[425px] w-full max-w-lg max-h-[90vh] flex flex-col p-0 gap-0">
+        <form onSubmit={handleSubmit} className="flex flex-col h-full overflow-hidden">
+          <DialogHeader className="p-6 pb-2">
+            <DialogTitle>{t('bookmark.add_new')}</DialogTitle>
             <DialogDescription>
-              {t('Enter the details of the bookmark you want to add.')}
+              {t('bookmark.add_description')}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col gap-4 py-4 flex-grow">
+
+          <div className="flex-1 overflow-y-auto p-6 pt-2 gap-4 flex flex-col">
             {/* URL input */}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="url" className="text-right">
-                {t('URL')}
+                {t('bookmark.url')}
               </Label>
-              <Input id="url" value={url} onChange={e => setUrl(e.target.value)} onBlur={handleUrlBlur} placeholder={t('https://example.com')} className="col-span-3" />
+              <Input id="url" value={url} onChange={e => setUrl(e.target.value)} onBlur={handleUrlBlur} placeholder={t('bookmark.placeholder_url')} className="col-span-3" />
             </div>
             {/* Screenshot preview with skeleton - always rendered, even if no URL */}
             <div className="col-span-4 flex justify-center items-center min-h-[80px]" id="screenshot-debug-block">
@@ -205,32 +206,32 @@ export function AddBookmarkForm() {
                 />
               ) : (
                 <div className="w-24 h-20 bg-muted/30 rounded-md flex items-center justify-center text-xs text-muted-foreground border border-dashed border-muted-foreground/30" data-testid="no-preview">
-                  {t('No preview')}
+                  {t('bookmark.no_preview')}
                 </div>
               )}
             </div>
             {/* Title input */}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="title" className="text-right">
-                {t('Title')}
+                {t('bookmark.title')}
               </Label>
-              <Input id="title" value={title} onChange={e => setTitle(e.target.value)} placeholder={isFetching ? t('Fetching title...') : t('A cool website')} className="col-span-3" />
+              <Input id="title" value={title} onChange={e => setTitle(e.target.value)} placeholder={isFetching ? t('app.loading') : t('bookmark.placeholder_title')} className="col-span-3" />
             </div>
             {/* Description input */}
             <div className="grid grid-cols-4 items-start gap-4">
               <Label htmlFor="description" className="text-right pt-2">
-                {t('Description')}
+                {t('bookmark.description')}
               </Label>
-              <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder={t('A short description')} className="col-span-3" />
+              <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder={t('bookmark.placeholder_description')} className="col-span-3" />
             </div>
             {/* Collection select */}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="collection" className="text-right">
-                {t('Collection')}
+                {t('bookmark.collection')}
               </Label>
               <Select onValueChange={setCollectionId} value={collectionId}>
                 <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder={t('Select a collection')} />
+                  <SelectValue placeholder={t('bookmark.select_collection')} />
                 </SelectTrigger>
                 <SelectContent>
                   {availableCollections.map(collection => (
@@ -242,15 +243,15 @@ export function AddBookmarkForm() {
             {/* Tags multi-select */}
             <div className="grid grid-cols-4 items-start gap-4">
               <Label htmlFor="tags" className="text-right pt-2">
-                {t('Tags')}
+                {t('bookmark.tags')}
               </Label>
               <div className="col-span-3">
                 <TagSelector
                   value={selectedTags}
                   onChange={setSelectedTags}
                   options={tagOptions}
-                  placeholder={t('Add tags...')}
-                  emptyIndicator={t('No tags found.')}
+                  placeholder={t('bookmark.select_tags')}
+                  emptyIndicator={t('bookmark.no_tags_found')}
                   creatable
                   onCreateOption={handleCreateTag}
                 />
@@ -261,9 +262,10 @@ export function AddBookmarkForm() {
               <div className="col-span-4 text-red-600 text-sm text-center">{saveError}</div>
             )}
           </div>
-          <DialogFooter className="sticky bottom-0 bg-background pt-2 z-10">
+
+          <DialogFooter className="p-6 pt-2 bg-background z-10 border-t">
             <Button type="submit" className="w-full md:w-auto" disabled={isSaving}>
-              {isSaving ? t('Saving...') : t('Save bookmark')}
+              {isSaving ? t('app.saving') : t('bookmark.save')}
             </Button>
           </DialogFooter>
         </form>
