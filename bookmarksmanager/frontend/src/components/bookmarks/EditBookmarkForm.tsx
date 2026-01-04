@@ -15,14 +15,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { useRouteContext, useRouter } from '@tanstack/react-router';
+import { useLoaderData, useRouter } from '@tanstack/react-router';
 
 import { Bookmark } from '../../types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { TrashIcon } from '@radix-ui/react-icons';
-import { useTranslation } from 'react-i18next';
+import { TrashIcon, Cross2Icon } from '@radix-ui/react-icons';
+import { t } from '../../lib/l10n';
 
 // Helper to get Nextcloud's request token
 function getRequestToken() {
@@ -39,9 +39,9 @@ interface EditBookmarkFormProps {
 }
 
 export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmarkFormProps) {
-  const { t } = useTranslation();
+  console.log('EditBookmarkForm render v3');
   const router = useRouter();
-  const { collections, tags: allTags } = useRouteContext({ from: '__root__' }) || { collections: [], tags: [] };
+  const { collections, tags: allTags } = useLoaderData({ from: '__root__' }) || { collections: [], tags: [] };
   const availableCollections = collections || [];
   const availableTags = allTags || [];
 
@@ -51,6 +51,7 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
   const [collectionId, setCollectionId] = useState<string | undefined>();
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [screenshot, setScreenshot] = useState<string | null>(null);
+  const [showScreenshotInput, setShowScreenshotInput] = useState(false);
 
   const tagOptions: Tag[] = availableTags.map(tag => ({ label: tag.name, value: String(tag.id) }));
 
@@ -135,7 +136,7 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
     if (!bookmark) return;
 
     if (!window.confirm(t('bookmark.confirm_delete'))) {
-        return;
+      return;
     }
 
     const requestToken = getRequestToken();
@@ -163,29 +164,85 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
+      <DialogContent className="sm:max-w-[425px] w-full max-w-lg max-h-[90vh] flex flex-col p-0 gap-0">
+        <form onSubmit={handleSubmit} className="flex flex-col h-full overflow-hidden">
+          <DialogHeader className="p-6 pb-2">
             <DialogTitle>{t('bookmark.edit_title')}</DialogTitle>
             <DialogDescription>
               {t('bookmark.edit_description')}
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
+
+          <div className="flex-1 overflow-y-auto p-6 pt-2 gap-4 flex flex-col">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="url" className="text-right">
                 {t('bookmark.url')}
               </Label>
               <Input id="url" value={url} onChange={e => setUrl(e.target.value)} className="col-span-3" />
             </div>
+
+            {/* Screenshot preview with hover edit */}
+            <div className="col-span-4 flex flex-col items-center justify-center gap-3 min-h-[80px]">
+              <div className="relative group w-24 h-20 flex-shrink-0">
+                {screenshot ? (
+                  <img
+                    src={screenshot}
+                    alt="Website preview"
+                    className="w-24 h-20 object-cover rounded-md border"
+                    style={{ maxWidth: '100%', maxHeight: 80 }}
+                  />
+                ) : (
+                  <div className="w-24 h-20 bg-muted/30 rounded-md flex items-center justify-center text-xs text-muted-foreground border border-dashed border-muted-foreground/30 text-center p-1">
+                    {t('bookmark.no_preview')}
+                  </div>
+                )}
+                {/* Edit overlay/button */}
+                {!showScreenshotInput && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer" onClick={() => setShowScreenshotInput(true)}>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      className="h-6 text-xs px-2"
+                    >
+                      {t('bookmark.edit')}
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* Screenshot URL Input */}
+              {showScreenshotInput && (
+                <div className="flex w-full max-w-[280px] items-center gap-2">
+                  <Input
+                    value={screenshot || ''}
+                    onChange={(e) => setScreenshot(e.target.value)}
+                    placeholder={t('bookmark.enter_screenshot_url')}
+                    className="h-8 text-xs"
+                    autoFocus
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => setShowScreenshotInput(false)}
+                    title={t('collection.cancel')}
+                  >
+                    <Cross2Icon className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="title" className="text-right">
                 {t('bookmark.title')}
               </Label>
               <Input id="title" value={title} onChange={e => setTitle(e.target.value)} className="col-span-3" />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="description" className="text-right">
+            <div className="grid grid-cols-4 items-start gap-4">
+              <Label htmlFor="description" className="text-right pt-2">
                 {t('bookmark.description')}
               </Label>
               <Input id="description" value={description} onChange={e => setDescription(e.target.value)} className="col-span-3" />
@@ -222,7 +279,8 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
               </div>
             </div>
           </div>
-          <DialogFooter className="sm:justify-between">
+
+          <DialogFooter className="p-6 pt-2 bg-background z-10 border-t justify-between sm:justify-between">
             <Button type="button" variant="destructive" onClick={handleDelete}>
               <TrashIcon className="mr-2 h-4 w-4" />
               {t('bookmark.delete')}

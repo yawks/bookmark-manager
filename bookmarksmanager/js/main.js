@@ -1057,6 +1057,7 @@ const SEGMENT_TYPE_PATHNAME = 0;
 const SEGMENT_TYPE_PARAM = 1;
 const SEGMENT_TYPE_WILDCARD = 2;
 const SEGMENT_TYPE_OPTIONAL_PARAM = 3;
+const SEGMENT_TYPE_INDEX = 4;
 const PARAM_W_CURLY_BRACES_RE = /^([^{]*)\{\$([a-zA-Z_$][a-zA-Z0-9_$]*)\}([^}]*)$/;
 const OPTIONAL_PARAM_W_CURLY_BRACES_RE = /^([^{]*)\{-\$([a-zA-Z_$][a-zA-Z0-9_$]*)\}([^}]*)$/;
 const WILDCARD_W_CURLY_BRACES_RE = /^([^{]*)\{\$\}([^}]*)$/;
@@ -1267,11 +1268,21 @@ function parseSegments(defaultCaseSensitive, data, route, start, node, depth, on
       }
       node = nextNode;
     }
-    if ((route.path || !route.children) && !route.isRoot) {
-      const isIndex = path.endsWith("/");
-      if (!isIndex) node.notFound = route;
-      if (!node.route || !node.isIndex && isIndex) node.route = route;
-      node.isIndex || (node.isIndex = isIndex);
+    const isLeaf = (route.path || !route.children) && !route.isRoot;
+    if (isLeaf && path.endsWith("/")) {
+      const indexNode = createStaticNode(
+        route.fullPath ?? route.from
+      );
+      indexNode.kind = SEGMENT_TYPE_INDEX;
+      indexNode.parent = node;
+      depth++;
+      indexNode.depth = depth;
+      node.index = indexNode;
+      node = indexNode;
+    }
+    if (isLeaf && !node.route) {
+      node.route = route;
+      node.fullPath = route.fullPath ?? route.from;
     }
   }
   if (route.children)
@@ -1339,6 +1350,7 @@ function createStaticNode(fullPath) {
   return {
     kind: SEGMENT_TYPE_PATHNAME,
     depth: 0,
+    index: null,
     static: null,
     staticInsensitive: null,
     dynamic: null,
@@ -1346,15 +1358,14 @@ function createStaticNode(fullPath) {
     wildcard: null,
     route: null,
     fullPath,
-    parent: null,
-    isIndex: false,
-    notFound: null
+    parent: null
   };
 }
 function createDynamicNode(kind, fullPath, caseSensitive, prefix2, suffix) {
   return {
     kind,
     depth: 0,
+    index: null,
     static: null,
     staticInsensitive: null,
     dynamic: null,
@@ -1363,8 +1374,6 @@ function createDynamicNode(kind, fullPath, caseSensitive, prefix2, suffix) {
     route: null,
     fullPath,
     parent: null,
-    isIndex: false,
-    notFound: null,
     caseSensitive,
     prefix: prefix2,
     suffix
@@ -1458,9 +1467,8 @@ function findMatch(path, segmentTree, fuzzy = false) {
   const leaf = getNodeMatch(path, parts, segmentTree, fuzzy);
   if (!leaf) return null;
   const params = extractParams(path, parts, leaf);
-  const isFuzzyMatch = "**" in leaf;
-  if (isFuzzyMatch) params["**"] = leaf["**"];
-  const route = isFuzzyMatch ? leaf.node.notFound ?? leaf.node.route : leaf.node.route;
+  if ("**" in leaf) params["**"] = leaf["**"];
+  const route = leaf.node.route;
   return {
     route,
     params
@@ -1540,6 +1548,8 @@ function buildBranch(node) {
   return list;
 }
 function getNodeMatch(path, parts, segmentTree, fuzzy) {
+  if (path === "/" && segmentTree.index)
+    return { node: segmentTree.index, skipped: 0 };
   const trailingSlash = !last(parts);
   const pathIsIndex = trailingSlash && path !== "/";
   const partsLength = parts.length - (trailingSlash ? 1 : 0);
@@ -1560,21 +1570,35 @@ function getNodeMatch(path, parts, segmentTree, fuzzy) {
   while (stack.length) {
     const frame = stack.pop();
     let { node, index: index2, skipped, depth, statics, dynamics, optionals } = frame;
-    if (fuzzy && node.notFound && isFrameMoreSpecific(bestFuzzy, frame)) {
+    if (fuzzy && node.route && node.kind !== SEGMENT_TYPE_INDEX && isFrameMoreSpecific(bestFuzzy, frame)) {
       bestFuzzy = frame;
     }
     const isBeyondPath = index2 === partsLength;
     if (isBeyondPath) {
-      if (node.route && (!pathIsIndex || node.isIndex)) {
-        if (isFrameMoreSpecific(bestMatch, frame)) {
-          bestMatch = frame;
-        }
-        if (statics === partsLength) return bestMatch;
+      if (node.route && !pathIsIndex && isFrameMoreSpecific(bestMatch, frame)) {
+        bestMatch = frame;
       }
-      if (!node.optional && !node.wildcard) continue;
+      if (!node.optional && !node.wildcard && !node.index) continue;
     }
     const part = isBeyondPath ? void 0 : parts[index2];
     let lowerPart;
+    if (isBeyondPath && node.index) {
+      const indexFrame = {
+        node: node.index,
+        index: index2,
+        skipped,
+        depth: depth + 1,
+        statics,
+        dynamics,
+        optionals
+      };
+      if (statics === partsLength && !dynamics && !optionals && !skipped) {
+        return indexFrame;
+      }
+      if (isFrameMoreSpecific(bestMatch, indexFrame)) {
+        bestMatch = indexFrame;
+      }
+    }
     if (node.wildcard && isFrameMoreSpecific(wildcardMatch, frame)) {
       for (const segment of node.wildcard) {
         const { prefix: prefix2, suffix } = segment;
@@ -1591,7 +1615,7 @@ function getNodeMatch(path, parts, segmentTree, fuzzy) {
         }
         wildcardMatch = {
           node: segment,
-          index: index2,
+          index: partsLength,
           skipped,
           depth,
           statics,
@@ -1688,6 +1712,9 @@ function getNodeMatch(path, parts, segmentTree, fuzzy) {
       }
     }
   }
+  if (bestMatch && wildcardMatch) {
+    return isFrameMoreSpecific(wildcardMatch, bestMatch) ? bestMatch : wildcardMatch;
+  }
   if (bestMatch) return bestMatch;
   if (wildcardMatch) return wildcardMatch;
   if (fuzzy && bestFuzzy) {
@@ -1706,7 +1733,7 @@ function getNodeMatch(path, parts, segmentTree, fuzzy) {
 }
 function isFrameMoreSpecific(prev, next) {
   if (!prev) return true;
-  return next.statics > prev.statics || next.statics === prev.statics && (next.dynamics > prev.dynamics || next.dynamics === prev.dynamics && next.optionals > prev.optionals);
+  return next.statics > prev.statics || next.statics === prev.statics && (next.dynamics > prev.dynamics || next.dynamics === prev.dynamics && (next.optionals > prev.optionals || next.optionals === prev.optionals && ((next.node.kind === SEGMENT_TYPE_INDEX) > (prev.node.kind === SEGMENT_TYPE_INDEX) || next.node.kind === SEGMENT_TYPE_INDEX === (prev.node.kind === SEGMENT_TYPE_INDEX) && next.depth > prev.depth)));
 }
 function joinPaths(paths) {
   return cleanPath(
@@ -1882,16 +1909,11 @@ function interpolatePath({
     }
     if (kind === SEGMENT_TYPE_OPTIONAL_PARAM) {
       const key = path.substring(segment[2], segment[3]);
+      const valueRaw = params[key];
+      if (valueRaw == null) continue;
+      usedParams[key] = valueRaw;
       const prefix2 = path.substring(start, segment[1]);
       const suffix = path.substring(segment[4], end);
-      const valueRaw = params[key];
-      if (valueRaw == null) {
-        if (prefix2 || suffix) {
-          joined += "/" + prefix2 + suffix;
-        }
-        continue;
-      }
-      usedParams[key] = valueRaw;
       const value = encodeParam(key, params, decodeCharMap) ?? "";
       joined += "/" + prefix2 + value + suffix;
       continue;
@@ -2233,6 +2255,20 @@ const triggerOnReady = (inner) => {
 const resolvePreload = (inner, matchId) => {
   return !!(inner.preload && !inner.router.state.matches.some((d) => d.id === matchId));
 };
+const buildMatchContext = (inner, index2, includeCurrentMatch = true) => {
+  const context = {
+    ...inner.router.options.context ?? {}
+  };
+  const end = includeCurrentMatch ? index2 : index2 - 1;
+  for (let i = 0; i <= end; i++) {
+    const innerMatch = inner.matches[i];
+    if (!innerMatch) continue;
+    const m2 = inner.router.getMatch(innerMatch.id);
+    if (!m2) continue;
+    Object.assign(context, m2.__routeContext, m2.__beforeLoadContext);
+  }
+  return context;
+};
 const _handleNotFound = (inner, err) => {
   var _a;
   const routeCursor = inner.router.routesById[err.routeId ?? ""] ?? inner.router.routeTree;
@@ -2428,8 +2464,7 @@ const executeBeforeLoad = (inner, matchId, index2, route) => {
   const abortController = new AbortController();
   const parentMatchId = (_a = inner.matches[index2 - 1]) == null ? void 0 : _a.id;
   const parentMatch = parentMatchId ? inner.router.getMatch(parentMatchId) : void 0;
-  const parentMatchContext = (parentMatch == null ? void 0 : parentMatch.context) ?? inner.router.options.context ?? void 0;
-  const context = { ...parentMatchContext, ...match.__routeContext };
+  (parentMatch == null ? void 0 : parentMatch.context) ?? inner.router.options.context ?? void 0;
   let isPending = false;
   const pending = () => {
     if (isPending) return;
@@ -2438,8 +2473,10 @@ const executeBeforeLoad = (inner, matchId, index2, route) => {
       ...prev,
       isFetching: "beforeLoad",
       fetchCount: prev.fetchCount + 1,
-      abortController,
-      context
+      abortController
+      // Note: We intentionally don't update context here.
+      // Context should only be updated after beforeLoad resolves to avoid
+      // components seeing incomplete context during async beforeLoad execution.
     }));
   };
   const resolve = () => {
@@ -2459,6 +2496,10 @@ const executeBeforeLoad = (inner, matchId, index2, route) => {
     return;
   }
   match._nonReactive.beforeLoadPromise = createControlledPromise();
+  const context = {
+    ...buildMatchContext(inner, index2, false),
+    ...match.__routeContext
+  };
   const { search, params, cause } = match;
   const preload = resolvePreload(inner, matchId);
   const beforeLoadFnContext = {
@@ -2493,11 +2534,7 @@ const executeBeforeLoad = (inner, matchId, index2, route) => {
       pending();
       inner.updateMatch(matchId, (prev) => ({
         ...prev,
-        __beforeLoadContext: beforeLoadContext2,
-        context: {
-          ...prev.context,
-          ...beforeLoadContext2
-        }
+        __beforeLoadContext: beforeLoadContext2
       }));
       resolve();
     });
@@ -2573,18 +2610,7 @@ const executeHead = (inner, matchId, route) => {
 const getLoaderContext = (inner, matchId, index2, route) => {
   const parentMatchPromise = inner.matchPromises[index2 - 1];
   const { params, loaderDeps, abortController, cause } = inner.router.getMatch(matchId);
-  let context = inner.router.options.context ?? {};
-  for (let i = 0; i <= index2; i++) {
-    const innerMatch = inner.matches[i];
-    if (!innerMatch) continue;
-    const m2 = inner.router.getMatch(innerMatch.id);
-    if (!m2) continue;
-    context = {
-      ...context,
-      ...m2.__routeContext ?? {},
-      ...m2.__beforeLoadContext ?? {}
-    };
-  }
+  const context = buildMatchContext(inner, index2);
   const preload = resolvePreload(inner, matchId);
   return {
     params,
@@ -2638,8 +2664,6 @@ const runLoader = async (inner, matchId, index2, route) => {
         }
       }
       if (route._lazyPromise) await route._lazyPromise;
-      const headResult = executeHead(inner, matchId, route);
-      const head = headResult ? await headResult : void 0;
       const pendingPromise = match._nonReactive.minPendingPromise;
       if (pendingPromise) await pendingPromise;
       if (route._componentsPromise) await route._componentsPromise;
@@ -2648,8 +2672,7 @@ const runLoader = async (inner, matchId, index2, route) => {
         error: void 0,
         status: "success",
         isFetching: false,
-        updatedAt: Date.now(),
-        ...head
+        updatedAt: Date.now()
       }));
     } catch (e) {
       let error = e;
@@ -2669,27 +2692,16 @@ const runLoader = async (inner, matchId, index2, route) => {
           onErrorError
         );
       }
-      const headResult = executeHead(inner, matchId, route);
-      const head = headResult ? await headResult : void 0;
       inner.updateMatch(matchId, (prev) => ({
         ...prev,
         error,
         status: "error",
-        isFetching: false,
-        ...head
+        isFetching: false
       }));
     }
   } catch (err) {
     const match = inner.router.getMatch(matchId);
     if (match) {
-      const headResult = executeHead(inner, matchId, route);
-      if (headResult) {
-        const head = await headResult;
-        inner.updateMatch(matchId, (prev) => ({
-          ...prev,
-          ...head
-        }));
-      }
       match._nonReactive.loaderPromise = void 0;
     }
     handleRedirectAndNotFound(inner, match, err);
@@ -2701,16 +2713,14 @@ const loadRouteMatch = async (inner, index2) => {
   let loaderShouldRunAsync = false;
   let loaderIsRunningAsync = false;
   const route = inner.router.looseRoutesById[routeId];
+  const commitContext = () => {
+    inner.updateMatch(matchId, (prev) => ({
+      ...prev,
+      context: buildMatchContext(inner, index2)
+    }));
+  };
   if (shouldSkipLoader(inner, matchId)) {
     if (inner.router.isServer) {
-      const headResult = executeHead(inner, matchId, route);
-      if (headResult) {
-        const head = await headResult;
-        inner.updateMatch(matchId, (prev) => ({
-          ...prev,
-          ...head
-        }));
-      }
       return inner.router.getMatch(matchId);
     }
   } else {
@@ -2749,6 +2759,7 @@ const loadRouteMatch = async (inner, index2) => {
           var _a2, _b2;
           try {
             await runLoader(inner, matchId, index2, route);
+            commitContext();
             const match3 = inner.router.getMatch(matchId);
             (_a2 = match3._nonReactive.loaderPromise) == null ? void 0 : _a2.resolve();
             (_b2 = match3._nonReactive.loadPromise) == null ? void 0 : _b2.resolve();
@@ -2761,15 +2772,6 @@ const loadRouteMatch = async (inner, index2) => {
         })();
       } else if (status !== "success" || loaderShouldRunAsync && inner.sync) {
         await runLoader(inner, matchId, index2, route);
-      } else {
-        const headResult = executeHead(inner, matchId, route);
-        if (headResult) {
-          const head = await headResult;
-          inner.updateMatch(matchId, (prev) => ({
-            ...prev,
-            ...head
-          }));
-        }
       }
     }
   }
@@ -2782,6 +2784,9 @@ const loadRouteMatch = async (inner, index2) => {
   match._nonReactive.pendingTimeout = void 0;
   if (!loaderIsRunningAsync) match._nonReactive.loaderPromise = void 0;
   match._nonReactive.dehydrated = void 0;
+  if (!loaderIsRunningAsync) {
+    commitContext();
+  }
   const nextIsFetching = loaderIsRunningAsync ? match.isFetching : false;
   if (nextIsFetching !== match.isFetching || match.invalid !== false) {
     inner.updateMatch(matchId, (prev) => ({
@@ -2810,7 +2815,38 @@ async function loadMatches(arg) {
     for (let i = 0; i < max2; i++) {
       inner.matchPromises.push(loadRouteMatch(inner, i));
     }
-    await Promise.all(inner.matchPromises);
+    const results = await Promise.allSettled(inner.matchPromises);
+    const failures = results.filter(
+      (result) => result.status === "rejected"
+    ).map((result) => result.reason);
+    let firstNotFound;
+    for (const err of failures) {
+      if (isRedirect(err)) {
+        throw err;
+      }
+      if (!firstNotFound && isNotFound(err)) {
+        firstNotFound = err;
+      }
+    }
+    for (const match of inner.matches) {
+      const { id: matchId, routeId } = match;
+      const route = inner.router.looseRoutesById[routeId];
+      try {
+        const headResult = executeHead(inner, matchId, route);
+        if (headResult) {
+          const head = await headResult;
+          inner.updateMatch(matchId, (prev) => ({
+            ...prev,
+            ...head
+          }));
+        }
+      } catch (err) {
+        console.error(`Error executing head for route ${routeId}:`, err);
+      }
+    }
+    if (firstNotFound) {
+      throw firstNotFound;
+    }
     const readyPromise = triggerOnReady(inner);
     if (isPromise(readyPromise)) await readyPromise;
   } catch (err) {
@@ -3118,15 +3154,14 @@ class RouterCore {
         const searchStr = this.options.stringifySearch(parsedSearch);
         url.search = searchStr;
         const fullPath = url.href.replace(url.origin, "");
-        const { pathname, hash } = url;
         return {
           href: fullPath,
           publicHref: href,
-          url: url.href,
-          pathname: decodePath(pathname),
+          url,
+          pathname: decodePath(url.pathname),
           searchStr,
           search: replaceEqualDeep(previousLocation == null ? void 0 : previousLocation.search, parsedSearch),
-          hash: hash.split("#").reverse()[0] ?? "",
+          hash: url.hash.split("#").reverse()[0] ?? "",
           state: replaceEqualDeep(previousLocation == null ? void 0 : previousLocation.state, state)
         };
       };
@@ -3277,7 +3312,7 @@ class RouterCore {
         return {
           publicHref: rewrittenUrl.pathname + rewrittenUrl.search + rewrittenUrl.hash,
           href: fullPath,
-          url: rewrittenUrl.href,
+          url: rewrittenUrl,
           pathname: nextPathname,
           search: nextSearch,
           searchStr,
@@ -3298,11 +3333,16 @@ class RouterCore {
             );
             if (match) {
               Object.assign(params, match.params);
-              const { from: _from, ...maskProps } = match.route;
+              const {
+                from: _from,
+                params: maskParams,
+                ...maskProps
+              } = match.route;
+              const nextParams = maskParams === false || maskParams === null ? {} : (maskParams ?? true) === true ? params : Object.assign(params, functionalUpdate(maskParams, params));
               maskedDest = {
                 from: opts.from,
                 ...maskProps,
-                params
+                params: nextParams
               };
               maskedNext = build(maskedDest);
             }
@@ -3351,7 +3391,16 @@ class RouterCore {
       if (isSameUrl && isSameState()) {
         this.load();
       } else {
-        let { maskedLocation, hashScrollIntoView, ...nextHistory } = next;
+        let {
+          // eslint-disable-next-line prefer-const
+          maskedLocation,
+          // eslint-disable-next-line prefer-const
+          hashScrollIntoView,
+          // don't pass url into history since it is a URL instance that cannot be serialized
+          // eslint-disable-next-line prefer-const
+          url: _url,
+          ...nextHistory
+        } = next;
         if (maskedLocation) {
           nextHistory = {
             ...maskedLocation,
@@ -3428,23 +3477,53 @@ class RouterCore {
       });
       return commitPromise;
     };
-    this.navigate = ({ to, reloadDocument, href, ...rest }) => {
-      if (!reloadDocument && href) {
+    this.navigate = async ({
+      to,
+      reloadDocument,
+      href,
+      publicHref,
+      ...rest
+    }) => {
+      var _a;
+      let hrefIsUrl = false;
+      if (href) {
         try {
           new URL(`${href}`);
-          reloadDocument = true;
+          hrefIsUrl = true;
         } catch {
         }
       }
+      if (hrefIsUrl && !reloadDocument) {
+        reloadDocument = true;
+      }
       if (reloadDocument) {
-        if (!href) {
+        if (!href || !publicHref && !hrefIsUrl) {
           const location = this.buildLocation({ to, ...rest });
-          href = location.url;
+          href = href ?? location.url.href;
+          publicHref = publicHref ?? location.url.href;
+        }
+        const reloadHref = !hrefIsUrl && publicHref ? publicHref : href;
+        if (!rest.ignoreBlocker) {
+          const historyWithBlockers = this.history;
+          const blockers = ((_a = historyWithBlockers.getBlockers) == null ? void 0 : _a.call(historyWithBlockers)) ?? [];
+          for (const blocker of blockers) {
+            if (blocker == null ? void 0 : blocker.blockerFn) {
+              const shouldBlock = await blocker.blockerFn({
+                currentLocation: this.latestLocation,
+                nextLocation: this.latestLocation,
+                // External URLs don't have a next location in our router
+                action: "PUSH"
+              });
+              if (shouldBlock) {
+                return Promise.resolve();
+              }
+            }
+          }
         }
         if (rest.replace) {
-          window.location.replace(href);
+          window.location.replace(reloadHref);
         } else {
-          window.location.href = href;
+          window.location.href = reloadHref;
         }
         return Promise.resolve();
       }
@@ -3467,18 +3546,8 @@ class RouterCore {
           state: true,
           _includeValidateSearch: true
         });
-        const normalizeUrl = (url) => {
-          try {
-            return encodeURI(decodeURI(url));
-          } catch {
-            return url;
-          }
-        };
-        if (trimPath(normalizeUrl(this.latestLocation.href)) !== trimPath(normalizeUrl(nextLocation.href))) {
-          let href = nextLocation.url;
-          if (this.origin && href.startsWith(this.origin)) {
-            href = href.replace(this.origin, "") || "/";
-          }
+        if (this.latestLocation.publicHref !== nextLocation.publicHref || nextLocation.url.origin !== this.origin) {
+          const href = this.getParsedLocationHref(nextLocation);
           throw redirect({ href });
         }
       }
@@ -3709,13 +3778,17 @@ class RouterCore {
       this.shouldViewTransition = false;
       return this.load({ sync: opts == null ? void 0 : opts.sync });
     };
+    this.getParsedLocationHref = (location) => {
+      let href = location.url.href;
+      if (this.origin && location.url.origin === this.origin) {
+        href = href.replace(this.origin, "") || "/";
+      }
+      return href;
+    };
     this.resolveRedirect = (redirect2) => {
       if (!redirect2.options.href) {
         const location = this.buildLocation(redirect2.options);
-        let href = location.url;
-        if (this.origin && href.startsWith(this.origin)) {
-          href = href.replace(this.origin, "") || "/";
-        }
+        const href = this.getParsedLocationHref(location);
         redirect2.options.href = location.href;
         redirect2.headers.set("Location", href);
       }
@@ -4010,6 +4083,7 @@ class RouterCore {
         const status = route.options.loader || route.options.beforeLoad || route.lazyFn || routeNeedsPreload(route) ? "pending" : "success";
         match = {
           id: matchId,
+          ssr: this.isServer ? void 0 : route.options.ssr,
           index: index2,
           routeId: route.id,
           params: previousMatch ? replaceEqualDeep(previousMatch.params, routeParams) : routeParams,
@@ -11487,7 +11561,7 @@ function useLinkProps(options, forwardedRef) {
     if (disabled) {
       return void 0;
     }
-    let href = next.maskedLocation ? next.maskedLocation.url : next.url;
+    let href = next.maskedLocation ? next.maskedLocation.url.href : next.url.href;
     let external = false;
     if (router2.origin) {
       if (href.startsWith(router2.origin)) {
@@ -11950,7 +12024,7 @@ function Transitioner() {
       state: true,
       _includeValidateSearch: true
     });
-    if (trimPathRight(router2.latestLocation.href) !== trimPathRight(nextLocation.href)) {
+    if (trimPathRight(router2.latestLocation.publicHref) !== trimPathRight(nextLocation.publicHref)) {
       router2.commitLocation({ ...nextLocation, replace: true });
     }
     return () => {
@@ -11993,16 +12067,19 @@ function Transitioner() {
   }, [isPagePending, previousIsPagePending, router2]);
   useLayoutEffect(() => {
     if (previousIsAnyPending && !isAnyPending) {
+      const changeInfo = getLocationChangeInfo(router2.state);
       router2.emit({
         type: "onResolved",
-        ...getLocationChangeInfo(router2.state)
+        ...changeInfo
       });
       router2.__store.setState((s) => ({
         ...s,
         status: "idle",
         resolvedLocation: s.location
       }));
-      handleHashScroll(router2);
+      if (changeInfo.hrefChanged) {
+        handleHashScroll(router2);
+      }
     }
   }, [isAnyPending, previousIsAnyPending, router2]);
   return null;
@@ -12060,9 +12137,8 @@ function ScriptOnce({ children }) {
     "script",
     {
       nonce: (_a = router2.options.ssr) == null ? void 0 : _a.nonce,
-      className: "$tsr",
       dangerouslySetInnerHTML: {
-        __html: children + ';typeof $_TSR !== "undefined" && $_TSR.c()'
+        __html: children + ";document.currentScript.remove()"
       }
     }
   );
@@ -12218,6 +12294,7 @@ const MatchInner = reactExports.memo(function MatchInnerImpl({
           id: match2.id,
           status: match2.status,
           error: match2.error,
+          invalid: match2.invalid,
           _forcePending: match2._forcePending,
           _displayPending: match2._displayPending
         }
@@ -12466,6 +12543,24 @@ var CodeIcon = /* @__PURE__ */ reactExports.forwardRef(function(_ref, forwardedR
     ref: forwardedRef
   }), reactExports.createElement("path", {
     d: "M9.96424 2.68571C10.0668 2.42931 9.94209 2.13833 9.6857 2.03577C9.4293 1.93322 9.13832 2.05792 9.03576 2.31432L5.03576 12.3143C4.9332 12.5707 5.05791 12.8617 5.3143 12.9642C5.5707 13.0668 5.86168 12.9421 5.96424 12.6857L9.96424 2.68571ZM3.85355 5.14646C4.04882 5.34172 4.04882 5.6583 3.85355 5.85356L2.20711 7.50001L3.85355 9.14646C4.04882 9.34172 4.04882 9.6583 3.85355 9.85356C3.65829 10.0488 3.34171 10.0488 3.14645 9.85356L1.14645 7.85356C0.951184 7.6583 0.951184 7.34172 1.14645 7.14646L3.14645 5.14646C3.34171 4.9512 3.65829 4.9512 3.85355 5.14646ZM11.1464 5.14646C11.3417 4.9512 11.6583 4.9512 11.8536 5.14646L13.8536 7.14646C14.0488 7.34172 14.0488 7.6583 13.8536 7.85356L11.8536 9.85356C11.6583 10.0488 11.3417 10.0488 11.1464 9.85356C10.9512 9.6583 10.9512 9.34172 11.1464 9.14646L12.7929 7.50001L11.1464 5.85356C10.9512 5.6583 10.9512 5.34172 11.1464 5.14646Z",
+    fill: color,
+    fillRule: "evenodd",
+    clipRule: "evenodd"
+  }));
+});
+var _excluded$1r = ["color"];
+var Cross2Icon = /* @__PURE__ */ reactExports.forwardRef(function(_ref, forwardedRef) {
+  var _ref$color = _ref.color, color = _ref$color === void 0 ? "currentColor" : _ref$color, props = _objectWithoutPropertiesLoose(_ref, _excluded$1r);
+  return reactExports.createElement("svg", Object.assign({
+    width: "15",
+    height: "15",
+    viewBox: "0 0 15 15",
+    fill: "none",
+    xmlns: "http://www.w3.org/2000/svg"
+  }, props, {
+    ref: forwardedRef
+  }), reactExports.createElement("path", {
+    d: "M11.7816 4.03157C12.0062 3.80702 12.0062 3.44295 11.7816 3.2184C11.5571 2.99385 11.193 2.99385 10.9685 3.2184L7.50005 6.68682L4.03164 3.2184C3.80708 2.99385 3.44301 2.99385 3.21846 3.2184C2.99391 3.44295 2.99391 3.80702 3.21846 4.03157L6.68688 7.49999L3.21846 10.9684C2.99391 11.193 2.99391 11.557 3.21846 11.7816C3.44301 12.0061 3.80708 12.0061 4.03164 11.7816L7.50005 8.31316L10.9685 11.7816C11.193 12.0061 11.5571 12.0061 11.7816 11.7816C12.0062 11.557 12.0062 11.193 11.7816 10.9684L8.31322 7.49999L11.7816 4.03157Z",
     fill: color,
     fillRule: "evenodd",
     clipRule: "evenodd"
@@ -14085,6 +14180,12 @@ function RemoveScrollSideCar(props) {
     var target = event.target;
     var moveDirection = Math.abs(deltaX) > Math.abs(deltaY) ? "h" : "v";
     if ("touches" in event && moveDirection === "h" && target.type === "range") {
+      return false;
+    }
+    var selection = window.getSelection();
+    var anchorNode = selection && selection.anchorNode;
+    var isTouchingSelection = anchorNode ? anchorNode === target || anchorNode.contains(target) : false;
+    if (isTouchingSelection) {
       return false;
     }
     var canBeScrolledInMainDirection = locationCouldBeScrolled(moveDirection, target);
@@ -25030,7 +25131,8 @@ let defaultOptions = {
   transWrapTextNodes: "",
   transKeepBasicHtmlNodesFor: ["br", "strong", "i", "p"],
   useSuspense: true,
-  unescape
+  unescape,
+  transDefaultProps: void 0
 };
 const getDefaults = () => defaultOptions;
 let i18nInstance;
@@ -25438,9 +25540,9 @@ function getRequestToken() {
   return (_a = document.querySelector('meta[name="requesttoken"]')) == null ? void 0 : _a.getAttribute("content");
 }
 function EditBookmarkForm({ bookmark, isOpen, onOpenChange }) {
-  const { t: t2 } = useTranslation();
+  console.log("EditBookmarkForm render v3");
   const router2 = useRouter();
-  const { collections, tags: allTags } = useRouteContext({ from: "__root__" }) || { collections: [], tags: [] };
+  const { collections, tags: allTags } = useLoaderData({ from: "__root__" }) || { collections: [], tags: [] };
   const availableCollections = collections || [];
   const availableTags = allTags || [];
   const [url, setUrl] = reactExports.useState("");
@@ -25449,6 +25551,7 @@ function EditBookmarkForm({ bookmark, isOpen, onOpenChange }) {
   const [collectionId, setCollectionId] = reactExports.useState();
   const [selectedTags, setSelectedTags] = reactExports.useState([]);
   const [screenshot, setScreenshot] = reactExports.useState(null);
+  const [showScreenshotInput, setShowScreenshotInput] = reactExports.useState(false);
   const tagOptions = availableTags.map((tag) => ({ label: tag.name, value: String(tag.id) }));
   const handleCreateTag = async (label) => {
     const requestToken = getRequestToken();
@@ -25518,7 +25621,7 @@ function EditBookmarkForm({ bookmark, isOpen, onOpenChange }) {
   };
   const handleDelete = async () => {
     if (!bookmark) return;
-    if (!window.confirm(t2("bookmark.confirm_delete"))) {
+    if (!window.confirm(t("bookmark.confirm_delete"))) {
       return;
     }
     const requestToken = getRequestToken();
@@ -25540,53 +25643,100 @@ function EditBookmarkForm({ bookmark, isOpen, onOpenChange }) {
     }
   };
   if (!bookmark) return null;
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Dialog, { open: isOpen, onOpenChange, children: /* @__PURE__ */ jsxRuntimeExports.jsx(DialogContent, { className: "sm:max-w-[425px]", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("form", { onSubmit: handleSubmit, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogHeader, { children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(DialogTitle, { children: t2("bookmark.edit_title") }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(DialogDescription, { children: t2("bookmark.edit_description") })
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Dialog, { open: isOpen, onOpenChange, children: /* @__PURE__ */ jsxRuntimeExports.jsx(DialogContent, { className: "sm:max-w-[425px] w-full max-w-lg max-h-[90vh] flex flex-col p-0 gap-0", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("form", { onSubmit: handleSubmit, className: "flex flex-col h-full overflow-hidden", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogHeader, { className: "p-6 pb-2", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(DialogTitle, { children: t("bookmark.edit_title") }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(DialogDescription, { children: t("bookmark.edit_description") })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid gap-4 py-4", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex-1 overflow-y-auto p-6 pt-2 gap-4 flex flex-col", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 items-center gap-4", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "url", className: "text-right", children: t2("bookmark.url") }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "url", className: "text-right", children: t("bookmark.url") }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { id: "url", value: url, onChange: (e) => setUrl(e.target.value), className: "col-span-3" })
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 items-center gap-4", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "title", className: "text-right", children: t2("bookmark.title") }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { id: "title", value: title, onChange: (e) => setTitle(e.target.value), className: "col-span-3" })
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "col-span-4 flex flex-col items-center justify-center gap-3 min-h-[80px]", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative group w-24 h-20 flex-shrink-0", children: [
+          screenshot ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "img",
+            {
+              src: screenshot,
+              alt: "Website preview",
+              className: "w-24 h-20 object-cover rounded-md border",
+              style: { maxWidth: "100%", maxHeight: 80 }
+            }
+          ) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-24 h-20 bg-muted/30 rounded-md flex items-center justify-center text-xs text-muted-foreground border border-dashed border-muted-foreground/30 text-center p-1", children: t("bookmark.no_preview") }),
+          !showScreenshotInput && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute inset-0 bg-black/50 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer", onClick: () => setShowScreenshotInput(true), children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Button,
+            {
+              type: "button",
+              variant: "secondary",
+              size: "sm",
+              className: "h-6 text-xs px-2",
+              children: t("bookmark.edit")
+            }
+          ) })
+        ] }),
+        showScreenshotInput && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex w-full max-w-[280px] items-center gap-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Input,
+            {
+              value: screenshot || "",
+              onChange: (e) => setScreenshot(e.target.value),
+              placeholder: t("bookmark.enter_screenshot_url"),
+              className: "h-8 text-xs",
+              autoFocus: true
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Button,
+            {
+              type: "button",
+              variant: "ghost",
+              size: "icon",
+              className: "h-8 w-8",
+              onClick: () => setShowScreenshotInput(false),
+              title: t("collection.cancel"),
+              children: /* @__PURE__ */ jsxRuntimeExports.jsx(Cross2Icon, { className: "h-4 w-4" })
+            }
+          )
+        ] })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 items-center gap-4", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "description", className: "text-right", children: t2("bookmark.description") }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "title", className: "text-right", children: t("bookmark.title") }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { id: "title", value: title, onChange: (e) => setTitle(e.target.value), className: "col-span-3" })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 items-start gap-4", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "description", className: "text-right pt-2", children: t("bookmark.description") }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { id: "description", value: description, onChange: (e) => setDescription(e.target.value), className: "col-span-3" })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 items-center gap-4", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "collection", className: "text-right", children: t2("bookmark.collection") }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "collection", className: "text-right", children: t("bookmark.collection") }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs(Select, { value: collectionId, onValueChange: setCollectionId, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(SelectTrigger, { className: "col-span-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectValue, { placeholder: t2("bookmark.select_collection") }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(SelectTrigger, { className: "col-span-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectValue, { placeholder: t("bookmark.select_collection") }) }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContent, { children: availableCollections.map((collection) => /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: String(collection.id), children: collection.name }, collection.id)) })
         ] })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 items-start gap-4", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "tags", className: "text-right mt-2", children: t2("bookmark.tags") }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "tags", className: "text-right mt-2", children: t("bookmark.tags") }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "col-span-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
           TagSelector,
           {
             value: selectedTags,
             onChange: setSelectedTags,
             options: tagOptions,
-            placeholder: t2("bookmark.select_tags"),
-            emptyIndicator: t2("bookmark.no_tags_found"),
+            placeholder: t("bookmark.select_tags"),
+            emptyIndicator: t("bookmark.no_tags_found"),
             creatable: true,
             onCreateOption: handleCreateTag
           }
         ) })
       ] })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogFooter, { className: "sm:justify-between", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogFooter, { className: "p-6 pt-2 bg-background z-10 border-t justify-between sm:justify-between", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs(Button, { type: "button", variant: "destructive", onClick: handleDelete, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx(TrashIcon, { className: "mr-2 h-4 w-4" }),
-        t2("bookmark.delete")
+        t("bookmark.delete")
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "submit", children: t2("bookmark.save") })
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "submit", children: t("bookmark.save") })
     ] })
   ] }) }) });
 }

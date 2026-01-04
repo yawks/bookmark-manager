@@ -29,6 +29,8 @@
       "select_tags": "Sélectionner des tags...",
       "edit_title": "Modifier le favori",
       "edit_description": "Modifiez votre favori ici. Cliquez sur enregistrer lorsque vous avez terminé.",
+      "edit": "Modifier",
+      "enter_screenshot_url": "Entrez l'URL de l'image :",
       "delete": "Supprimer",
       "confirm_delete": "Voulez-vous vraiment supprimer ce favori ?",
       "no_tags_found": "Aucun tag trouvé.",
