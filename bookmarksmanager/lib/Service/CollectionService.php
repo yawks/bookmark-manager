@@ -17,18 +17,24 @@ class CollectionService {
         $this->bookmarkService = $bookmarkService;
     }
 
-    public function findAll(): array {
-        $userId = $this->userSession->getUser()->getUID();
+    public function findAll(?string $userId = null): array {
+        if ($userId === null) {
+            $userId = $this->userSession->getUser()->getUID();
+        }
         return $this->mapper->findAll($userId);
     }
 
-    public function find(int $id) {
-        $userId = $this->userSession->getUser()->getUID();
+    public function find(int $id, ?string $userId = null) {
+        if ($userId === null) {
+            $userId = $this->userSession->getUser()->getUID();
+        }
         return $this->mapper->find($id, $userId);
     }
 
-    public function create(string $name, ?string $icon, ?int $parentId) {
-        $userId = $this->userSession->getUser()->getUID();
+    public function create(string $name, ?string $icon, ?int $parentId, ?string $userId = null) {
+        if ($userId === null) {
+            $userId = $this->userSession->getUser()->getUID();
+        }
         $collection = new \OCA\BookmarksManager\Db\Collection();
         $collection->setUserId($userId);
         $collection->setName($name);
@@ -37,8 +43,10 @@ class CollectionService {
         return $this->mapper->insert($collection);
     }
 
-    public function update(int $id, string $name, ?string $icon, ?int $parentId) {
-        $userId = $this->userSession->getUser()->getUID();
+    public function update(int $id, string $name, ?string $icon, ?int $parentId, ?string $userId = null) {
+        if ($userId === null) {
+            $userId = $this->userSession->getUser()->getUID();
+        }
         $collection = $this->mapper->find($id, $userId);
         if ($collection === null) {
             throw new \Exception('Collection not found');
@@ -49,8 +57,10 @@ class CollectionService {
         return $this->mapper->update($collection);
     }
 
-    public function delete(int $id) {
-        $userId = $this->userSession->getUser()->getUID();
+    public function delete(int $id, ?string $userId = null) {
+        if ($userId === null) {
+            $userId = $this->userSession->getUser()->getUID();
+        }
         $collection = $this->mapper->find($id, $userId);
         if ($collection === null) {
             throw new \Exception('Collection not found');

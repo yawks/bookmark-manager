@@ -4,10 +4,12 @@ import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Button } from '../ui/button';
 import { t } from '../../lib/l10n';
 import ImportRaindropDialog from './ImportRaindropDialog';
+import ApiTokenDialog from './ApiTokenDialog';
 
 const SettingsButton = () => {
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [apiTokenDialogOpen, setApiTokenDialogOpen] = useState(false);
 
   return (
     <>
@@ -34,11 +36,21 @@ const SettingsButton = () => {
               >
                 {t('settings.import_from_raindrop')}
               </button>
+              <button
+                className="w-full text-left px-2 py-1.5 text-sm rounded-md hover:bg-accent"
+                onClick={() => {
+                  setPopoverOpen(false);
+                  setApiTokenDialogOpen(true);
+                }}
+              >
+                {t('settings.api_token.title')}
+              </button>
             </div>
           </PopoverContent>
         </Popover>
       </div>
       <ImportRaindropDialog open={importDialogOpen} onOpenChange={setImportDialogOpen} />
+      <ApiTokenDialog open={apiTokenDialogOpen} onOpenChange={setApiTokenDialogOpen} />
     </>
   );
 };

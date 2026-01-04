@@ -4,7 +4,7 @@
     <name>Bookmarks Manager</name>
     <summary>A simple bookmarking app</summary>
     <description>This is a simple bookmarking app that allows you to save and organize your favorite websites.</description>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <author>Jules</author>
     <namespace>BookmarksManager</namespace>
     <category>organization</category>

@@ -31,6 +31,7 @@
       "edit_description": "Modifiez votre favori ici. Cliquez sur enregistrer lorsque vous avez terminé.",
       "edit": "Modifier",
       "enter_screenshot_url": "Entrez l'URL de l'image :",
+      "favicon_url": "URL du favicon",
       "delete": "Supprimer",
       "confirm_delete": "Voulez-vous vraiment supprimer ce favori ?",
       "no_tags_found": "Aucun tag trouvé.",
@@ -57,7 +58,18 @@
       "importing": "Importation en cours...",
       "import_error_invalid_file": "Veuillez sélectionner un fichier CSV valide.",
       "import_error_token": "Token CSRF introuvable. Veuillez actualiser la page.",
-      "import_error_failed": "L'importation a échoué. Veuillez réessayer."
+      "import_error_failed": "L'importation a échoué. Veuillez réessayer.",
+      "api_token": {
+        "title": "Token API",
+        "description": "Générez un token API pour accéder à vos favoris via l'API. Gardez ce token secret.",
+        "your_token": "Votre token API",
+        "no_token": "Vous n'avez pas encore de token API. Générez-en un pour commencer à utiliser l'API.",
+        "generate": "Générer un token",
+        "regenerate": "Régénérer",
+        "revoke": "Révoquer",
+        "revoke_confirm": "Êtes-vous sûr de vouloir révoquer ce token ? Vous devrez en générer un nouveau pour utiliser l'API à nouveau.",
+        "copied": "Token copié dans le presse-papiers !"
+      }
     }
   }
 }

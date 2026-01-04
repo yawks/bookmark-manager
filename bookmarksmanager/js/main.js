@@ -14935,6 +14935,59 @@ const Circle = createLucideIcon("Circle", [
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
+const Copy = createLucideIcon("Copy", [
+  ["rect", { width: "14", height: "14", x: "8", y: "8", rx: "2", ry: "2", key: "17jyea" }],
+  ["path", { d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2", key: "zix9uf" }]
+]);
+/**
+ * @license lucide-react v0.379.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const EyeOff = createLucideIcon("EyeOff", [
+  ["path", { d: "M9.88 9.88a3 3 0 1 0 4.24 4.24", key: "1jxqfv" }],
+  [
+    "path",
+    {
+      d: "M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68",
+      key: "9wicm4"
+    }
+  ],
+  [
+    "path",
+    { d: "M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61", key: "1jreej" }
+  ],
+  ["line", { x1: "2", x2: "22", y1: "2", y2: "22", key: "a6p6uj" }]
+]);
+/**
+ * @license lucide-react v0.379.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const Eye = createLucideIcon("Eye", [
+  ["path", { d: "M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z", key: "rwhkz3" }],
+  ["circle", { cx: "12", cy: "12", r: "3", key: "1v7zrd" }]
+]);
+/**
+ * @license lucide-react v0.379.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const RefreshCw = createLucideIcon("RefreshCw", [
+  ["path", { d: "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8", key: "v9h5vc" }],
+  ["path", { d: "M21 3v5h-5", key: "1q7to0" }],
+  ["path", { d: "M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16", key: "3uifl3" }],
+  ["path", { d: "M8 16H3v5", key: "1cv678" }]
+]);
+/**
+ * @license lucide-react v0.379.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
 const Search = createLucideIcon("Search", [
   ["circle", { cx: "11", cy: "11", r: "8", key: "4ej97u" }],
   ["path", { d: "m21 21-4.3-4.3", key: "1qie3q" }]
@@ -14954,6 +15007,19 @@ const Settings = createLucideIcon("Settings", [
     }
   ],
   ["circle", { cx: "12", cy: "12", r: "3", key: "1v7zrd" }]
+]);
+/**
+ * @license lucide-react v0.379.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const Trash2 = createLucideIcon("Trash2", [
+  ["path", { d: "M3 6h18", key: "d0wm0j" }],
+  ["path", { d: "M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6", key: "4alrt4" }],
+  ["path", { d: "M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2", key: "v07s0e" }],
+  ["line", { x1: "10", x2: "10", y1: "11", y2: "17", key: "1uufr5" }],
+  ["line", { x1: "14", x2: "14", y1: "11", y2: "17", key: "xtxkd" }]
 ]);
 /**
  * @license lucide-react v0.379.0 - ISC
@@ -24334,6 +24400,7 @@ function AddBookmarkForm() {
   const [collectionId, setCollectionId] = reactExports.useState(void 0);
   const [selectedTags, setSelectedTags] = reactExports.useState([]);
   const [screenshot, setScreenshot] = reactExports.useState(null);
+  const [favicon, setFavicon] = reactExports.useState(null);
   const [isFetching, setIsFetching] = reactExports.useState(false);
   const [isSaving, setIsSaving] = reactExports.useState(false);
   const [saveError, setSaveError] = reactExports.useState(null);
@@ -24370,6 +24437,7 @@ function AddBookmarkForm() {
         if (data.title) setTitle(data.title);
         if (data.description) setDescription(data.description);
         if (data.image) setScreenshot(data.image);
+        if (data.favicon) setFavicon(data.favicon);
       }
     } catch (error) {
       console.error("Failed to fetch page info", error);
@@ -24396,7 +24464,8 @@ function AddBookmarkForm() {
         const id2 = parseInt(tag.value, 10);
         return isNaN(id2) ? tag.value : id2;
       }),
-      screenshot
+      screenshot,
+      favicon
     };
     try {
       const response = await fetch("/apps/bookmarksmanager/api/v1/bookmarks", {
@@ -24428,6 +24497,7 @@ function AddBookmarkForm() {
       setCollectionId(void 0);
       setSelectedTags([]);
       setScreenshot(null);
+      setFavicon(null);
     }
   };
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(Dialog, { open, onOpenChange: handleOpenChange, children: [
@@ -24446,21 +24516,24 @@ function AddBookmarkForm() {
           /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "url", className: "text-right", children: t("bookmark.url") }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { id: "url", value: url, onChange: (e) => setUrl(e.target.value), onBlur: handleUrlBlur, placeholder: t("bookmark.placeholder_url"), className: "col-span-3" })
         ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "col-span-4 flex justify-center items-center min-h-[80px]", id: "screenshot-debug-block", children: [
-          (() => {
-            console.log("RENDER screenshot block", { isFetching, screenshot });
-            return null;
-          })(),
-          isFetching ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-24 h-20 bg-muted animate-pulse rounded-md", "data-testid": "skeleton" }) : screenshot ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "col-span-4 flex justify-center items-center gap-4 min-h-[80px]", id: "screenshot-debug-block", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "relative group w-24 h-20 flex-shrink-0", children: isFetching ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-24 h-20 bg-muted animate-pulse rounded-md" }) : screenshot ? /* @__PURE__ */ jsxRuntimeExports.jsx(
             "img",
             {
               src: screenshot,
               alt: "Website preview",
               className: "w-24 h-20 object-cover rounded-md border",
-              style: { maxWidth: "100%", maxHeight: 80 },
-              "data-testid": "screenshot-img"
+              style: { maxWidth: "100%", maxHeight: 80 }
             }
-          ) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-24 h-20 bg-muted/30 rounded-md flex items-center justify-center text-xs text-muted-foreground border border-dashed border-muted-foreground/30", "data-testid": "no-preview", children: t("bookmark.no_preview") })
+          ) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-24 h-20 bg-muted/30 rounded-md flex items-center justify-center text-xs text-muted-foreground border border-dashed border-muted-foreground/30 text-center p-1", children: t("bookmark.no_preview") }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "relative group w-12 h-12 flex-shrink-0", children: isFetching ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-12 h-12 bg-muted animate-pulse rounded-md" }) : favicon ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "img",
+            {
+              src: favicon,
+              alt: "Favicon",
+              className: "w-12 h-12 object-contain rounded-sm border p-1"
+            }
+          ) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-12 h-12 bg-muted/30 rounded-md flex items-center justify-center text-[10px] text-muted-foreground border border-dashed border-muted-foreground/30 text-center", children: "Icon" }) })
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 items-center gap-4", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "title", className: "text-right", children: t("bookmark.title") }),
@@ -24618,9 +24691,185 @@ const ImportRaindropDialog = ({
     ] })
   ] }) });
 };
+const ApiTokenDialog = ({ open, onOpenChange }) => {
+  const [token, setToken] = reactExports.useState(null);
+  const [loading, setLoading] = reactExports.useState(false);
+  const [showToken, setShowToken] = reactExports.useState(false);
+  const [copied, setCopied] = reactExports.useState(false);
+  const fetchToken = async () => {
+    setLoading(true);
+    try {
+      const headers = {};
+      const oc2 = globalThis.OC;
+      if (oc2 && oc2.requestToken) {
+        headers["requesttoken"] = oc2.requestToken;
+      }
+      const res = await fetch("/apps/bookmarksmanager/api/v1/token", { headers });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.token) {
+          setToken(data.token);
+        } else {
+          setToken(null);
+        }
+      } else if (res.status === 404) {
+        setToken(null);
+      }
+    } catch (error) {
+      console.error("Failed to fetch token:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  reactExports.useEffect(() => {
+    if (open) {
+      fetchToken();
+    }
+  }, [open]);
+  const generateToken = async () => {
+    setLoading(true);
+    try {
+      const headers = {
+        "Content-Type": "application/json"
+      };
+      const oc2 = globalThis.OC;
+      if (oc2 && oc2.requestToken) {
+        headers["requesttoken"] = oc2.requestToken;
+      }
+      const res = await fetch("/apps/bookmarksmanager/api/v1/token/generate", {
+        method: "POST",
+        headers
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setToken(data.token);
+      }
+    } catch (error) {
+      console.error("Failed to generate token:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  const revokeToken = async () => {
+    if (!confirm(t("settings.api_token.revoke_confirm"))) {
+      return;
+    }
+    setLoading(true);
+    try {
+      const headers = {};
+      const oc2 = globalThis.OC;
+      if (oc2 && oc2.requestToken) {
+        headers["requesttoken"] = oc2.requestToken;
+      }
+      const res = await fetch("/apps/bookmarksmanager/api/v1/token/revoke", {
+        method: "POST",
+        headers
+      });
+      if (res.ok) {
+        setToken(null);
+      }
+    } catch (error) {
+      console.error("Failed to revoke token:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  const copyToClipboard = () => {
+    if (token) {
+      navigator.clipboard.writeText(token);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2e3);
+    }
+  };
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Dialog, { open, onOpenChange, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogContent, { className: "sm:max-w-[500px]", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogHeader, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(DialogTitle, { children: t("settings.api_token.title") }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(DialogDescription, { children: t("settings.api_token.description") })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-4", children: token ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-2", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { children: t("settings.api_token.your_token") }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Input,
+            {
+              type: showToken ? "text" : "password",
+              value: token,
+              readOnly: true,
+              className: "font-mono text-sm"
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Button,
+            {
+              variant: "outline",
+              size: "icon",
+              onClick: () => setShowToken(!showToken),
+              children: showToken ? /* @__PURE__ */ jsxRuntimeExports.jsx(EyeOff, { className: "h-4 w-4" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Eye, { className: "h-4 w-4" })
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Button,
+            {
+              variant: "outline",
+              size: "icon",
+              onClick: copyToClipboard,
+              disabled: copied,
+              children: /* @__PURE__ */ jsxRuntimeExports.jsx(Copy, { className: "h-4 w-4" })
+            }
+          )
+        ] }),
+        copied && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-green-600", children: t("settings.api_token.copied") })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-2", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          Button,
+          {
+            variant: "outline",
+            onClick: revokeToken,
+            disabled: loading,
+            className: "flex-1",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Trash2, { className: "h-4 w-4 mr-2" }),
+              t("settings.api_token.revoke")
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          Button,
+          {
+            variant: "outline",
+            onClick: generateToken,
+            disabled: loading,
+            className: "flex-1",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(RefreshCw, { className: "h-4 w-4 mr-2" }),
+              t("settings.api_token.regenerate")
+            ]
+          }
+        )
+      ] })
+    ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-4", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: t("settings.api_token.no_token") }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        Button,
+        {
+          onClick: generateToken,
+          disabled: loading,
+          className: "w-full",
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(RefreshCw, { className: "h-4 w-4 mr-2" }),
+            t("settings.api_token.generate")
+          ]
+        }
+      )
+    ] }) })
+  ] }) });
+};
 const SettingsButton = () => {
   const [popoverOpen, setPopoverOpen] = reactExports.useState(false);
   const [importDialogOpen, setImportDialogOpen] = reactExports.useState(false);
+  const [apiTokenDialogOpen, setApiTokenDialogOpen] = reactExports.useState(false);
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "p-4 border-t", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Popover, { open: popoverOpen, onOpenChange: setPopoverOpen, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(PopoverTrigger, { asChild: true, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
@@ -24635,19 +24884,33 @@ const SettingsButton = () => {
           ]
         }
       ) }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(PopoverContent, { align: "start", side: "right", className: "w-56", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-1", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "button",
-        {
-          className: "w-full text-left px-2 py-1.5 text-sm rounded-md hover:bg-accent",
-          onClick: () => {
-            setPopoverOpen(false);
-            setImportDialogOpen(true);
-          },
-          children: t("settings.import_from_raindrop")
-        }
-      ) }) })
+      /* @__PURE__ */ jsxRuntimeExports.jsx(PopoverContent, { align: "start", side: "right", className: "w-56", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-1", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            className: "w-full text-left px-2 py-1.5 text-sm rounded-md hover:bg-accent",
+            onClick: () => {
+              setPopoverOpen(false);
+              setImportDialogOpen(true);
+            },
+            children: t("settings.import_from_raindrop")
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            className: "w-full text-left px-2 py-1.5 text-sm rounded-md hover:bg-accent",
+            onClick: () => {
+              setPopoverOpen(false);
+              setApiTokenDialogOpen(true);
+            },
+            children: t("settings.api_token.title")
+          }
+        )
+      ] }) })
     ] }) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(ImportRaindropDialog, { open: importDialogOpen, onOpenChange: setImportDialogOpen })
+    /* @__PURE__ */ jsxRuntimeExports.jsx(ImportRaindropDialog, { open: importDialogOpen, onOpenChange: setImportDialogOpen }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(ApiTokenDialog, { open: apiTokenDialogOpen, onOpenChange: setApiTokenDialogOpen })
   ] });
 };
 const Tags = () => {
@@ -25552,6 +25815,8 @@ function EditBookmarkForm({ bookmark, isOpen, onOpenChange }) {
   const [selectedTags, setSelectedTags] = reactExports.useState([]);
   const [screenshot, setScreenshot] = reactExports.useState(null);
   const [showScreenshotInput, setShowScreenshotInput] = reactExports.useState(false);
+  const [favicon, setFavicon] = reactExports.useState(null);
+  const [showFaviconInput, setShowFaviconInput] = reactExports.useState(false);
   const tagOptions = availableTags.map((tag) => ({ label: tag.name, value: String(tag.id) }));
   const handleCreateTag = async (label) => {
     const requestToken = getRequestToken();
@@ -25581,6 +25846,7 @@ function EditBookmarkForm({ bookmark, isOpen, onOpenChange }) {
       setDescription(bookmark.description || "");
       setCollectionId(bookmark.collectionId ? String(bookmark.collectionId) : void 0);
       setScreenshot(bookmark.screenshot);
+      setFavicon(bookmark.favicon);
       const currentTags = availableTags.filter((tag) => bookmark.tags.includes(tag.id)).map((tag) => ({ label: tag.name, value: String(tag.id) }));
       setSelectedTags(currentTags);
     }
@@ -25602,7 +25868,8 @@ function EditBookmarkForm({ bookmark, isOpen, onOpenChange }) {
         const id2 = parseInt(tag.value, 10);
         return isNaN(id2) ? tag.label : id2;
       }),
-      screenshot
+      screenshot,
+      favicon
     };
     const response = await fetch(`/apps/bookmarksmanager/api/v1/bookmarks/${bookmark.id}`, {
       method: "PUT",
@@ -25653,51 +25920,116 @@ function EditBookmarkForm({ bookmark, isOpen, onOpenChange }) {
         /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "url", className: "text-right", children: t("bookmark.url") }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { id: "url", value: url, onChange: (e) => setUrl(e.target.value), className: "col-span-3" })
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "col-span-4 flex flex-col items-center justify-center gap-3 min-h-[80px]", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative group w-24 h-20 flex-shrink-0", children: [
-          screenshot ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "img",
-            {
-              src: screenshot,
-              alt: "Website preview",
-              className: "w-24 h-20 object-cover rounded-md border",
-              style: { maxWidth: "100%", maxHeight: 80 }
-            }
-          ) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-24 h-20 bg-muted/30 rounded-md flex items-center justify-center text-xs text-muted-foreground border border-dashed border-muted-foreground/30 text-center p-1", children: t("bookmark.no_preview") }),
-          !showScreenshotInput && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute inset-0 bg-black/50 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer", onClick: () => setShowScreenshotInput(true), children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-            Button,
-            {
-              type: "button",
-              variant: "secondary",
-              size: "sm",
-              className: "h-6 text-xs px-2",
-              children: t("bookmark.edit")
-            }
-          ) })
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "col-span-4 flex justify-center items-center gap-6 min-h-[80px]", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col items-center gap-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative group w-24 h-20 flex-shrink-0", children: [
+            screenshot ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "img",
+              {
+                src: screenshot,
+                alt: "Website preview",
+                className: "w-24 h-20 object-cover rounded-md border",
+                style: { maxWidth: "100%", maxHeight: 80 }
+              }
+            ) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-24 h-20 bg-muted/30 rounded-md flex items-center justify-center text-xs text-muted-foreground border border-dashed border-muted-foreground/30 text-center p-1", children: t("bookmark.no_preview") }),
+            !showScreenshotInput && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute inset-0 bg-black/50 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer", onClick: () => setShowScreenshotInput(true), children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+              Button,
+              {
+                type: "button",
+                variant: "secondary",
+                size: "sm",
+                className: "h-6 text-xs px-2",
+                children: t("bookmark.edit")
+              }
+            ) })
+          ] }),
+          showScreenshotInput && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex w-full max-w-[200px] items-center gap-1 absolute -bottom-10 z-10 bg-background p-1 border rounded shadow-md left-0", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              Input,
+              {
+                value: screenshot || "",
+                onChange: (e) => setScreenshot(e.target.value),
+                placeholder: t("bookmark.screenshot"),
+                className: "h-7 text-xs",
+                autoFocus: true
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              Button,
+              {
+                type: "button",
+                variant: "ghost",
+                size: "icon",
+                className: "h-7 w-7",
+                onClick: () => setShowScreenshotInput(false),
+                children: /* @__PURE__ */ jsxRuntimeExports.jsx(Cross2Icon, { className: "h-3 w-3" })
+              }
+            )
+          ] })
         ] }),
-        showScreenshotInput && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex w-full max-w-[280px] items-center gap-2", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            Input,
-            {
-              value: screenshot || "",
-              onChange: (e) => setScreenshot(e.target.value),
-              placeholder: t("bookmark.enter_screenshot_url"),
-              className: "h-8 text-xs",
-              autoFocus: true
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            Button,
-            {
-              type: "button",
-              variant: "ghost",
-              size: "icon",
-              className: "h-8 w-8",
-              onClick: () => setShowScreenshotInput(false),
-              title: t("collection.cancel"),
-              children: /* @__PURE__ */ jsxRuntimeExports.jsx(Cross2Icon, { className: "h-4 w-4" })
-            }
-          )
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col items-center gap-2 relative", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative group w-12 h-12 flex-shrink-0", children: [
+            favicon ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "img",
+              {
+                src: favicon,
+                alt: "Favicon",
+                className: "w-12 h-12 object-contain rounded-md border p-1"
+              }
+            ) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-12 h-12 bg-muted/30 rounded-md flex items-center justify-center text-[10px] text-muted-foreground border border-dashed border-muted-foreground/30 text-center", children: "Icon" }),
+            !showFaviconInput && /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "div",
+              {
+                className: "absolute inset-0 bg-black/50 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer",
+                onClick: () => {
+                  if (!favicon && url) {
+                    try {
+                      const urlObj = new URL(url);
+                      setFavicon(`${urlObj.origin}/favicon.ico`);
+                    } catch (e) {
+                    }
+                  }
+                  setShowFaviconInput(true);
+                },
+                children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  Button,
+                  {
+                    type: "button",
+                    variant: "secondary",
+                    size: "icon",
+                    className: "h-6 w-6",
+                    children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(Cross2Icon, { className: "h-3 w-3 rotate-45" }),
+                      " "
+                    ]
+                  }
+                )
+              }
+            )
+          ] }),
+          showFaviconInput && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex w-[280px] items-center gap-1 absolute -bottom-10 z-10 bg-background p-1 border rounded shadow-md left-1/2 -translate-x-1/2", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              Input,
+              {
+                value: favicon || "",
+                onChange: (e) => setFavicon(e.target.value),
+                placeholder: t("bookmark.favicon_url"),
+                className: "h-7 text-xs",
+                autoFocus: true
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              Button,
+              {
+                type: "button",
+                variant: "ghost",
+                size: "icon",
+                className: "h-7 w-7",
+                onClick: () => setShowFaviconInput(false),
+                children: /* @__PURE__ */ jsxRuntimeExports.jsx(Cross2Icon, { className: "h-3 w-3" })
+              }
+            )
+          ] })
         ] })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 items-center gap-4", children: [

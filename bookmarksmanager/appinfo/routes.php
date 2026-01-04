@@ -31,5 +31,10 @@ return [
 
         // Locales
         ['name' => 'locale#getLocale', 'url' => '/locales/{locale}', 'verb' => 'GET'],
+
+        // API Tokens
+        ['name' => 'api_token#generate', 'url' => '/api/v1/token/generate', 'verb' => 'POST'],
+        ['name' => 'api_token#get', 'url' => '/api/v1/token', 'verb' => 'GET'],
+        ['name' => 'api_token#revoke', 'url' => '/api/v1/token/revoke', 'verb' => 'POST'],
     ]
 ];

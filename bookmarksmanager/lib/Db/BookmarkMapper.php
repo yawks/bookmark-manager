@@ -28,11 +28,42 @@ class BookmarkMapper extends QBMapper {
         return $bookmark;
     }
 
-    public function findAll(string $userId): array {
+    public function findAll(string $userId, ?int $collectionId = null, ?array $tagsId = null): array {
+        // If filtering by tags, first get the bookmark IDs that match
+        $bookmarkIdsFiltered = null;
+        if ($tagsId !== null && !empty($tagsId)) {
+            $tagQb = $this->db->getQueryBuilder();
+            $tagQb->select('bookmark_id')
+                  ->from('bkmr_bookmarks_tags')
+                  ->where($tagQb->expr()->in('tag_id', $tagQb->createNamedParameter($tagsId, IQueryBuilder::PARAM_INT_ARRAY)))
+                  ->groupBy('bookmark_id');
+            
+            $result = $tagQb->execute();
+            $bookmarkIdsFiltered = [];
+            while ($row = $result->fetch()) {
+                $bookmarkIdsFiltered[] = (int)$row['bookmark_id'];
+            }
+            
+            // If no bookmarks match the tags, return empty array
+            if (empty($bookmarkIdsFiltered)) {
+                return [];
+            }
+        }
+
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
            ->from($this->tableName)
            ->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId)));
+
+        // Filter by collectionId if provided
+        if ($collectionId !== null) {
+            $qb->andWhere($qb->expr()->eq('collection_id', $qb->createNamedParameter($collectionId, \PDO::PARAM_INT)));
+        }
+
+        // Filter by bookmark IDs from tags if provided
+        if ($bookmarkIdsFiltered !== null) {
+            $qb->andWhere($qb->expr()->in('id', $qb->createNamedParameter($bookmarkIdsFiltered, IQueryBuilder::PARAM_INT_ARRAY)));
+        }
 
         $bookmarks = $this->findEntities($qb);
 

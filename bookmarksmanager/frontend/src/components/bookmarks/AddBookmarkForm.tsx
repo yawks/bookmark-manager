@@ -55,6 +55,7 @@ export function AddBookmarkForm() {
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   // Screenshot URL for the bookmark
   const [screenshot, setScreenshot] = useState<string | null>(null);
+  const [favicon, setFavicon] = useState<string | null>(null);
   // Loading state for fetching page info
   const [isFetching, setIsFetching] = useState(false);
   // Loading and error state for saving bookmark
@@ -100,6 +101,7 @@ export function AddBookmarkForm() {
         if (data.title) setTitle(data.title);
         if (data.description) setDescription(data.description);
         if (data.image) setScreenshot(data.image);
+        if (data.favicon) setFavicon(data.favicon);
       }
     } catch (error) {
       console.error('Failed to fetch page info', error);
@@ -129,6 +131,7 @@ export function AddBookmarkForm() {
         return isNaN(id) ? tag.value : id;
       }),
       screenshot,
+      favicon,
     };
 
     try {
@@ -164,6 +167,7 @@ export function AddBookmarkForm() {
       setCollectionId(undefined);
       setSelectedTags([]);
       setScreenshot(null);
+      setFavicon(null);
     }
   };
 
@@ -191,24 +195,42 @@ export function AddBookmarkForm() {
               </Label>
               <Input id="url" value={url} onChange={e => setUrl(e.target.value)} onBlur={handleUrlBlur} placeholder={t('bookmark.placeholder_url')} className="col-span-3" />
             </div>
-            {/* Screenshot preview with skeleton - always rendered, even if no URL */}
-            <div className="col-span-4 flex justify-center items-center min-h-[80px]" id="screenshot-debug-block">
-              {(() => { console.log('RENDER screenshot block', { isFetching, screenshot }); return null; })()}
-              {isFetching ? (
-                <div className="w-24 h-20 bg-muted animate-pulse rounded-md" data-testid="skeleton" />
-              ) : screenshot ? (
-                <img
-                  src={screenshot}
-                  alt="Website preview"
-                  className="w-24 h-20 object-cover rounded-md border"
-                  style={{ maxWidth: '100%', maxHeight: 80 }}
-                  data-testid="screenshot-img"
-                />
-              ) : (
-                <div className="w-24 h-20 bg-muted/30 rounded-md flex items-center justify-center text-xs text-muted-foreground border border-dashed border-muted-foreground/30" data-testid="no-preview">
-                  {t('bookmark.no_preview')}
-                </div>
-              )}
+            {/* Screenshot preview with skeleton */}
+            <div className="col-span-4 flex justify-center items-center gap-4 min-h-[80px]" id="screenshot-debug-block">
+              {/* Screenshot */}
+              <div className="relative group w-24 h-20 flex-shrink-0">
+                {isFetching ? (
+                  <div className="w-24 h-20 bg-muted animate-pulse rounded-md" />
+                ) : screenshot ? (
+                  <img
+                    src={screenshot}
+                    alt="Website preview"
+                    className="w-24 h-20 object-cover rounded-md border"
+                    style={{ maxWidth: '100%', maxHeight: 80 }}
+                  />
+                ) : (
+                  <div className="w-24 h-20 bg-muted/30 rounded-md flex items-center justify-center text-xs text-muted-foreground border border-dashed border-muted-foreground/30 text-center p-1">
+                    {t('bookmark.no_preview')}
+                  </div>
+                )}
+              </div>
+
+              {/* Favicon */}
+              <div className="relative group w-12 h-12 flex-shrink-0">
+                {isFetching ? (
+                  <div className="w-12 h-12 bg-muted animate-pulse rounded-md" />
+                ) : favicon ? (
+                  <img
+                    src={favicon}
+                    alt="Favicon"
+                    className="w-12 h-12 object-contain rounded-sm border p-1"
+                  />
+                ) : (
+                  <div className="w-12 h-12 bg-muted/30 rounded-md flex items-center justify-center text-[10px] text-muted-foreground border border-dashed border-muted-foreground/30 text-center">
+                    Icon
+                  </div>
+                )}
+              </div>
             </div>
             {/* Title input */}
             <div className="grid grid-cols-4 items-center gap-4">

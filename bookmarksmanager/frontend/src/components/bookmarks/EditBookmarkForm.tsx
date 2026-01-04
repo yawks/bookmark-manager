@@ -52,6 +52,8 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [screenshot, setScreenshot] = useState<string | null>(null);
   const [showScreenshotInput, setShowScreenshotInput] = useState(false);
+  const [favicon, setFavicon] = useState<string | null>(null);
+  const [showFaviconInput, setShowFaviconInput] = useState(false);
 
   const tagOptions: Tag[] = availableTags.map(tag => ({ label: tag.name, value: String(tag.id) }));
 
@@ -85,6 +87,7 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
       setDescription(bookmark.description || '');
       setCollectionId(bookmark.collectionId ? String(bookmark.collectionId) : undefined);
       setScreenshot(bookmark.screenshot);
+      setFavicon(bookmark.favicon);
 
       const currentTags = availableTags
         .filter(tag => bookmark.tags.includes(tag.id))
@@ -113,6 +116,7 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
         return isNaN(id) ? tag.label : id;
       }),
       screenshot,
+      favicon,
     };
 
     const response = await fetch(`/apps/bookmarksmanager/api/v1/bookmarks/${bookmark.id}`, {
@@ -182,57 +186,122 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
             </div>
 
             {/* Screenshot preview with hover edit */}
-            <div className="col-span-4 flex flex-col items-center justify-center gap-3 min-h-[80px]">
-              <div className="relative group w-24 h-20 flex-shrink-0">
-                {screenshot ? (
-                  <img
-                    src={screenshot}
-                    alt="Website preview"
-                    className="w-24 h-20 object-cover rounded-md border"
-                    style={{ maxWidth: '100%', maxHeight: 80 }}
-                  />
-                ) : (
-                  <div className="w-24 h-20 bg-muted/30 rounded-md flex items-center justify-center text-xs text-muted-foreground border border-dashed border-muted-foreground/30 text-center p-1">
-                    {t('bookmark.no_preview')}
-                  </div>
-                )}
-                {/* Edit overlay/button */}
-                {!showScreenshotInput && (
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer" onClick={() => setShowScreenshotInput(true)}>
+            {/* Screenshot & Favicon area */}
+            <div className="col-span-4 flex justify-center items-center gap-6 min-h-[80px]">
+              {/* Screenshot */}
+              <div className="flex flex-col items-center gap-2">
+                <div className="relative group w-24 h-20 flex-shrink-0">
+                  {screenshot ? (
+                    <img
+                      src={screenshot}
+                      alt="Website preview"
+                      className="w-24 h-20 object-cover rounded-md border"
+                      style={{ maxWidth: '100%', maxHeight: 80 }}
+                    />
+                  ) : (
+                    <div className="w-24 h-20 bg-muted/30 rounded-md flex items-center justify-center text-xs text-muted-foreground border border-dashed border-muted-foreground/30 text-center p-1">
+                      {t('bookmark.no_preview')}
+                    </div>
+                  )}
+                  {/* Edit overlay/button */}
+                  {!showScreenshotInput && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer" onClick={() => setShowScreenshotInput(true)}>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        className="h-6 text-xs px-2"
+                      >
+                        {t('bookmark.edit')}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                {/* Screenshot Input */}
+                {showScreenshotInput && (
+                  <div className="flex w-full max-w-[200px] items-center gap-1 absolute -bottom-10 z-10 bg-background p-1 border rounded shadow-md left-0">
+                    <Input
+                      value={screenshot || ''}
+                      onChange={(e) => setScreenshot(e.target.value)}
+                      placeholder={t('bookmark.screenshot')}
+                      className="h-7 text-xs"
+                      autoFocus
+                    />
                     <Button
                       type="button"
-                      variant="secondary"
-                      size="sm"
-                      className="h-6 text-xs px-2"
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => setShowScreenshotInput(false)}
                     >
-                      {t('bookmark.edit')}
+                      <Cross2Icon className="h-3 w-3" />
                     </Button>
                   </div>
                 )}
               </div>
 
-              {/* Screenshot URL Input */}
-              {showScreenshotInput && (
-                <div className="flex w-full max-w-[280px] items-center gap-2">
-                  <Input
-                    value={screenshot || ''}
-                    onChange={(e) => setScreenshot(e.target.value)}
-                    placeholder={t('bookmark.enter_screenshot_url')}
-                    className="h-8 text-xs"
-                    autoFocus
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => setShowScreenshotInput(false)}
-                    title={t('collection.cancel')}
-                  >
-                    <Cross2Icon className="h-4 w-4" />
-                  </Button>
+              {/* Favicon */}
+              <div className="flex flex-col items-center gap-2 relative">
+                <div className="relative group w-12 h-12 flex-shrink-0">
+                  {favicon ? (
+                    <img
+                      src={favicon}
+                      alt="Favicon"
+                      className="w-12 h-12 object-contain rounded-md border p-1"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 bg-muted/30 rounded-md flex items-center justify-center text-[10px] text-muted-foreground border border-dashed border-muted-foreground/30 text-center">
+                      Icon
+                    </div>
+                  )}
+                  {/* Edit overlay/button */}
+                  {!showFaviconInput && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                      onClick={() => {
+                        if (!favicon && url) {
+                          try {
+                            const urlObj = new URL(url);
+                            setFavicon(`${urlObj.origin}/favicon.ico`);
+                          } catch (e) {
+                            // ignore invalid URL
+                          }
+                        }
+                        setShowFaviconInput(true);
+                      }}
+                    >
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="icon"
+                        className="h-6 w-6"
+                      >
+                        <Cross2Icon className="h-3 w-3 rotate-45" /> {/* Use plus/edit icon metaphor or just simple edit */}
+                      </Button>
+                    </div>
+                  )}
                 </div>
-              )}
+                {/* Favicon Input */}
+                {showFaviconInput && (
+                  <div className="flex w-[280px] items-center gap-1 absolute -bottom-10 z-10 bg-background p-1 border rounded shadow-md left-1/2 -translate-x-1/2">
+                    <Input
+                      value={favicon || ''}
+                      onChange={(e) => setFavicon(e.target.value)}
+                      placeholder={t('bookmark.favicon_url')}
+                      className="h-7 text-xs"
+                      autoFocus
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => setShowFaviconInput(false)}
+                    >
+                      <Cross2Icon className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-4 items-center gap-4">

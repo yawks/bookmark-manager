@@ -9,14 +9,17 @@ use OCA\BookmarksManager\Controller\TagController;
 use OCA\BookmarksManager\Controller\PageInfoController;
 use OCA\BookmarksManager\Controller\ImportController;
 use OCA\BookmarksManager\Controller\LocaleController;
+use OCA\BookmarksManager\Controller\ApiTokenController;
 use OCA\BookmarksManager\Db\BookmarkMapper;
 use OCA\BookmarksManager\Db\CollectionMapper;
 use OCA\BookmarksManager\Db\TagMapper;
+use OCA\BookmarksManager\Db\ApiTokenMapper;
 use OCA\BookmarksManager\Service\BookmarkService;
 use OCA\BookmarksManager\Service\CollectionService;
 use OCA\BookmarksManager\Service\TagService;
 use OCA\BookmarksManager\Service\PageInfoService;
 use OCA\BookmarksManager\Service\ImportService;
+use OCA\BookmarksManager\Service\ApiTokenService;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
@@ -56,7 +59,9 @@ class Application extends App implements IBootstrap {
             return new CollectionController(
                 $c->get('AppName'),
                 $c->get('Request'),
-                $c->get('CollectionService')
+                $c->get('CollectionService'),
+                $c->get(IUserSession::class),
+                $c->get('ApiTokenService')
             );
         });
 
@@ -73,7 +78,9 @@ class Application extends App implements IBootstrap {
             return new TagController(
                 $c->get('AppName'),
                 $c->get('Request'),
-                $c->get('TagService')
+                $c->get('TagService'),
+                $c->get(IUserSession::class),
+                $c->get('ApiTokenService')
             );
         });
 
@@ -84,14 +91,18 @@ class Application extends App implements IBootstrap {
             return new BookmarkService(
                 $c->get('BookmarkMapper'),
                 $c->get(IUserSession::class),
-                $c->get('TagService')
+                $c->get('TagService'),
+                $c->get('CollectionMapper'),
+                $c->get('TagMapper')
             );
         });
         $context->registerService('BookmarkController', function ($c) {
             return new BookmarkController(
                 $c->get('AppName'),
                 $c->get('Request'),
-                $c->get('BookmarkService')
+                $c->get('BookmarkService'),
+                $c->get(IUserSession::class),
+                $c->get('ApiTokenService')
             );
         });
 
@@ -126,6 +137,23 @@ class Application extends App implements IBootstrap {
             return new LocaleController(
                 $c->get('AppName'),
                 $c->get('Request')
+            );
+        });
+
+        $context->registerService('ApiTokenMapper', function ($c) {
+            return new ApiTokenMapper($c->get(IDBConnection::class));
+        });
+        $context->registerService('ApiTokenService', function ($c) {
+            return new ApiTokenService(
+                $c->get('ApiTokenMapper'),
+                $c->get(IUserSession::class)
+            );
+        });
+        $context->registerService('ApiTokenController', function ($c) {
+            return new ApiTokenController(
+                $c->get('AppName'),
+                $c->get('Request'),
+                $c->get('ApiTokenService')
             );
         });
     }

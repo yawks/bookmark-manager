@@ -15,26 +15,34 @@ class TagService {
         $this->userSession = $userSession;
     }
 
-    public function findAll(): array {
-        $userId = $this->userSession->getUser()->getUID();
+    public function findAll(?string $userId = null): array {
+        if ($userId === null) {
+            $userId = $this->userSession->getUser()->getUID();
+        }
         return $this->mapper->findAll($userId);
     }
 
-    public function find(int $id) {
-        $userId = $this->userSession->getUser()->getUID();
+    public function find(int $id, ?string $userId = null) {
+        if ($userId === null) {
+            $userId = $this->userSession->getUser()->getUID();
+        }
         return $this->mapper->find($id, $userId);
     }
 
-    public function create(string $name) {
-        $userId = $this->userSession->getUser()->getUID();
+    public function create(string $name, ?string $userId = null) {
+        if ($userId === null) {
+            $userId = $this->userSession->getUser()->getUID();
+        }
         $tag = new \OCA\BookmarksManager\Db\Tag();
         $tag->setUserId($userId);
         $tag->setName($name);
         return $this->mapper->insert($tag);
     }
 
-    public function update(int $id, string $name) {
-        $userId = $this->userSession->getUser()->getUID();
+    public function update(int $id, string $name, ?string $userId = null) {
+        if ($userId === null) {
+            $userId = $this->userSession->getUser()->getUID();
+        }
         $tag = $this->mapper->find($id, $userId);
         if ($tag === null) {
             throw new \Exception('Tag not found');
@@ -43,8 +51,10 @@ class TagService {
         return $this->mapper->update($tag);
     }
 
-    public function delete(int $id) {
-        $userId = $this->userSession->getUser()->getUID();
+    public function delete(int $id, ?string $userId = null) {
+        if ($userId === null) {
+            $userId = $this->userSession->getUser()->getUID();
+        }
         $tag = $this->mapper->find($id, $userId);
         if ($tag === null) {
             throw new \Exception('Tag not found');

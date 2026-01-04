@@ -4,6 +4,7 @@ export interface Bookmark {
   title: string;
   description: string | null;
   screenshot: string | null;
+  favicon: string | null;
   collectionId: number | null;
   tags: number[];
 }

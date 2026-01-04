@@ -11,10 +11,13 @@ class Bookmark extends Entity implements JsonSerializable {
     protected $title;
     protected $description;
     protected $screenshot;
+    protected $favicon;
     protected $collectionId;
     
-    // Non-db property
+    // Non-db properties
     public array $tags = [];
+    public ?string $collectionName = null;
+    public array $tagsWithNames = [];
 
     public function __construct() {
         $this->addType('collectionId', 'integer');
@@ -74,6 +77,15 @@ class Bookmark extends Entity implements JsonSerializable {
         return $this->screenshot;
     }
 
+    public function setFavicon(?string $favicon): void {
+        $this->favicon = $favicon;
+        $this->markFieldUpdated('favicon');
+    }
+
+    public function getFavicon(): ?string {
+        return $this->favicon;
+    }
+
     public function setTags(array $tags): void {
         $this->tags = $tags;
     }
@@ -90,8 +102,10 @@ class Bookmark extends Entity implements JsonSerializable {
             'title' => $this->title,
             'description' => $this->description,
             'collectionId' => $this->collectionId,
+            'collectionName' => $this->collectionName,
             'screenshot' => $this->screenshot,
-            'tags' => $this->tags,
+            'favicon' => $this->favicon,
+            'tags' => $this->tagsWithNames,
         ];
     }
 }
