@@ -1,8 +1,10 @@
-import { createFileRoute, useRouteContext, useRouterState } from '@tanstack/react-router'
+import { createFileRoute, useRouterState } from '@tanstack/react-router'
 
 import { AddBookmarkForm } from '../components/bookmarks/AddBookmarkForm'
 import BookmarkList from '../components/bookmarks/BookmarkList'
 import React from 'react'
+import { Route as RootRoute } from './__root'
+import { getDescendantCollectionIds } from '../lib/utils'
 import { t } from '../lib/l10n'
 
 export const Route = createFileRoute('/collections/$collectionId')({
@@ -11,19 +13,20 @@ export const Route = createFileRoute('/collections/$collectionId')({
 
 function CollectionComponent() {
   const { collectionId } = Route.useParams()
-  const routeContext = useRouteContext({ from: '__root__' }) || {};
-  const collections = routeContext.collections || [];
-  const bookmarks = routeContext.bookmarks || [];
+  const rootLoaderData = RootRoute.useLoaderData({ shouldThrow: false }) || {};
+  const collections = rootLoaderData.collections || [];
+  const bookmarks = rootLoaderData.bookmarks || [];
   const isLoading = useRouterState({ select: (s) => s.status === 'pending' })
 
-  const numericCollectionId = parseInt(collectionId, 10)
-  const collection = collections.find(c => c.id === numericCollectionId)
+  const numericCollectionId = Number(collectionId)
+  const collection = collections.find(c => Number(c.id) === numericCollectionId)
 
   if (!collection && !isLoading) {
     return <div>{t('Collection not found.')}</div>
   }
 
-  const collectionBookmarks = bookmarks.filter(b => b.collectionId === numericCollectionId)
+  const descendantIds = new Set(getDescendantCollectionIds(collections, numericCollectionId))
+  const collectionBookmarks = bookmarks.filter(b => b.collectionId !== null && descendantIds.has(Number(b.collectionId)))
 
   return (
     <>

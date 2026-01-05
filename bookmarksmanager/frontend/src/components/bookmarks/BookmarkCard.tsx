@@ -88,7 +88,7 @@ const BookmarkCard = ({ bookmark, showCollection = false, onEdit, onDelete }: Bo
 
         <div className="flex items-center space-x-2 text-xs text-muted-foreground w-full">
           <img
-            src={`https://www.google.com/s2/favicons?domain=${domain}&sz=16`}
+            src={bookmark.favicon ? bookmark.favicon : `https://www.google.com/s2/favicons?domain=${domain}&sz=16`}
             alt={`${domain} favicon`}
             width={16}
             height={16}

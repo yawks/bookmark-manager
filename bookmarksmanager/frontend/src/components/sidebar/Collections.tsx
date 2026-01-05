@@ -21,6 +21,7 @@ import { Link, useLoaderData, useRouter } from '@tanstack/react-router';
 import React, { useEffect, useRef, useState } from 'react';
 
 import { Button } from '../ui/button';
+import { getDescendantCollectionIds } from '../../lib/utils'
 import { t } from '../../lib/l10n';
 
 // Helper to get Nextcloud's request token
@@ -48,6 +49,7 @@ const iconMap = {
 interface CollectionItemProps {
   collection: Collection;
   bookmarks: Bookmark[];
+  allCollections: Collection[];
   onRename: (collection: Collection) => void;
   onDelete: (collection: Collection) => void;
   onCreateNested: (collection: Collection) => void;
@@ -56,13 +58,15 @@ interface CollectionItemProps {
 const CollectionItem: React.FC<CollectionItemProps> = ({
   collection,
   bookmarks,
+  allCollections,
   onRename,
   onDelete,
   onCreateNested,
 }) => {
   const iconKey = collection.icon as keyof typeof iconMap;
   const Icon = collection.icon && iconMap[iconKey] ? iconMap[iconKey] : VercelLogoIcon;
-  const count = bookmarks.filter((b: Bookmark) => b.collectionId === collection.id).length;
+  const descendantIds = new Set(getDescendantCollectionIds(allCollections, collection.id))
+  const count = bookmarks.filter((b: Bookmark) => b.collectionId !== null && descendantIds.has(Number(b.collectionId))).length;
   const [menuOpen, setMenuOpen] = useState(false);
   return (
     <div className="relative group flex items-center">
@@ -353,6 +357,7 @@ const Collections = () => {
             <CollectionItem
               collection={collection}
               bookmarks={bookmarks}
+              allCollections={allCollections}
               onRename={handleRename}
               onDelete={handleDelete}
               onCreateNested={handleCreateNested}
@@ -377,6 +382,7 @@ const Collections = () => {
                   key={child.id}
                   collection={child}
                   bookmarks={bookmarks}
+                  allCollections={allCollections}
                   onRename={handleRename}
                   onDelete={handleDelete}
                   onCreateNested={handleCreateNested}

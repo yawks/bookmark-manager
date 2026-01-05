@@ -1,3 +1,5 @@
+import { Bookmark, Collection } from '../../types';
+import { Cross2Icon, TrashIcon } from '@radix-ui/react-icons';
 import {
   Dialog,
   DialogContent,
@@ -6,8 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Tag, TagSelector } from '@/components/ui/tag-selector';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Select,
   SelectContent,
@@ -15,13 +16,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Tag, TagSelector } from '@/components/ui/tag-selector';
 import { useLoaderData, useRouter } from '@tanstack/react-router';
 
-import { Bookmark } from '../../types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { TrashIcon, Cross2Icon } from '@radix-ui/react-icons';
 import { t } from '../../lib/l10n';
 
 // Helper to get Nextcloud's request token
@@ -31,6 +31,98 @@ function getRequestToken() {
   }
   return document.querySelector('meta[name="requesttoken"]')?.getAttribute('content');
 }
+
+// Helper function to build collection tree structure
+interface CollectionNode extends Collection {
+  children: CollectionNode[];
+}
+
+function buildCollectionTree(collections: Collection[]): CollectionNode[] {
+  const collectionMap = new Map<number, CollectionNode>();
+  const rootCollections: CollectionNode[] = [];
+
+  // First pass: create all nodes
+  collections.forEach(collection => {
+    collectionMap.set(collection.id, {
+      ...collection,
+      children: [],
+    });
+  });
+
+  // Second pass: build tree structure
+  collections.forEach(collection => {
+    const node = collectionMap.get(collection.id)!;
+    if (collection.parentId === null) {
+      rootCollections.push(node);
+    } else {
+      const parent = collectionMap.get(collection.parentId);
+      if (parent) {
+        parent.children.push(node);
+      } else {
+        // If parent not found, treat as root
+        rootCollections.push(node);
+      }
+    }
+  });
+
+  return rootCollections;
+}
+
+// Recursive component to render collection tree
+interface CollectionTreeItemProps {
+  collection: CollectionNode;
+  selectedId: string;
+  onSelect: (value: string) => void;
+  level: number;
+  isLast?: boolean;
+  parentPrefix?: string;
+}
+
+const CollectionTreeItem: React.FC<CollectionTreeItemProps> = ({
+  collection,
+  selectedId,
+  onSelect,
+  level,
+  isLast = false,
+  parentPrefix = '',
+}) => {
+  const indent = level * 20; // 20px per level
+  let prefix = '';
+  if (level > 0) {
+    prefix = isLast ? '└─ ' : '├─ ';
+  }
+  const displayName = parentPrefix + prefix + collection.name;
+
+  return (
+    <>
+      <SelectItem
+        value={String(collection.id)}
+        className="pl-8"
+        style={{ paddingLeft: `${8 + indent}px` }}
+      >
+        {displayName}
+      </SelectItem>
+      {collection.children.map((child, index) => {
+        const isChildLast = index === collection.children.length - 1;
+        let childPrefix = '';
+        if (level > 0) {
+          childPrefix = isLast ? '   ' : '│  ';
+        }
+        return (
+          <CollectionTreeItem
+            key={child.id}
+            collection={child}
+            selectedId={selectedId}
+            onSelect={onSelect}
+            level={level + 1}
+            isLast={isChildLast}
+            parentPrefix={childPrefix}
+          />
+        );
+      })}
+    </>
+  );
+};
 
 interface EditBookmarkFormProps {
   bookmark: Bookmark | null;
@@ -45,6 +137,11 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
   const availableCollections = collections || [];
   const availableTags = allTags || [];
   const [localCreatedTags, setLocalCreatedTags] = useState<Tag[]>([]);
+
+  // Build collection tree
+  const collectionTree = useMemo(() => {
+    return buildCollectionTree(availableCollections);
+  }, [availableCollections]);
 
   const [url, setUrl] = useState('');
   const [title, setTitle] = useState('');
@@ -88,7 +185,7 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
         // Invalidate router only after form is closed or saved
         return newTag;
       }
-    } catch (e) {
+    } catch {
       // fallback
     }
     return { label, value: label };
@@ -279,7 +376,7 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
                           try {
                             const urlObj = new URL(url);
                             setFavicon(`${urlObj.origin}/favicon.ico`);
-                          } catch (e) {
+                          } catch {
                             // ignore invalid URL
                           }
                         }
@@ -342,8 +439,15 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
                   <SelectValue placeholder={t('bookmark.select_collection')} />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableCollections.map(collection => (
-                    <SelectItem key={collection.id} value={String(collection.id)}>{collection.name}</SelectItem>
+                  {collectionTree.map((collection, index) => (
+                    <CollectionTreeItem
+                      key={collection.id}
+                      collection={collection}
+                      selectedId={collectionId}
+                      onSelect={setCollectionId}
+                      level={0}
+                      isLast={index === collectionTree.length - 1}
+                    />
                   ))}
                 </SelectContent>
               </Select>

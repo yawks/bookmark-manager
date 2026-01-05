@@ -12476,12 +12476,6 @@ function RouterContextProvider({
 function RouterProvider({ router: router2, ...rest }) {
   return /* @__PURE__ */ jsxRuntimeExports.jsx(RouterContextProvider, { router: router2, ...rest, children: /* @__PURE__ */ jsxRuntimeExports.jsx(Matches, {}) });
 }
-function useRouteContext(opts) {
-  return useMatch({
-    ...opts,
-    select: (match) => opts.select ? opts.select(match.context) : match.context
-  });
-}
 var client = {};
 var m$1 = reactDomExports;
 {
@@ -17506,6 +17500,20 @@ const twMerge = /* @__PURE__ */ createTailwindMerge(getDefaultConfig);
 function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
+function getDescendantCollectionIds(collections, rootId) {
+  const ids = /* @__PURE__ */ new Set([rootId]);
+  let added = true;
+  while (added) {
+    added = false;
+    for (const c of collections) {
+      if (c.parentId !== null && ids.has(c.parentId) && !ids.has(c.id)) {
+        ids.add(c.id);
+        added = true;
+      }
+    }
+  }
+  return Array.from(ids);
+}
 const Dialog = Root$3;
 const DialogTrigger = Trigger$3;
 const DialogPortal = Portal$3;
@@ -21648,13 +21656,15 @@ const iconMap = {
 const CollectionItem = ({
   collection,
   bookmarks,
+  allCollections,
   onRename,
   onDelete,
   onCreateNested
 }) => {
   const iconKey = collection.icon;
   const Icon2 = collection.icon && iconMap[iconKey] ? iconMap[iconKey] : VercelLogoIcon;
-  const count2 = bookmarks.filter((b) => b.collectionId === collection.id).length;
+  const descendantIds = new Set(getDescendantCollectionIds(allCollections, collection.id));
+  const count2 = bookmarks.filter((b) => b.collectionId !== null && descendantIds.has(Number(b.collectionId))).length;
   const [menuOpen, setMenuOpen] = reactExports.useState(false);
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative group flex items-center", children: [
     /* @__PURE__ */ jsxRuntimeExports.jsxs(
@@ -21945,6 +21955,7 @@ const Collections = () => {
           {
             collection,
             bookmarks,
+            allCollections,
             onRename: handleRename,
             onDelete: handleDelete,
             onCreateNested: handleCreateNested
@@ -21968,6 +21979,7 @@ const Collections = () => {
           {
             collection: child,
             bookmarks,
+            allCollections,
             onRename: handleRename,
             onDelete: handleDelete,
             onCreateNested: handleCreateNested
@@ -24193,20 +24205,15 @@ function TagSelector({
     }, 0);
   }, [value, onChange]);
   const handleCreate = reactExports.useCallback(async () => {
-    console.log("[TagSelector] handleCreate called", { creatable, inputValue, isCreating });
     if (!creatable || !inputValue.trim() || !onCreateOption || isCreating) {
-      console.log("[TagSelector] handleCreate early return");
       return;
     }
     const trimmedValue = inputValue.trim();
     setIsCreating(true);
-    console.log("[TagSelector] Starting tag creation for:", trimmedValue);
     setInputValue("");
     try {
       const newTag = await onCreateOption(trimmedValue);
-      console.log("[TagSelector] Tag created:", newTag);
       if (newTag && !value.some((t2) => t2.value === newTag.value)) {
-        console.log("[TagSelector] Adding tag to selection");
         reactExports.startTransition(() => {
           onChange([...value, newTag]);
         });
@@ -24219,8 +24226,7 @@ function TagSelector({
       } else {
         setIsCreating(false);
       }
-    } catch (error) {
-      console.error("[TagSelector] Failed to create tag:", error);
+    } catch {
       setInputValue(trimmedValue);
       setIsCreating(false);
     }
@@ -24231,14 +24237,11 @@ function TagSelector({
   const handleKeyDown = (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      console.log("[TagSelector] Enter pressed", { inputValue, isCreating });
       if (inputValue.trim() && !isCreating) {
         const exactMatch = options.find((opt) => opt.label.toLowerCase() === inputValue.trim().toLowerCase());
         if (exactMatch && !value.some((v2) => v2.value === exactMatch.value)) {
-          console.log("[TagSelector] Exact match found, selecting");
           handleSelect(exactMatch);
         } else if (creatable) {
-          console.log("[TagSelector] No match, creating new tag");
           handleCreate();
         }
       }
@@ -24305,20 +24308,17 @@ function TagSelector({
           onMouseDown: (e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log("[TagSelector] Create item clicked");
             handleCreate();
           },
           onClick: (e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log("[TagSelector] Create item onClick");
             handleCreate();
           },
           onKeyDown: (e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
               e.stopPropagation();
-              console.log("[TagSelector] Create item keyDown");
               handleCreate();
             }
           },
@@ -25863,7 +25863,7 @@ const BookmarkCard = ({ bookmark, showCollection = false, onEdit, onDelete }) =>
                 /* @__PURE__ */ jsxRuntimeExports.jsx(
                   "img",
                   {
-                    src: `https://www.google.com/s2/favicons?domain=${domain}&sz=16`,
+                    src: bookmark.favicon ? bookmark.favicon : `https://www.google.com/s2/favicons?domain=${domain}&sz=16`,
                     alt: `${domain} favicon`,
                     width: 16,
                     height: 16,
@@ -26021,6 +26021,75 @@ function getRequestToken() {
   }
   return (_a = document.querySelector('meta[name="requesttoken"]')) == null ? void 0 : _a.getAttribute("content");
 }
+function buildCollectionTree(collections) {
+  const collectionMap = /* @__PURE__ */ new Map();
+  const rootCollections = [];
+  collections.forEach((collection) => {
+    collectionMap.set(collection.id, {
+      ...collection,
+      children: []
+    });
+  });
+  collections.forEach((collection) => {
+    const node = collectionMap.get(collection.id);
+    if (collection.parentId === null) {
+      rootCollections.push(node);
+    } else {
+      const parent = collectionMap.get(collection.parentId);
+      if (parent) {
+        parent.children.push(node);
+      } else {
+        rootCollections.push(node);
+      }
+    }
+  });
+  return rootCollections;
+}
+const CollectionTreeItem = ({
+  collection,
+  selectedId,
+  onSelect,
+  level,
+  isLast = false,
+  parentPrefix = ""
+}) => {
+  const indent = level * 20;
+  let prefix2 = "";
+  if (level > 0) {
+    prefix2 = isLast ? "└─ " : "├─ ";
+  }
+  const displayName = parentPrefix + prefix2 + collection.name;
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      SelectItem,
+      {
+        value: String(collection.id),
+        className: "pl-8",
+        style: { paddingLeft: `${8 + indent}px` },
+        children: displayName
+      }
+    ),
+    collection.children.map((child, index2) => {
+      const isChildLast = index2 === collection.children.length - 1;
+      let childPrefix = "";
+      if (level > 0) {
+        childPrefix = isLast ? "   " : "│  ";
+      }
+      return /* @__PURE__ */ jsxRuntimeExports.jsx(
+        CollectionTreeItem,
+        {
+          collection: child,
+          selectedId,
+          onSelect,
+          level: level + 1,
+          isLast: isChildLast,
+          parentPrefix: childPrefix
+        },
+        child.id
+      );
+    })
+  ] });
+};
 function EditBookmarkForm({ bookmark, isOpen, onOpenChange }) {
   console.log("EditBookmarkForm render v3");
   const router2 = useRouter();
@@ -26028,6 +26097,9 @@ function EditBookmarkForm({ bookmark, isOpen, onOpenChange }) {
   const availableCollections = collections || [];
   const availableTags = allTags || [];
   const [localCreatedTags, setLocalCreatedTags] = reactExports.useState([]);
+  const collectionTree = reactExports.useMemo(() => {
+    return buildCollectionTree(availableCollections);
+  }, [availableCollections]);
   const [url, setUrl] = reactExports.useState("");
   const [title, setTitle] = reactExports.useState("");
   const [description, setDescription] = reactExports.useState("");
@@ -26045,14 +26117,11 @@ function EditBookmarkForm({ bookmark, isOpen, onOpenChange }) {
     return [...baseTags, ...localTagsToAdd];
   }, [availableTags, localCreatedTags]);
   const handleCreateTag = async (label) => {
-    console.log("[EditBookmarkForm] handleCreateTag called", { label });
     const requestToken = getRequestToken();
     if (!requestToken) {
-      console.log("[EditBookmarkForm] No request token");
       return { label, value: label };
     }
     try {
-      console.log("[EditBookmarkForm] Creating tag via API");
       const response = await fetch("/apps/bookmarksmanager/api/v1/tags", {
         method: "POST",
         headers: {
@@ -26063,21 +26132,11 @@ function EditBookmarkForm({ bookmark, isOpen, onOpenChange }) {
       });
       if (response.ok) {
         const tag = await response.json();
-        console.log("[EditBookmarkForm] Tag created successfully", tag);
         const newTag = { label: tag.name, value: String(tag.id) };
-        console.log("[EditBookmarkForm] Adding to localCreatedTags");
-        setLocalCreatedTags((prev) => {
-          console.log("[EditBookmarkForm] Previous localCreatedTags:", prev);
-          const updated = [...prev, newTag];
-          console.log("[EditBookmarkForm] Updated localCreatedTags:", updated);
-          return updated;
-        });
+        setLocalCreatedTags((prev) => [...prev, newTag]);
         return newTag;
-      } else {
-        console.error("[EditBookmarkForm] Failed to create tag, status:", response.status);
       }
-    } catch (e) {
-      console.error("[EditBookmarkForm] Error creating tag:", e);
+    } catch {
     }
     return { label, value: label };
   };
@@ -26231,7 +26290,7 @@ function EditBookmarkForm({ bookmark, isOpen, onOpenChange }) {
                     try {
                       const urlObj = new URL(url);
                       setFavicon(`${urlObj.origin}/favicon.ico`);
-                    } catch (e) {
+                    } catch {
                     }
                   }
                   setShowFaviconInput(true);
@@ -26289,7 +26348,17 @@ function EditBookmarkForm({ bookmark, isOpen, onOpenChange }) {
         /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "collection", className: "text-right", children: t("bookmark.collection") }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs(Select, { value: collectionId || "", onValueChange: (value) => setCollectionId(value || ""), children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx(SelectTrigger, { className: "col-span-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectValue, { placeholder: t("bookmark.select_collection") }) }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContent, { children: availableCollections.map((collection) => /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: String(collection.id), children: collection.name }, collection.id)) })
+          /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContent, { children: collectionTree.map((collection, index2) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+            CollectionTreeItem,
+            {
+              collection,
+              selectedId: collectionId,
+              onSelect: setCollectionId,
+              level: 0,
+              isLast: index2 === collectionTree.length - 1
+            },
+            collection.id
+          )) })
         ] })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 items-start gap-4", children: [
@@ -26441,16 +26510,17 @@ const Route2 = createFileRoute("/collections/$collectionId")({
 });
 function CollectionComponent() {
   const { collectionId } = Route2.useParams();
-  const routeContext = useRouteContext({ from: "__root__" }) || {};
-  const collections = routeContext.collections || [];
-  const bookmarks = routeContext.bookmarks || [];
+  const rootLoaderData = Route$5.useLoaderData({ shouldThrow: false }) || {};
+  const collections = rootLoaderData.collections || [];
+  const bookmarks = rootLoaderData.bookmarks || [];
   const isLoading2 = useRouterState({ select: (s) => s.status === "pending" });
-  const numericCollectionId = parseInt(collectionId, 10);
-  const collection = collections.find((c) => c.id === numericCollectionId);
+  const numericCollectionId = Number(collectionId);
+  const collection = collections.find((c) => Number(c.id) === numericCollectionId);
   if (!collection && !isLoading2) {
     return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: t("Collection not found.") });
   }
-  const collectionBookmarks = bookmarks.filter((b) => b.collectionId === numericCollectionId);
+  const descendantIds = new Set(getDescendantCollectionIds(collections, numericCollectionId));
+  const collectionBookmarks = bookmarks.filter((b) => b.collectionId !== null && descendantIds.has(Number(b.collectionId)));
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex justify-between items-center mb-6", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { className: "text-2xl font-semibold", children: collection ? collection.name : t("Loading...") }),
