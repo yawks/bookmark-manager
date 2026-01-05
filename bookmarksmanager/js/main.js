@@ -21628,7 +21628,7 @@ function t(text) {
   }
   return text;
 }
-function getRequestToken$3() {
+function getRequestToken$4() {
   if (typeof document === "undefined") {
     return null;
   }
@@ -21734,7 +21734,7 @@ const Collections = () => {
   }, [creatingNestedFor]);
   const handleCreateCollection = async () => {
     if (!newCollectionName.trim()) return;
-    const requestToken = getRequestToken$3();
+    const requestToken = getRequestToken$4();
     if (!requestToken) {
       console.error("CSRF token not found!");
       return;
@@ -21777,7 +21777,7 @@ const Collections = () => {
   };
   const handleRenameSubmit = async () => {
     if (!collectionToRename || !renameValue.trim()) return;
-    const requestToken = getRequestToken$3();
+    const requestToken = getRequestToken$4();
     if (!requestToken) {
       console.error("CSRF token not found!");
       return;
@@ -21809,7 +21809,7 @@ const Collections = () => {
   };
   const handleDeleteConfirm = async () => {
     if (!collectionToDelete) return;
-    const requestToken = getRequestToken$3();
+    const requestToken = getRequestToken$4();
     if (!requestToken) {
       console.error("CSRF token not found!");
       return;
@@ -21839,7 +21839,7 @@ const Collections = () => {
   };
   const handleCreateNestedSubmit = async () => {
     if (creatingNestedFor === null || !nestedCollectionName.trim()) return;
-    const requestToken = getRequestToken$3();
+    const requestToken = getRequestToken$4();
     if (!requestToken) {
       console.error("CSRF token not found!");
       return;
@@ -24178,33 +24178,67 @@ function TagSelector({
   const inputRef = reactExports.useRef(null);
   const [open, setOpen] = reactExports.useState(false);
   const [inputValue, setInputValue] = reactExports.useState("");
+  const [isCreating, setIsCreating] = reactExports.useState(false);
   const handleSelect = reactExports.useCallback((tag) => {
-    var _a;
     if (!value.some((t2) => t2.value === tag.value)) {
-      onChange([...value, tag]);
+      reactExports.startTransition(() => {
+        onChange([...value, tag]);
+      });
     }
     setInputValue("");
     setOpen(false);
-    (_a = inputRef.current) == null ? void 0 : _a.focus();
+    setTimeout(() => {
+      var _a;
+      (_a = inputRef.current) == null ? void 0 : _a.focus();
+    }, 0);
   }, [value, onChange]);
-  const handleCreate = async () => {
-    if (!creatable || !inputValue.trim() || !onCreateOption) return;
-    const newTag = await onCreateOption(inputValue.trim());
-    if (newTag) {
-      handleSelect(newTag);
+  const handleCreate = reactExports.useCallback(async () => {
+    console.log("[TagSelector] handleCreate called", { creatable, inputValue, isCreating });
+    if (!creatable || !inputValue.trim() || !onCreateOption || isCreating) {
+      console.log("[TagSelector] handleCreate early return");
+      return;
     }
-  };
+    const trimmedValue = inputValue.trim();
+    setIsCreating(true);
+    console.log("[TagSelector] Starting tag creation for:", trimmedValue);
+    setInputValue("");
+    try {
+      const newTag = await onCreateOption(trimmedValue);
+      console.log("[TagSelector] Tag created:", newTag);
+      if (newTag && !value.some((t2) => t2.value === newTag.value)) {
+        console.log("[TagSelector] Adding tag to selection");
+        reactExports.startTransition(() => {
+          onChange([...value, newTag]);
+        });
+        setOpen(false);
+        setTimeout(() => {
+          var _a;
+          (_a = inputRef.current) == null ? void 0 : _a.focus();
+          setIsCreating(false);
+        }, 0);
+      } else {
+        setIsCreating(false);
+      }
+    } catch (error) {
+      console.error("[TagSelector] Failed to create tag:", error);
+      setInputValue(trimmedValue);
+      setIsCreating(false);
+    }
+  }, [creatable, inputValue, onCreateOption, value, onChange, isCreating]);
   const handleRemove = (tagToRemove) => {
     onChange(value.filter((tag) => tag.value !== tagToRemove.value));
   };
   const handleKeyDown = (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      if (inputValue.trim()) {
+      console.log("[TagSelector] Enter pressed", { inputValue, isCreating });
+      if (inputValue.trim() && !isCreating) {
         const exactMatch = options.find((opt) => opt.label.toLowerCase() === inputValue.trim().toLowerCase());
         if (exactMatch && !value.some((v2) => v2.value === exactMatch.value)) {
+          console.log("[TagSelector] Exact match found, selecting");
           handleSelect(exactMatch);
         } else if (creatable) {
+          console.log("[TagSelector] No match, creating new tag");
           handleCreate();
         }
       }
@@ -24263,11 +24297,38 @@ function TagSelector({
       }
     ) }),
     /* @__PURE__ */ jsxRuntimeExports.jsx(PopoverContent, { className: "p-0 w-[var(--radix-popover-trigger-width)]", align: "start", onOpenAutoFocus: (e) => e.preventDefault(), children: /* @__PURE__ */ jsxRuntimeExports.jsx(Command, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(CommandList, { className: "max-h-[200px] overflow-y-auto", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(CommandEmpty, { children: creatable && inputValue.trim() ? /* @__PURE__ */ jsxRuntimeExports.jsxs(CommandItem, { value: inputValue, onSelect: handleCreate, className: "cursor-pointer", children: [
-        'Create "',
-        inputValue,
-        '"'
-      ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "p-2 text-center text-sm block text-muted-foreground", children: emptyIndicator }) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(CommandEmpty, { children: creatable && inputValue.trim() && !isCreating ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "button",
+        {
+          type: "button",
+          className: "w-full relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground cursor-pointer text-left",
+          onMouseDown: (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log("[TagSelector] Create item clicked");
+            handleCreate();
+          },
+          onClick: (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log("[TagSelector] Create item onClick");
+            handleCreate();
+          },
+          onKeyDown: (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log("[TagSelector] Create item keyDown");
+              handleCreate();
+            }
+          },
+          children: [
+            'Create "',
+            inputValue,
+            '"'
+          ]
+        }
+      ) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "p-2 text-center text-sm block text-muted-foreground", children: isCreating ? "Creating..." : emptyIndicator }) }),
       filteredOptions.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(CommandGroup, { children: filteredOptions.map((option) => /* @__PURE__ */ jsxRuntimeExports.jsx(
         CommandItem,
         {
@@ -24377,7 +24438,7 @@ const Textarea = reactExports.forwardRef(
   }
 );
 Textarea.displayName = "Textarea";
-function getRequestToken$2() {
+function getRequestToken$3() {
   if (typeof document === "undefined") {
     return null;
   }
@@ -24407,7 +24468,7 @@ function AddBookmarkForm() {
   const { setBookmarks } = useBookmarks();
   const tagOptions = availableTags.map((tag) => ({ label: tag.name, value: String(tag.id) }));
   const handleCreateTag = async (label) => {
-    const requestToken = getRequestToken$2();
+    const requestToken = getRequestToken$3();
     if (!requestToken) return { label, value: label };
     try {
       const response = await fetch("/apps/bookmarksmanager/api/v1/tags", {
@@ -24449,7 +24510,7 @@ function AddBookmarkForm() {
     e.preventDefault();
     setIsSaving(true);
     setSaveError(null);
-    const requestToken = getRequestToken$2();
+    const requestToken = getRequestToken$3();
     if (!requestToken) {
       setSaveError("CSRF token not found!");
       setIsSaving(false);
@@ -24577,7 +24638,7 @@ function Header() {
     /* @__PURE__ */ jsxRuntimeExports.jsx(AddBookmarkForm, {})
   ] });
 }
-function getRequestToken$1() {
+function getRequestToken$2() {
   if (typeof document === "undefined") {
     return null;
   }
@@ -24612,7 +24673,7 @@ const ImportRaindropDialog = ({
     if (!file) return;
     setIsImporting(true);
     setError(null);
-    const requestToken = getRequestToken$1();
+    const requestToken = getRequestToken$2();
     if (!requestToken) {
       setError(t("settings.import_error_token"));
       setIsImporting(false);
@@ -24913,32 +24974,193 @@ const SettingsButton = () => {
     /* @__PURE__ */ jsxRuntimeExports.jsx(ApiTokenDialog, { open: apiTokenDialogOpen, onOpenChange: setApiTokenDialogOpen })
   ] });
 };
-const Tags = () => {
-  const { tags } = useLoaderData({ from: "__root__" }) || { tags: [] };
-  const allTags = tags || [];
-  const { bookmarks: allBookmarks } = useLoaderData({ from: "__root__" }) || { bookmarks: [] };
-  const getTagCount = (tagId) => {
-    return allBookmarks.filter((bookmark) => bookmark.tags.includes(tagId)).length;
-  };
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "p-4", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "text-lg font-semibold mb-4", children: t("Tags") }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-2", children: allTags.map((tag) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+function getRequestToken$1() {
+  if (typeof document === "undefined") {
+    return null;
+  }
+  const meta = document.querySelector('meta[name="requesttoken"]');
+  if (meta) return meta.getAttribute("content");
+  const head = document.querySelector("head[data-requesttoken]");
+  if (head) return head.getAttribute("data-requesttoken");
+  return null;
+}
+const TagItem = ({
+  tag,
+  bookmarkCount,
+  onRename,
+  onDelete
+}) => {
+  const [menuOpen, setMenuOpen] = reactExports.useState(false);
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative group flex items-center", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(
       Link,
       {
         to: "/tags/$tagId",
         params: { tagId: String(tag.id) },
-        className: "flex justify-between items-center text-sm p-2 hover:bg-accent rounded-md cursor-pointer text-foreground",
+        className: "flex items-center justify-between text-sm p-2 hover:bg-accent rounded-md cursor-pointer text-foreground flex-1",
         activeProps: { className: "bg-accent" },
         children: [
           /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
             "# ",
             tag.name
           ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "bg-muted-foreground/20 text-muted-foreground rounded-full px-2 py-0.5 text-xs", children: getTagCount(tag.id) })
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "bg-muted-foreground/20 text-muted-foreground rounded-full px-2 py-0.5 text-xs", children: bookmarkCount })
         ]
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(DropdownMenu, { open: menuOpen, onOpenChange: setMenuOpen, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(DropdownMenuTrigger, { asChild: true, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
+        {
+          className: "ml-2 p-1 rounded hover:bg-accent opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity",
+          tabIndex: 0,
+          "aria-label": "Tag menu",
+          onClick: (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            setMenuOpen((v2) => !v2);
+          },
+          children: /* @__PURE__ */ jsxRuntimeExports.jsx(DotsHorizontalIcon, { className: "h-4 w-4" })
+        }
+      ) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(DropdownMenuContent, { align: "end", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(DropdownMenuItem, { onSelect: () => {
+          setMenuOpen(false);
+          onRename(tag);
+        }, children: t("tag.rename") }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(DropdownMenuItem, { onSelect: () => {
+          setMenuOpen(false);
+          onDelete(tag);
+        }, children: t("tag.delete") })
+      ] })
+    ] })
+  ] });
+};
+const Tags = () => {
+  const { tags } = useLoaderData({ from: "__root__" }) || { tags: [] };
+  const allTags = tags || [];
+  const { bookmarks: allBookmarks } = useLoaderData({ from: "__root__" }) || { bookmarks: [] };
+  const router2 = useRouter();
+  const [renameDialogOpen, setRenameDialogOpen] = reactExports.useState(false);
+  const [tagToRename, setTagToRename] = reactExports.useState(null);
+  const [renameValue, setRenameValue] = reactExports.useState("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = reactExports.useState(false);
+  const [tagToDelete, setTagToDelete] = reactExports.useState(null);
+  const getTagCount = (tagId) => {
+    return allBookmarks.filter((bookmark) => bookmark.tags.some((t2) => t2.id === tagId)).length;
+  };
+  const getBookmarkCountForTag = (tagId) => {
+    return allBookmarks.filter((bookmark) => bookmark.tags.some((t2) => t2.id === tagId)).length;
+  };
+  const handleRename = (tag) => {
+    setTagToRename(tag);
+    setRenameValue(tag.name);
+    setRenameDialogOpen(true);
+  };
+  const handleRenameSubmit = async () => {
+    if (!tagToRename || !renameValue.trim()) return;
+    const requestToken = getRequestToken$1();
+    if (!requestToken) {
+      console.error("CSRF token not found!");
+      return;
+    }
+    try {
+      const response = await fetch(`/apps/bookmarksmanager/api/v1/tags/${tagToRename.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "requesttoken": requestToken
+        },
+        body: JSON.stringify({ name: renameValue.trim() })
+      });
+      if (response.ok) {
+        setRenameDialogOpen(false);
+        setTagToRename(null);
+        setRenameValue("");
+        await router2.invalidate();
+      } else {
+        console.error("Failed to rename tag");
+      }
+    } catch (error) {
+      console.error("Error renaming tag:", error);
+    }
+  };
+  const handleDelete = (tag) => {
+    setTagToDelete(tag);
+    setDeleteDialogOpen(true);
+  };
+  const handleDeleteConfirm = async () => {
+    if (!tagToDelete) return;
+    const requestToken = getRequestToken$1();
+    if (!requestToken) {
+      console.error("CSRF token not found!");
+      return;
+    }
+    try {
+      const response = await fetch(`/apps/bookmarksmanager/api/v1/tags/${tagToDelete.id}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "requesttoken": requestToken
+        }
+      });
+      if (response.ok) {
+        setDeleteDialogOpen(false);
+        setTagToDelete(null);
+        await router2.invalidate();
+      } else {
+        console.error("Failed to delete tag");
+      }
+    } catch (error) {
+      console.error("Error deleting tag:", error);
+    }
+  };
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "p-4", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "text-lg font-semibold mb-4", children: t("Tags") }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-2", children: allTags.map((tag) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+      TagItem,
+      {
+        tag,
+        bookmarkCount: getTagCount(tag.id),
+        onRename: handleRename,
+        onDelete: handleDelete
       },
       tag.id
-    )) })
+    )) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(Dialog, { open: renameDialogOpen, onOpenChange: setRenameDialogOpen, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogContent, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogHeader, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(DialogTitle, { children: t("tag.rename_tag") }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(DialogDescription, { children: t("tag.enter_new_name") })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "input",
+        {
+          type: "text",
+          value: renameValue,
+          onChange: (e) => setRenameValue(e.target.value),
+          onKeyDown: (e) => {
+            if (e.key === "Enter") handleRenameSubmit();
+          },
+          className: "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+          placeholder: t("tag.tag_name"),
+          autoFocus: true
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogFooter, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { variant: "ghost", onClick: () => setRenameDialogOpen(false), children: t("tag.cancel") }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { onClick: handleRenameSubmit, children: t("tag.rename") })
+      ] })
+    ] }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(Dialog, { open: deleteDialogOpen, onOpenChange: setDeleteDialogOpen, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogContent, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogHeader, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(DialogTitle, { children: t("tag.delete_tag") }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(DialogDescription, { children: tagToDelete && getBookmarkCountForTag(tagToDelete.id) > 0 ? t("tag.confirm_delete_with_bookmarks").replace("{{count}}", String(getBookmarkCountForTag(tagToDelete.id))) : t("tag.confirm_delete") })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogFooter, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { variant: "ghost", onClick: () => setDeleteDialogOpen(false), children: t("tag.cancel") }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { variant: "destructive", onClick: handleDeleteConfirm, children: t("tag.delete") })
+      ] })
+    ] }) })
   ] });
 };
 const Layout = ({ children }) => {
@@ -25570,12 +25792,11 @@ const useTranslation = (ns, props = {}) => {
 };
 const BookmarkCard = ({ bookmark, showCollection = false, onEdit, onDelete }) => {
   const { t: t2 } = useTranslation();
-  const { collections, tags: allTags } = useLoaderData({ from: "__root__" }) || { collections: [], tags: [] };
+  const { collections } = useLoaderData({ from: "__root__" }) || { collections: [] };
   const allCollections = collections || [];
-  const tags = allTags || [];
   const domain = new URL(bookmark.url).hostname;
   const [hovered, setHovered] = reactExports.useState(false);
-  const bookmarkTags = tags.filter((tag) => bookmark.tags.includes(tag.id));
+  const bookmarkTags = bookmark.tags || [];
   const collection = allCollections.find((c) => c.id === bookmark.collectionId);
   return /* @__PURE__ */ jsxRuntimeExports.jsx(
     "a",
@@ -25695,10 +25916,8 @@ const BookmarkCardSkeleton = () => {
   ] });
 };
 const BookmarkListItem = ({ bookmark, onEdit, onDelete }) => {
-  const { tags: allTags } = useLoaderData({ from: "__root__" }) || { tags: [] };
-  const tags = allTags || [];
   const domain = new URL(bookmark.url).hostname;
-  const bookmarkTags = tags.filter((tag) => bookmark.tags.includes(tag.id));
+  const bookmarkTags = bookmark.tags || [];
   const [hovered, setHovered] = reactExports.useState(false);
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(
     "a",
@@ -25808,20 +26027,32 @@ function EditBookmarkForm({ bookmark, isOpen, onOpenChange }) {
   const { collections, tags: allTags } = useLoaderData({ from: "__root__" }) || { collections: [], tags: [] };
   const availableCollections = collections || [];
   const availableTags = allTags || [];
+  const [localCreatedTags, setLocalCreatedTags] = reactExports.useState([]);
   const [url, setUrl] = reactExports.useState("");
   const [title, setTitle] = reactExports.useState("");
   const [description, setDescription] = reactExports.useState("");
-  const [collectionId, setCollectionId] = reactExports.useState();
+  const [collectionId, setCollectionId] = reactExports.useState("");
   const [selectedTags, setSelectedTags] = reactExports.useState([]);
   const [screenshot, setScreenshot] = reactExports.useState(null);
   const [showScreenshotInput, setShowScreenshotInput] = reactExports.useState(false);
   const [favicon, setFavicon] = reactExports.useState(null);
   const [showFaviconInput, setShowFaviconInput] = reactExports.useState(false);
-  const tagOptions = availableTags.map((tag) => ({ label: tag.name, value: String(tag.id) }));
+  const tagOptions = reactExports.useMemo(() => {
+    const baseTags = availableTags.map((tag) => ({ label: tag.name, value: String(tag.id) }));
+    const localTagsToAdd = localCreatedTags.filter(
+      (localTag) => !baseTags.some((baseTag) => baseTag.value === localTag.value)
+    );
+    return [...baseTags, ...localTagsToAdd];
+  }, [availableTags, localCreatedTags]);
   const handleCreateTag = async (label) => {
+    console.log("[EditBookmarkForm] handleCreateTag called", { label });
     const requestToken = getRequestToken();
-    if (!requestToken) return { label, value: label };
+    if (!requestToken) {
+      console.log("[EditBookmarkForm] No request token");
+      return { label, value: label };
+    }
     try {
+      console.log("[EditBookmarkForm] Creating tag via API");
       const response = await fetch("/apps/bookmarksmanager/api/v1/tags", {
         method: "POST",
         headers: {
@@ -25832,10 +26063,21 @@ function EditBookmarkForm({ bookmark, isOpen, onOpenChange }) {
       });
       if (response.ok) {
         const tag = await response.json();
-        await router2.invalidate();
-        return { label: tag.name, value: String(tag.id) };
+        console.log("[EditBookmarkForm] Tag created successfully", tag);
+        const newTag = { label: tag.name, value: String(tag.id) };
+        console.log("[EditBookmarkForm] Adding to localCreatedTags");
+        setLocalCreatedTags((prev) => {
+          console.log("[EditBookmarkForm] Previous localCreatedTags:", prev);
+          const updated = [...prev, newTag];
+          console.log("[EditBookmarkForm] Updated localCreatedTags:", updated);
+          return updated;
+        });
+        return newTag;
+      } else {
+        console.error("[EditBookmarkForm] Failed to create tag, status:", response.status);
       }
     } catch (e) {
+      console.error("[EditBookmarkForm] Error creating tag:", e);
     }
     return { label, value: label };
   };
@@ -25844,13 +26086,14 @@ function EditBookmarkForm({ bookmark, isOpen, onOpenChange }) {
       setUrl(bookmark.url);
       setTitle(bookmark.title);
       setDescription(bookmark.description || "");
-      setCollectionId(bookmark.collectionId ? String(bookmark.collectionId) : void 0);
+      setCollectionId(bookmark.collectionId ? String(bookmark.collectionId) : "");
       setScreenshot(bookmark.screenshot);
       setFavicon(bookmark.favicon);
-      const currentTags = availableTags.filter((tag) => bookmark.tags.includes(tag.id)).map((tag) => ({ label: tag.name, value: String(tag.id) }));
+      const currentTags = bookmark.tags.map((tag) => ({ label: tag.name, value: String(tag.id) }));
       setSelectedTags(currentTags);
+      setLocalCreatedTags([]);
     }
-  }, [bookmark, availableTags]);
+  }, [bookmark]);
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!bookmark) return;
@@ -25882,6 +26125,7 @@ function EditBookmarkForm({ bookmark, isOpen, onOpenChange }) {
     if (response.ok) {
       onOpenChange(false);
       router2.invalidate();
+      setLocalCreatedTags([]);
     } else {
       console.error("Failed to update bookmark");
     }
@@ -25905,6 +26149,7 @@ function EditBookmarkForm({ bookmark, isOpen, onOpenChange }) {
     if (response.ok) {
       onOpenChange(false);
       router2.invalidate();
+      setLocalCreatedTags([]);
     } else {
       console.error("Failed to delete bookmark");
     }
@@ -26042,7 +26287,7 @@ function EditBookmarkForm({ bookmark, isOpen, onOpenChange }) {
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 items-center gap-4", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "collection", className: "text-right", children: t("bookmark.collection") }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs(Select, { value: collectionId, onValueChange: setCollectionId, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(Select, { value: collectionId || "", onValueChange: (value) => setCollectionId(value || ""), children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx(SelectTrigger, { className: "col-span-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectValue, { placeholder: t("bookmark.select_collection") }) }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContent, { children: availableCollections.map((collection) => /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: String(collection.id), children: collection.name }, collection.id)) })
         ] })

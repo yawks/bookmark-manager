@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 
 import { Bookmark } from '../../types';
 import { Pencil2Icon } from '@radix-ui/react-icons';
-import { useLoaderData } from '@tanstack/react-router';
 
 interface BookmarkListItemProps {
   bookmark: Bookmark;
@@ -11,10 +10,8 @@ interface BookmarkListItemProps {
 }
 
 const BookmarkListItem = ({ bookmark, onEdit, onDelete }: BookmarkListItemProps) => {
-  const { tags: allTags } = useLoaderData({ from: '__root__' }) || { tags: [] };
-  const tags = allTags || [];
   const domain = new URL(bookmark.url).hostname;
-  const bookmarkTags = tags.filter(tag => bookmark.tags.includes(tag.id));
+  const bookmarkTags = bookmark.tags || [];
   const [hovered, setHovered] = useState(false);
 
   return (

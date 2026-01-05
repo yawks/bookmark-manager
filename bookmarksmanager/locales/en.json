@@ -49,6 +49,17 @@
       "new_nested_collection_name": "New nested collection name",
       "cancel": "Cancel"
     },
+    "tag": {
+      "rename": "Rename",
+      "rename_tag": "Rename tag",
+      "delete": "Delete",
+      "delete_tag": "Delete tag",
+      "enter_new_name": "Enter a new name for this tag",
+      "confirm_delete": "Are you sure you want to delete this tag?",
+      "confirm_delete_with_bookmarks": "Are you sure you want to delete this tag? All bookmarks using this tag ({{count}}) will no longer have this tag. This action cannot be undone.",
+      "tag_name": "Tag name",
+      "cancel": "Cancel"
+    },
     "settings": {
       "title": "Settings",
       "import_from_raindrop": "Import from Raindrop",

@@ -1,6 +1,6 @@
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
-import React, { useCallback, useRef, useState } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import React, { startTransition, useCallback, useRef, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { XIcon } from 'lucide-react';
@@ -32,23 +32,55 @@ export function TagSelector({
   const inputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
 
   const handleSelect = useCallback((tag: Tag) => {
     if (!value.some(t => t.value === tag.value)) {
-      onChange([...value, tag]);
+      startTransition(() => {
+        onChange([...value, tag]);
+      });
     }
     setInputValue('');
     setOpen(false);
-    inputRef.current?.focus();
+    // Use setTimeout to avoid state update conflicts
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 0);
   }, [value, onChange]);
 
-  const handleCreate = async () => {
-    if (!creatable || !inputValue.trim() || !onCreateOption) return;
-    const newTag = await onCreateOption(inputValue.trim());
-    if (newTag) {
-      handleSelect(newTag);
+  const handleCreate = useCallback(async () => {
+    if (!creatable || !inputValue.trim() || !onCreateOption || isCreating) {
+      return;
     }
-  };
+    
+    const trimmedValue = inputValue.trim();
+    setIsCreating(true);
+    
+    // Clear input immediately to prevent conflicts
+    setInputValue('');
+    
+    try {
+      const newTag = await onCreateOption(trimmedValue);
+      
+      if (newTag && !value.some(t => t.value === newTag.value)) {
+        // Use startTransition to avoid state update conflicts
+        startTransition(() => {
+          onChange([...value, newTag]);
+        });
+        setOpen(false);
+        setTimeout(() => {
+          inputRef.current?.focus();
+          setIsCreating(false);
+        }, 0);
+      } else {
+        setIsCreating(false);
+      }
+    } catch {
+      // Restore input value on error
+      setInputValue(trimmedValue);
+      setIsCreating(false);
+    }
+  }, [creatable, inputValue, onCreateOption, value, onChange, isCreating]);
 
   const handleRemove = (tagToRemove: Tag) => {
     onChange(value.filter(tag => tag.value !== tagToRemove.value));
@@ -59,7 +91,7 @@ export function TagSelector({
       // Prevent form submission
       e.preventDefault();
 
-      if (inputValue.trim()) {
+      if (inputValue.trim() && !isCreating) {
         // Check if it matches an existing option exactly
         const exactMatch = options.find(opt => opt.label.toLowerCase() === inputValue.trim().toLowerCase());
         if (exactMatch && !value.some(v => v.value === exactMatch.value)) {
@@ -124,12 +156,34 @@ export function TagSelector({
         <Command>
           <CommandList className="max-h-[200px] overflow-y-auto">
             <CommandEmpty>
-              {creatable && inputValue.trim() ? (
-                <CommandItem value={inputValue} onSelect={handleCreate} className="cursor-pointer">
+              {creatable && inputValue.trim() && !isCreating ? (
+                <button
+                  type="button"
+                  className="w-full relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground cursor-pointer text-left"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleCreate();
+                  }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleCreate();
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleCreate();
+                    }
+                  }}
+                >
                   Create "{inputValue}"
-                </CommandItem>
+                </button>
               ) : (
-                <span className="p-2 text-center text-sm block text-muted-foreground">{emptyIndicator}</span>
+                <span className="p-2 text-center text-sm block text-muted-foreground">
+                  {isCreating ? 'Creating...' : emptyIndicator}
+                </span>
               )}
             </CommandEmpty>
 

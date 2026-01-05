@@ -15,13 +15,12 @@ interface BookmarkCardProps {
 
 const BookmarkCard = ({ bookmark, showCollection = false, onEdit, onDelete }: BookmarkCardProps) => {
   const { t } = useTranslation();
-  const { collections, tags: allTags } = useLoaderData({ from: '__root__' }) || { collections: [], tags: [] };
+  const { collections } = useLoaderData({ from: '__root__' }) || { collections: [] };
   const allCollections = collections || [];
-  const tags = allTags || [];
   const domain = new URL(bookmark.url).hostname;
 
   const [hovered, setHovered] = useState(false);
-  const bookmarkTags = tags.filter(tag => bookmark.tags.includes(tag.id));
+  const bookmarkTags = bookmark.tags || [];
   const collection = allCollections.find(c => c.id === bookmark.collectionId);
 
   return (

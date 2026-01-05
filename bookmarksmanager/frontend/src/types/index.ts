@@ -6,7 +6,7 @@ export interface Bookmark {
   screenshot: string | null;
   favicon: string | null;
   collectionId: number | null;
-  tags: number[];
+  tags: Tag[];
 }
 
 export interface Collection {

@@ -7,7 +7,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Tag, TagSelector } from '@/components/ui/tag-selector';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Select,
   SelectContent,
@@ -44,22 +44,33 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
   const { collections, tags: allTags } = useLoaderData({ from: '__root__' }) || { collections: [], tags: [] };
   const availableCollections = collections || [];
   const availableTags = allTags || [];
+  const [localCreatedTags, setLocalCreatedTags] = useState<Tag[]>([]);
 
   const [url, setUrl] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [collectionId, setCollectionId] = useState<string | undefined>();
+  const [collectionId, setCollectionId] = useState<string>('');
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [screenshot, setScreenshot] = useState<string | null>(null);
   const [showScreenshotInput, setShowScreenshotInput] = useState(false);
   const [favicon, setFavicon] = useState<string | null>(null);
   const [showFaviconInput, setShowFaviconInput] = useState(false);
 
-  const tagOptions: Tag[] = availableTags.map(tag => ({ label: tag.name, value: String(tag.id) }));
+  // Merge available tags with locally created tags
+  const tagOptions: Tag[] = useMemo(() => {
+    const baseTags = availableTags.map(tag => ({ label: tag.name, value: String(tag.id) }));
+    // Add locally created tags that aren't already in the list
+    const localTagsToAdd = localCreatedTags.filter(
+      localTag => !baseTags.some(baseTag => baseTag.value === localTag.value)
+    );
+    return [...baseTags, ...localTagsToAdd];
+  }, [availableTags, localCreatedTags]);
 
   const handleCreateTag = async (label: string): Promise<Tag> => {
     const requestToken = getRequestToken();
-    if (!requestToken) return { label, value: label };
+    if (!requestToken) {
+      return { label, value: label };
+    }
     try {
       const response = await fetch('/apps/bookmarksmanager/api/v1/tags', {
         method: 'POST',
@@ -71,8 +82,11 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
       });
       if (response.ok) {
         const tag = await response.json();
-        await router.invalidate();
-        return { label: tag.name, value: String(tag.id) };
+        const newTag = { label: tag.name, value: String(tag.id) };
+        // Add to local tags instead of invalidating router immediately
+        setLocalCreatedTags(prev => [...prev, newTag]);
+        // Invalidate router only after form is closed or saved
+        return newTag;
       }
     } catch (e) {
       // fallback
@@ -85,16 +99,16 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
       setUrl(bookmark.url);
       setTitle(bookmark.title);
       setDescription(bookmark.description || '');
-      setCollectionId(bookmark.collectionId ? String(bookmark.collectionId) : undefined);
+      setCollectionId(bookmark.collectionId ? String(bookmark.collectionId) : '');
       setScreenshot(bookmark.screenshot);
       setFavicon(bookmark.favicon);
 
-      const currentTags = availableTags
-        .filter(tag => bookmark.tags.includes(tag.id))
-        .map(tag => ({ label: tag.name, value: String(tag.id) }));
+      const currentTags = bookmark.tags.map(tag => ({ label: tag.name, value: String(tag.id) }));
       setSelectedTags(currentTags);
+      // Reset local created tags when bookmark changes
+      setLocalCreatedTags([]);
     }
-  }, [bookmark, availableTags]);
+  }, [bookmark]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,7 +144,9 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
 
     if (response.ok) {
       onOpenChange(false);
+      // Invalidate router after closing to refresh tags in sidebar
       router.invalidate();
+      setLocalCreatedTags([]);
     } else {
       console.error('Failed to update bookmark');
     }
@@ -159,6 +175,7 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
     if (response.ok) {
       onOpenChange(false);
       router.invalidate();
+      setLocalCreatedTags([]);
     } else {
       console.error('Failed to delete bookmark');
     }
@@ -320,7 +337,7 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
               <Label htmlFor="collection" className="text-right">
                 {t('bookmark.collection')}
               </Label>
-              <Select value={collectionId} onValueChange={setCollectionId}>
+              <Select value={collectionId || ''} onValueChange={(value) => setCollectionId(value || '')}>
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder={t('bookmark.select_collection')} />
                 </SelectTrigger>

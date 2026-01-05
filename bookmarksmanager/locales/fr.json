@@ -49,6 +49,17 @@
       "new_nested_collection_name": "Nom de la nouvelle collection imbriquée",
       "cancel": "Annuler"
     },
+    "tag": {
+      "rename": "Renommer",
+      "rename_tag": "Renommer le tag",
+      "delete": "Supprimer",
+      "delete_tag": "Supprimer le tag",
+      "enter_new_name": "Entrez un nouveau nom pour ce tag",
+      "confirm_delete": "Voulez-vous vraiment supprimer ce tag ?",
+      "confirm_delete_with_bookmarks": "Voulez-vous vraiment supprimer ce tag ? Tous les favoris utilisant ce tag ({{count}}) n'auront plus ce tag. Cette action ne peut pas être annulée.",
+      "tag_name": "Nom du tag",
+      "cancel": "Annuler"
+    },
     "settings": {
       "title": "Paramètres",
       "import_from_raindrop": "Importer depuis Raindrop",
