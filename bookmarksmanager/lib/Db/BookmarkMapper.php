@@ -65,6 +65,10 @@ class BookmarkMapper extends QBMapper {
             $qb->andWhere($qb->expr()->in('id', $qb->createNamedParameter($bookmarkIdsFiltered, IQueryBuilder::PARAM_INT_ARRAY)));
         }
 
+        // Order by order field, then by id
+        $qb->orderBy('order', 'ASC')
+           ->addOrderBy('id', 'ASC');
+
         $bookmarks = $this->findEntities($qb);
 
         if (!empty($bookmarks)) {
@@ -127,6 +131,15 @@ class BookmarkMapper extends QBMapper {
         $qb = $this->db->getQueryBuilder();
         $qb->delete($this->tableName)
            ->where($qb->expr()->eq('collection_id', $qb->createNamedParameter($collectionId, \PDO::PARAM_INT)))
+           ->execute();
+    }
+
+    public function updateOrder(int $bookmarkId, int $order, string $userId): void {
+        $qb = $this->db->getQueryBuilder();
+        $qb->update($this->tableName)
+           ->set('order', $qb->createNamedParameter($order, \PDO::PARAM_INT))
+           ->where($qb->expr()->eq('id', $qb->createNamedParameter($bookmarkId, \PDO::PARAM_INT)))
+           ->andWhere($qb->expr()->eq('user_id', $qb->createNamedParameter($userId)))
            ->execute();
     }
 }

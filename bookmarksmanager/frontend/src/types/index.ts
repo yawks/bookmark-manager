@@ -6,6 +6,7 @@ export interface Bookmark {
   screenshot: string | null;
   favicon: string | null;
   collectionId: number | null;
+  order: number | null;
   tags: Tag[];
 }
 

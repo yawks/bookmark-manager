@@ -115,6 +115,23 @@ class BookmarkService {
     }
 
     /**
+     * Reorder bookmarks
+     * @param array $bookmarks Array of bookmark objects with id and order properties
+     * @param string|null $userId
+     */
+    public function reorder(array $bookmarks, ?string $userId = null): void {
+        if ($userId === null) {
+            $userId = $this->userSession->getUser()->getUID();
+        }
+
+        foreach ($bookmarks as $bookmark) {
+            if (isset($bookmark['id']) && isset($bookmark['order'])) {
+                $this->mapper->updateOrder((int)$bookmark['id'], (int)$bookmark['order'], $userId);
+            }
+        }
+    }
+
+    /**
      * Enrich bookmarks with collection names and tag names
      */
     private function enrichBookmarks(array $bookmarks, string $userId): array {

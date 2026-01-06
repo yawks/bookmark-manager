@@ -107,4 +107,20 @@ class BookmarkController extends Controller {
             return new DataResponse(['error' => $e->getMessage()], 404);
         }
     }
+
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    #[PublicPage]
+    public function reorder(array $bookmarks): DataResponse {
+        $userId = $this->getAuthenticatedUserId($this->userSession, $this->apiTokenService, $this->request);
+        if ($userId === null) {
+            return new DataResponse(['error' => 'Unauthorized'], 401);
+        }
+        try {
+            $this->service->reorder($bookmarks, $userId);
+            return new DataResponse(['success' => true]);
+        } catch (\Exception $e) {
+            return new DataResponse(['error' => $e->getMessage()], 400);
+        }
+    }
 }

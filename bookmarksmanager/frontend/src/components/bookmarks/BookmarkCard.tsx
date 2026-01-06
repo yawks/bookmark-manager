@@ -2,7 +2,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import React, { useState } from 'react';
 
 import { Bookmark } from '../../types';
-import { Pencil2Icon } from '@radix-ui/react-icons';
+import { Pencil2Icon, DragHandleDots2Icon } from '@radix-ui/react-icons';
 import { useLoaderData } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 
@@ -11,9 +11,10 @@ interface BookmarkCardProps {
   showCollection?: boolean;
   onEdit: () => void;
   onDelete?: () => void;
+  dragHandleListeners?: any;
 }
 
-const BookmarkCard = ({ bookmark, showCollection = false, onEdit, onDelete }: BookmarkCardProps) => {
+const BookmarkCard = ({ bookmark, showCollection = false, onEdit, onDelete, dragHandleListeners }: BookmarkCardProps) => {
   const { t } = useTranslation();
   const { collections } = useLoaderData({ from: '__root__' }) || { collections: [] };
   const allCollections = collections || [];
@@ -50,6 +51,18 @@ const BookmarkCard = ({ bookmark, showCollection = false, onEdit, onDelete }: Bo
           )}
           {hovered && (
             <div className="absolute top-2 right-2 flex gap-2">
+              {dragHandleListeners && (
+                <button
+                  type="button"
+                  {...dragHandleListeners}
+                  onClick={e => e.preventDefault()}
+                  className="bg-white/80 hover:bg-white rounded-full p-1 shadow cursor-grab active:cursor-grabbing"
+                  tabIndex={-1}
+                  title="Déplacer"
+                >
+                  <DragHandleDots2Icon className="w-5 h-5 text-gray-700" />
+                </button>
+              )}
               <button
                 type="button"
                 onClick={e => { e.preventDefault(); onEdit(); }}

@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 
 import { Bookmark } from '../../types';
-import { Pencil2Icon } from '@radix-ui/react-icons';
+import { Pencil2Icon, DragHandleDots2Icon } from '@radix-ui/react-icons';
 
 interface BookmarkListItemProps {
   bookmark: Bookmark;
   onEdit: () => void;
   onDelete?: () => void;
+  dragHandleListeners?: any;
 }
 
-const BookmarkListItem = ({ bookmark, onEdit, onDelete }: BookmarkListItemProps) => {
+const BookmarkListItem = ({ bookmark, onEdit, onDelete, dragHandleListeners }: BookmarkListItemProps) => {
   const domain = new URL(bookmark.url).hostname;
   const bookmarkTags = bookmark.tags || [];
   const [hovered, setHovered] = useState(false);
@@ -59,6 +60,18 @@ const BookmarkListItem = ({ bookmark, onEdit, onDelete }: BookmarkListItemProps)
         ))}
         {hovered && (
           <>
+            {dragHandleListeners && (
+              <button
+                type="button"
+                {...dragHandleListeners}
+                onClick={e => e.preventDefault()}
+                className="ml-2 bg-white/80 hover:bg-white rounded-full p-1 shadow cursor-grab active:cursor-grabbing"
+                tabIndex={-1}
+                title="Déplacer"
+              >
+                <DragHandleDots2Icon className="w-5 h-5 text-gray-700" />
+              </button>
+            )}
             <button
               type="button"
               onClick={e => { e.preventDefault(); onEdit(); }}

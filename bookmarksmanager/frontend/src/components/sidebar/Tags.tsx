@@ -1,5 +1,3 @@
-import { DotsHorizontalIcon } from '@radix-ui/react-icons';
-import { Tag } from '../../types';
 import {
   Dialog,
   DialogContent,
@@ -16,7 +14,10 @@ import {
 } from '../ui/dropdown-menu';
 import { Link, useLoaderData, useRouter } from '@tanstack/react-router';
 import React, { useState } from 'react';
+
 import { Button } from '../ui/button';
+import { DotsHorizontalIcon } from '@radix-ui/react-icons';
+import { Tag } from '../../types';
 import { t } from '../../lib/l10n';
 
 // Helper to get Nextcloud's request token
@@ -178,7 +179,7 @@ const Tags = () => {
   return (
     <div className="p-4">
       <h2 className="text-lg font-semibold mb-4">{t('Tags')}</h2>
-      <div className="space-y-2">
+      <div>
         {allTags.map(tag => (
           <TagItem
             key={tag.id}

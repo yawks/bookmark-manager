@@ -13,6 +13,7 @@ class Bookmark extends Entity implements JsonSerializable {
     protected $screenshot;
     protected $favicon;
     protected $collectionId;
+    protected $order;
     
     // Non-db properties
     public array $tags = [];
@@ -21,6 +22,7 @@ class Bookmark extends Entity implements JsonSerializable {
 
     public function __construct() {
         $this->addType('collectionId', 'integer');
+        $this->addType('order', 'integer');
     }
 
     public function setUserId(string $userId): void {
@@ -86,6 +88,15 @@ class Bookmark extends Entity implements JsonSerializable {
         return $this->favicon;
     }
 
+    public function setOrder(?int $order): void {
+        $this->order = $order;
+        $this->markFieldUpdated('order');
+    }
+
+    public function getOrder(): ?int {
+        return $this->order;
+    }
+
     public function setTags(array $tags): void {
         $this->tags = $tags;
     }
@@ -105,6 +116,7 @@ class Bookmark extends Entity implements JsonSerializable {
             'collectionName' => $this->collectionName,
             'screenshot' => $this->screenshot,
             'favicon' => $this->favicon,
+            'order' => $this->order,
             'tags' => $this->tagsWithNames,
         ];
     }

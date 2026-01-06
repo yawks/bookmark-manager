@@ -10,6 +10,7 @@ return [
         ['name' => 'bookmark#create', 'url' => '/api/v1/bookmarks', 'verb' => 'POST'],
         ['name' => 'bookmark#update', 'url' => '/api/v1/bookmarks/{id}', 'verb' => 'PUT'],
         ['name' => 'bookmark#destroy', 'url' => '/api/v1/bookmarks/{id}', 'verb' => 'DELETE'],
+        ['name' => 'bookmark#reorder', 'url' => '/api/v1/bookmarks/reorder', 'verb' => 'POST'],
 
         // Collections
         ['name' => 'collection#index', 'url' => '/api/v1/collections', 'verb' => 'GET'],

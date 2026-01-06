@@ -7,6 +7,29 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * Reorder bookmarks via the API
+ */
+export async function reorderBookmarks(bookmarks: { id: number; order: number }[]): Promise<void> {
+  const requestToken = (globalThis as any).OC?.requestToken || document.querySelector('head meta[name="requesttoken"]')?.getAttribute('content');
+  if (!requestToken) {
+    throw new Error('CSRF token missing');
+  }
+
+  const response = await fetch('/apps/bookmarksmanager/api/v1/bookmarks/reorder', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'requesttoken': requestToken,
+    },
+    body: JSON.stringify({ bookmarks }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to reorder bookmarks');
+  }
+}
+
+/**
  * Return the list of descendant collection ids (including the rootId)
  * by walking parentId relationships.
  */
