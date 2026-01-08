@@ -30,3 +30,9 @@ dist-ssr
 
 #Ignore cursor AI rules
 .cursor/rules/codacy.mdc
+
+# Deployment scripts
+deploy_dev.sh
+
+# Codacy configuration
+.codacy/
