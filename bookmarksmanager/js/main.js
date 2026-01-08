@@ -46851,7 +46851,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     }
   ));
   DropdownMenuSeparator.displayName = Separator2.displayName;
-  function getRequestToken$4() {
+  function getRequestToken$5() {
     if (typeof document === "undefined") {
       return null;
     }
@@ -46979,7 +46979,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     }, [creatingNestedFor]);
     const handleCreateCollection = async () => {
       if (!newCollectionName.trim()) return;
-      const requestToken = getRequestToken$4();
+      const requestToken = getRequestToken$5();
       if (!requestToken) {
         console.error("CSRF token not found!");
         return;
@@ -47022,7 +47022,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     };
     const handleRenameSubmit = async () => {
       if (!collectionToRename || !renameValue.trim()) return;
-      const requestToken = getRequestToken$4();
+      const requestToken = getRequestToken$5();
       if (!requestToken) {
         console.error("CSRF token not found!");
         return;
@@ -47054,7 +47054,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     };
     const handleDeleteConfirm = async () => {
       if (!collectionToDelete) return;
-      const requestToken = getRequestToken$4();
+      const requestToken = getRequestToken$5();
       if (!requestToken) {
         console.error("CSRF token not found!");
         return;
@@ -47084,7 +47084,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     };
     const handleCreateNestedSubmit = async () => {
       if (creatingNestedFor === null || !nestedCollectionName.trim()) return;
-      const requestToken = getRequestToken$4();
+      const requestToken = getRequestToken$5();
       if (!requestToken) {
         console.error("CSRF token not found!");
         return;
@@ -47126,7 +47126,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
       }
     };
     const handleUpdateIcon = async (collection, newIcon) => {
-      const requestToken = getRequestToken$4();
+      const requestToken = getRequestToken$5();
       if (!requestToken) return;
       try {
         const response = await fetch(`/apps/bookmarksmanager/api/v1/collections/${collection.id}`, {
@@ -48918,7 +48918,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     }
   );
   Textarea.displayName = "Textarea";
-  function getRequestToken$3() {
+  function getRequestToken$4() {
     if (typeof document === "undefined") {
       return null;
     }
@@ -48950,7 +48950,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     const { setBookmarks } = useBookmarks();
     const tagOptions = availableTags.map((tag) => ({ label: tag.name, value: String(tag.id) }));
     const handleCreateTag = async (label) => {
-      const requestToken = getRequestToken$3();
+      const requestToken = getRequestToken$4();
       if (!requestToken) return { label, value: label };
       try {
         const response = await fetch("/apps/bookmarksmanager/api/v1/tags", {
@@ -48992,7 +48992,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
       e.preventDefault();
       setIsSaving(true);
       setSaveError(null);
-      const requestToken = getRequestToken$3();
+      const requestToken = getRequestToken$4();
       if (!requestToken) {
         setSaveError("CSRF token not found!");
         setIsSaving(false);
@@ -49221,7 +49221,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
       /* @__PURE__ */ jsxRuntimeExports.jsx(AddBookmarkForm, {})
     ] });
   }
-  function getRequestToken$2() {
+  function getRequestToken$3() {
     if (typeof document === "undefined") {
       return null;
     }
@@ -49256,7 +49256,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
       if (!file) return;
       setIsImporting(true);
       setError(null);
-      const requestToken = getRequestToken$2();
+      const requestToken = getRequestToken$3();
       if (!requestToken) {
         setError(t("settings.import_error_token"));
         setIsImporting(false);
@@ -49510,6 +49510,16 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
       ] }) })
     ] }) });
   };
+  function getRequestToken$2() {
+    if (typeof document === "undefined") {
+      return null;
+    }
+    const meta = document.querySelector('meta[name="requesttoken"]');
+    if (meta) return meta.getAttribute("content");
+    const head = document.querySelector("head[data-requesttoken]");
+    if (head) return head.getAttribute("data-requesttoken");
+    return null;
+  }
   const SettingsButton = () => {
     const [popoverOpen, setPopoverOpen] = reactExports.useState(false);
     const [importDialogOpen, setImportDialogOpen] = reactExports.useState(false);
@@ -49549,6 +49559,44 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
                 setApiTokenDialogOpen(true);
               },
               children: t("settings.api_token.title")
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "button",
+            {
+              className: "w-full text-left px-2 py-1.5 text-sm rounded-md hover:bg-accent",
+              onClick: async () => {
+                setPopoverOpen(false);
+                const requestToken = getRequestToken$2();
+                if (!requestToken) {
+                  console.error("CSRF token not found");
+                  return;
+                }
+                try {
+                  const response = await fetch("/apps/bookmarksmanager/api/v1/export/raindrop", {
+                    method: "GET",
+                    headers: {
+                      "requesttoken": requestToken
+                    }
+                  });
+                  if (response.ok) {
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `bookmarks_export_${(/* @__PURE__ */ new Date()).toISOString().split("T")[0]}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    URL.revokeObjectURL(url);
+                  } else {
+                    console.error("Export failed:", await response.text());
+                  }
+                } catch (error) {
+                  console.error("Export error:", error);
+                }
+              },
+              children: t("settings.export_to_raindrop")
             }
           )
         ] }) })

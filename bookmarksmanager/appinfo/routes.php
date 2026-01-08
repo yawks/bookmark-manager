@@ -30,6 +30,9 @@ return [
         // Import
         ['name' => 'import#raindrop', 'url' => '/api/v1/import/raindrop', 'verb' => 'POST'],
 
+        // Export
+        ['name' => 'export#raindrop', 'url' => '/api/v1/export/raindrop', 'verb' => 'GET'],
+
         // Locales
         ['name' => 'locale#getLocale', 'url' => '/locales/{locale}', 'verb' => 'GET'],
 

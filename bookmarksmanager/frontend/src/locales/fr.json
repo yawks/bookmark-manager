@@ -72,6 +72,7 @@
     "settings": {
       "title": "Paramètres",
       "import_from_raindrop": "Importer depuis Raindrop",
+      "export_to_raindrop": "Exporter",
       "import_description": "Téléchargez un fichier CSV exporté depuis Raindrop.io pour importer vos favoris.",
       "selected_file": "Fichier sélectionné",
       "import": "Importer",

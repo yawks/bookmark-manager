@@ -6,6 +6,18 @@ import { t } from '../../lib/l10n';
 import ImportRaindropDialog from './ImportRaindropDialog';
 import ApiTokenDialog from './ApiTokenDialog';
 
+// Helper to get Nextcloud's request token
+function getRequestToken() {
+  if (typeof document === 'undefined') {
+    return null;
+  }
+  const meta = document.querySelector('meta[name="requesttoken"]');
+  if (meta) return meta.getAttribute('content');
+  const head = document.querySelector('head[data-requesttoken]');
+  if (head) return head.getAttribute('data-requesttoken');
+  return null;
+}
+
 const SettingsButton = () => {
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
@@ -44,6 +56,45 @@ const SettingsButton = () => {
                 }}
               >
                 {t('settings.api_token.title')}
+              </button>
+              <button
+                className="w-full text-left px-2 py-1.5 text-sm rounded-md hover:bg-accent"
+                onClick={async () => {
+                  setPopoverOpen(false);
+                  const requestToken = getRequestToken();
+                  if (!requestToken) {
+                    console.error('CSRF token not found');
+                    return;
+                  }
+
+                  try {
+                    const response = await fetch('/apps/bookmarksmanager/api/v1/export/raindrop', {
+                      method: 'GET',
+                      headers: {
+                        'requesttoken': requestToken,
+                      },
+                    });
+
+                    if (response.ok) {
+                      // Get the CSV content and create a download
+                      const blob = await response.blob();
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `bookmarks_export_${new Date().toISOString().split('T')[0]}.csv`;
+                      document.body.appendChild(a);
+                      a.click();
+                      a.remove();
+                      URL.revokeObjectURL(url);
+                    } else {
+                      console.error('Export failed:', await response.text());
+                    }
+                  } catch (error) {
+                    console.error('Export error:', error);
+                  }
+                }}
+              >
+                {t('settings.export_to_raindrop')}
               </button>
             </div>
           </PopoverContent>
