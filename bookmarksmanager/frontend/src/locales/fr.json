@@ -40,6 +40,7 @@
     "collection": {
       "rename": "Renommer",
       "rename_collection": "Renommer la collection",
+      "change_icon": "Changer l'icône",
       "delete": "Supprimer",
       "delete_collection": "Supprimer la collection",
       "create_nested_collection": "Créer une collection imbriquée",
@@ -48,6 +49,14 @@
       "collection_name": "Nom de la collection",
       "new_nested_collection_name": "Nom de la nouvelle collection imbriquée",
       "cancel": "Annuler"
+    },
+    "icon_picker": {
+      "search_placeholder": "Rechercher une icône...",
+      "general": "Général",
+      "emojis": "Emojis",
+      "brands": "Marques",
+      "enter_url": "Ou entrer une URL d'image...",
+      "url_placeholder": "https://exemple.com/icon.png"
     },
     "tag": {
       "rename": "Renommer",

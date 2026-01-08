@@ -1,10 +1,10 @@
 <?php
 style('bookmarksmanager', 'style');
-script('bookmarksmanager', 'main');
 // Load build-id.js if it exists for cache-busting
 if (file_exists(__DIR__ . '/../js/build-id.js')) {
-    echo '<script src="' . \OC::$server->getURLGenerator()->linkTo('bookmarksmanager', 'js/build-id.js') . '"></script>';
+    script('bookmarksmanager', 'build-id');
 }
+script('bookmarksmanager', 'main');
 ?>
 <!DOCTYPE html>
 <html lang="en">

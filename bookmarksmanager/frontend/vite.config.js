@@ -24,6 +24,9 @@ export default defineConfig({
     },
   },
   base: '/apps/bookmarksmanager/',
+  define: {
+    'process.env.NODE_ENV': '"production"'
+  },
   build: {
     outDir: 'dist',
     emptyOutDir: true,
@@ -32,15 +35,21 @@ export default defineConfig({
     rollupOptions: {
       input: 'src/main.tsx',
       output: {
+        format: 'iife',
         entryFileNames: 'main.js',
-        chunkFileNames: 'chunks/[name]-[hash].js',
+        inlineDynamicImports: true,
         assetFileNames: ({ name }) => {
           if (name && name.endsWith('.css')) {
             return 'style.css'
           }
           return 'assets/[name][extname]'
+        },
+        globals: {
+          react: 'React',
+          'react-dom': 'ReactDOM'
         }
       },
+       // Prevent externalization of these libs so they are bundled into the IIFE
       external: []
     }
   }

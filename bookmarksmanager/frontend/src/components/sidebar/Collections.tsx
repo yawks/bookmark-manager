@@ -1,5 +1,6 @@
 import { ArchiveIcon, CodeIcon, DashboardIcon, DotsHorizontalIcon, DrawingPinIcon, PersonIcon, PlusIcon, VercelLogoIcon } from '@radix-ui/react-icons';
 import { Bookmark, Collection } from '../../types';
+import { IconPicker, RenderIcon } from './IconPicker';
 import {
   Dialog,
   DialogClose,
@@ -53,6 +54,7 @@ interface CollectionItemProps {
   onRename: (collection: Collection) => void;
   onDelete: (collection: Collection) => void;
   onCreateNested: (collection: Collection) => void;
+  onUpdateIcon: (collection: Collection, newIcon: string) => void;
 }
 
 const CollectionItem: React.FC<CollectionItemProps> = ({
@@ -62,21 +64,38 @@ const CollectionItem: React.FC<CollectionItemProps> = ({
   onRename,
   onDelete,
   onCreateNested,
+  onUpdateIcon,
 }) => {
-  const iconKey = collection.icon as keyof typeof iconMap;
-  const Icon = collection.icon && iconMap[iconKey] ? iconMap[iconKey] : VercelLogoIcon;
   const descendantIds = new Set(getDescendantCollectionIds(allCollections, collection.id))
   const count = bookmarks.filter((b: Bookmark) => b.collectionId !== null && descendantIds.has(Number(b.collectionId))).length;
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showIconPicker, setShowIconPicker] = useState(false);
   return (
-    <div className="relative group flex items-center">
+    <div className="relative group flex items-center rounded-md hover:bg-accent pr-2">
+      <div
+        className="p-2 cursor-pointer"
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+      >
+        <IconPicker
+          currentIcon={collection.icon}
+          onSelect={(icon) => {
+            onUpdateIcon(collection, icon);
+            setShowIconPicker(false);
+          }}
+          open={showIconPicker}
+          onOpenChange={setShowIconPicker}
+        >
+          <div role="button" className="p-0.5 rounded hover:bg-muted/50" onClick={() => setShowIconPicker(true)}>
+            <RenderIcon icon={collection.icon} className="h-4 w-4" />
+          </div>
+        </IconPicker>
+      </div>
       <Link
         to="/collections/$collectionId"
         params={{ collectionId: String(collection.id) }}
-        className="flex items-center space-x-2 p-2 hover:bg-accent rounded-md cursor-pointer text-foreground flex-1"
-        activeProps={{ className: 'bg-accent' }}
+        className="flex items-center space-x-2 py-2 flex-1 cursor-pointer text-foreground"
+        activeProps={{ className: 'font-medium' }}
       >
-        <Icon className="h-4 w-4" />
         <span>{collection.name}</span>
         <span className="ml-auto bg-muted-foreground/20 text-muted-foreground rounded-full px-2 py-0.5 text-xs">{count}</span>
       </Link>
@@ -92,7 +111,13 @@ const CollectionItem: React.FC<CollectionItemProps> = ({
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={() => { setMenuOpen(false); onRename(collection); }}>{t('collection.rename')}</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => { setMenuOpen(false); setShowIconPicker(true); }}>{t('collection.rename')}</DropdownMenuItem>
+          <DropdownMenuItem onSelect={(e) => {
+            e.preventDefault(); // Prevent closing immediately to allow state update to propagate if needed, though mostly standard behavior
+            setMenuOpen(false);
+            // We use setTimeout to ensure the menu close event doesn't interfere with the popover opening
+            setTimeout(() => setShowIconPicker(true), 300);
+          }}>{t('collection.change_icon')}</DropdownMenuItem>
           <DropdownMenuItem onSelect={() => { setMenuOpen(false); onDelete(collection); }}>{t('collection.delete')}</DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onSelect={() => { setMenuOpen(false); onCreateNested(collection); }}>{t('collection.create_nested_collection')}</DropdownMenuItem>
@@ -273,9 +298,9 @@ const Collections = () => {
           'Content-Type': 'application/json',
           'requesttoken': requestToken,
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           name: nestedCollectionName.trim(),
-          parentId: creatingNestedFor 
+          parentId: creatingNestedFor
         }),
       });
 
@@ -303,6 +328,34 @@ const Collections = () => {
   const handleNestedBlur = () => {
     if (!nestedCollectionName.trim()) {
       setCreatingNestedFor(null);
+    }
+  };
+
+  const handleUpdateIcon = async (collection: Collection, newIcon: string) => {
+    const requestToken = getRequestToken();
+    if (!requestToken) return;
+
+    try {
+      const response = await fetch(`/apps/bookmarksmanager/api/v1/collections/${collection.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'requesttoken': requestToken,
+        },
+        body: JSON.stringify({
+          icon: newIcon,
+          name: collection.name,
+          parentId: collection.parentId
+        }),
+      });
+
+      if (response.ok) {
+        await router.invalidate();
+      } else {
+        console.error('Failed to update collection icon');
+      }
+    } catch (error) {
+      console.error('Error updating collection icon:', error);
     }
   };
 
@@ -361,6 +414,7 @@ const Collections = () => {
               onRename={handleRename}
               onDelete={handleDelete}
               onCreateNested={handleCreateNested}
+              onUpdateIcon={handleUpdateIcon}
             />
             {creatingNestedFor === collection.id && (
               <div className="ml-4 mt-1 mb-2">
@@ -386,6 +440,7 @@ const Collections = () => {
                   onRename={handleRename}
                   onDelete={handleDelete}
                   onCreateNested={handleCreateNested}
+                  onUpdateIcon={handleUpdateIcon}
                 />
               ))}
             </div>

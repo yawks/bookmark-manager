@@ -6,6 +6,7 @@ import ReactDOM from 'react-dom/client'
 import type { RouterContext } from './lib/context'
 import { StrictMode } from 'react'
 import { BookmarkProvider } from './lib/BookmarkContext'
+import { initI18n } from './lib/i18n'
 // Import the generated route tree
 import { routeTree } from './routeTree.gen'
 
@@ -26,18 +27,21 @@ declare module '@tanstack/react-router' {
 // Initialization function for Nextcloud
 function initializeApp() {
   // Ensure we don't conflict with Nextcloud's initialization
-  const initializeWhenReady = () => {
+  const initializeWhenReady = async () => {
     try {
       const rootElement = document.getElementById('app-bookmarksmanager')
-      
+
       if (!rootElement) {
         console.error('BookmarksManager: Container element not found')
         return
       }
-      
+
       // Clear any existing content to avoid conflicts
       rootElement.innerHTML = ''
-      
+
+      // Initialize i18n BEFORE fetching data and rendering
+      await initI18n()
+
       // Get initial bookmarks from the router loader data
       // We need to fetch the loader data for the root route
       // This is a workaround since TanStack Router doesn't expose a direct API for this outside of a route
@@ -74,7 +78,7 @@ function initializeApp() {
             </StrictMode>,
           )
         })
-      
+
       console.log('BookmarksManager: Application initialized successfully')
     } catch (error) {
       console.error('BookmarksManager: Failed to initialize application:', error)

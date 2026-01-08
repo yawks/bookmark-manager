@@ -40,6 +40,7 @@
     "collection": {
       "rename": "Rename",
       "rename_collection": "Rename collection",
+      "change_icon": "Change icon",
       "delete": "Delete",
       "delete_collection": "Delete collection",
       "create_nested_collection": "Create nested collection",
@@ -80,7 +81,24 @@
         "revoke": "Revoke",
         "revoke_confirm": "Are you sure you want to revoke this token? You will need to generate a new one to use the API again.",
         "copied": "Token copied to clipboard!"
+      },
+      "icon_picker": {
+        "search_placeholder": "Search icon...",
+        "pick_icon": "Pick an icon",
+        "enter_url": "Enter image URL",
+        "url_placeholder": "https://example.com/icon.png",
+        "general": "General",
+        "brands": "Brands"
       }
+    },
+    "icon_picker": {
+      "search_placeholder": "Search icon...",
+      "pick_icon": "Pick an icon",
+      "enter_url": "Enter image URL",
+      "url_placeholder": "https://example.com/icon.png",
+      "general": "General",
+      "emojis": "Emojis",
+      "brands": "Brands"
     }
   }
 }

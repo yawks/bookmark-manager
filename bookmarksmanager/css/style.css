@@ -875,6 +875,9 @@ h1, h2, h3, h4, h5, h6, p {
 .w-\[280px\] {
   width: 280px;
 }
+.w-\[300px\] {
+  width: 300px;
+}
 .w-\[var\(--radix-popover-trigger-width\)\] {
   width: var(--radix-popover-trigger-width);
 }
@@ -1287,6 +1290,10 @@ h1, h2, h3, h4, h5, h6, p {
 }
 .tracking-widest {
   letter-spacing: 0.1em;
+}
+.text-blue-500 {
+  --tw-text-opacity: 1;
+  color: rgb(59 130 246 / var(--tw-text-opacity, 1));
 }
 .text-card-foreground {
   color: var(--color-main-text);

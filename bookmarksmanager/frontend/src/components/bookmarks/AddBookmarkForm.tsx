@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PlusIcon } from '@radix-ui/react-icons';
+import { X } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { t } from '../../lib/l10n';
 import { useBookmarks } from '@/lib/BookmarkContext';
@@ -55,7 +56,9 @@ export function AddBookmarkForm() {
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   // Screenshot URL for the bookmark
   const [screenshot, setScreenshot] = useState<string | null>(null);
+  const [showScreenshotInput, setShowScreenshotInput] = useState(false);
   const [favicon, setFavicon] = useState<string | null>(null);
+  const [showFaviconInput, setShowFaviconInput] = useState(false);
   // Loading state for fetching page info
   const [isFetching, setIsFetching] = useState(false);
   // Loading and error state for saving bookmark
@@ -168,6 +171,8 @@ export function AddBookmarkForm() {
       setSelectedTags([]);
       setScreenshot(null);
       setFavicon(null);
+      setShowScreenshotInput(false);
+      setShowFaviconInput(false);
     }
   };
 
@@ -195,39 +200,129 @@ export function AddBookmarkForm() {
               </Label>
               <Input id="url" value={url} onChange={e => setUrl(e.target.value)} onBlur={handleUrlBlur} placeholder={t('bookmark.placeholder_url')} className="col-span-3" />
             </div>
-            {/* Screenshot preview with skeleton */}
-            <div className="col-span-4 flex justify-center items-center gap-4 min-h-[80px]" id="screenshot-debug-block">
+            {/* Screenshot & Favicon area */}
+            <div className="col-span-4 flex justify-center items-center gap-6 min-h-[80px]">
               {/* Screenshot */}
-              <div className="relative group w-24 h-20 flex-shrink-0">
-                {isFetching ? (
-                  <div className="w-24 h-20 bg-muted animate-pulse rounded-md" />
-                ) : screenshot ? (
-                  <img
-                    src={screenshot}
-                    alt="Website preview"
-                    className="w-24 h-20 object-cover rounded-md border"
-                    style={{ maxWidth: '100%', maxHeight: 80 }}
-                  />
-                ) : (
-                  <div className="w-24 h-20 bg-muted/30 rounded-md flex items-center justify-center text-xs text-muted-foreground border border-dashed border-muted-foreground/30 text-center p-1">
-                    {t('bookmark.no_preview')}
+              <div className="flex flex-col items-center gap-2 relative">
+                <div className="relative group w-24 h-20 flex-shrink-0">
+                  {isFetching ? (
+                    <div className="w-24 h-20 bg-muted animate-pulse rounded-md" />
+                  ) : screenshot ? (
+                    <img
+                      src={screenshot}
+                      alt="Website preview"
+                      className="w-24 h-20 object-cover rounded-md border"
+                      style={{ maxWidth: '100%', maxHeight: 80 }}
+                    />
+                  ) : (
+                    <div className="w-24 h-20 bg-muted/30 rounded-md flex items-center justify-center text-xs text-muted-foreground border border-dashed border-muted-foreground/30 text-center p-1">
+                      {t('bookmark.no_preview')}
+                    </div>
+                  )}
+                  {/* Edit overlay/button */}
+                  {!showScreenshotInput && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer" onClick={() => setShowScreenshotInput(true)}>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        className="h-6 text-xs px-2"
+                      >
+                        {t('bookmark.edit')}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                {/* Screenshot Input */}
+                {showScreenshotInput && (
+                  <div className="flex flex-col gap-1 absolute top-full mt-2 z-20 bg-background p-2 border rounded shadow-md left-1/2 -translate-x-1/2 min-w-[250px]">
+                    <Label className="text-xs font-semibold">{t('bookmark.screenshot')}</Label>
+                    <div className="flex items-center gap-1">
+                      <Input
+                        value={screenshot || ''}
+                        onChange={(e) => setScreenshot(e.target.value)}
+                        placeholder={t('bookmark.screenshot')}
+                        className="h-7 text-xs"
+                        autoFocus
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => setShowScreenshotInput(false)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>
 
               {/* Favicon */}
-              <div className="relative group w-12 h-12 flex-shrink-0">
-                {isFetching ? (
-                  <div className="w-12 h-12 bg-muted animate-pulse rounded-md" />
-                ) : favicon ? (
-                  <img
-                    src={favicon}
-                    alt="Favicon"
-                    className="w-12 h-12 object-contain rounded-sm border p-1"
-                  />
-                ) : (
-                  <div className="w-12 h-12 bg-muted/30 rounded-md flex items-center justify-center text-[10px] text-muted-foreground border border-dashed border-muted-foreground/30 text-center">
-                    Icon
+              <div className="flex flex-col items-center gap-2 relative">
+                <div className="relative group w-12 h-12 flex-shrink-0">
+                  {isFetching ? (
+                    <div className="w-12 h-12 bg-muted animate-pulse rounded-md" />
+                  ) : favicon ? (
+                    <img
+                      src={favicon}
+                      alt="Favicon"
+                      className="w-12 h-12 object-contain rounded-md border p-1"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 bg-muted/30 rounded-md flex items-center justify-center text-[10px] text-muted-foreground border border-dashed border-muted-foreground/30 text-center">
+                      Icon
+                    </div>
+                  )}
+                  {/* Edit overlay/button */}
+                  {!showFaviconInput && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                      onClick={() => {
+                        if (!favicon && url) {
+                          try {
+                            const urlObj = new URL(url);
+                            setFavicon(`${urlObj.origin}/favicon.ico`);
+                          } catch {
+                            // ignore invalid URL
+                          }
+                        }
+                        setShowFaviconInput(true);
+                      }}
+                    >
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="icon"
+                        className="h-6 w-6"
+                      >
+                        <X className="h-3 w-3 rotate-45" /> {/* Use plus icon metaphor */}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                {/* Favicon Input */}
+                {showFaviconInput && (
+                  <div className="flex flex-col gap-1 absolute top-full mt-2 z-20 bg-background p-2 border rounded shadow-md left-1/2 -translate-x-1/2 min-w-[280px]">
+                    <Label className="text-xs font-semibold">{t('bookmark.favicon_url')}</Label>
+                    <div className="flex items-center gap-1">
+                      <Input
+                        value={favicon || ''}
+                        onChange={(e) => setFavicon(e.target.value)}
+                        placeholder={t('bookmark.favicon_url')}
+                        className="h-7 text-xs"
+                        autoFocus
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => setShowFaviconInput(false)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>

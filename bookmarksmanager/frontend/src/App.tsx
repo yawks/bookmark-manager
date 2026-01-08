@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect } from "react";
+import React, { useEffect } from "react";
 
 import { AddBookmarkForm } from "./components/bookmarks/AddBookmarkForm";
 import BookmarkList from "./components/bookmarks/BookmarkList";
@@ -58,23 +58,17 @@ function App() {
   }, []);
 
   return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center min-h-32">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
-    }>
-  <div id="app-bookmarksmanager-content" className="p-4 min-h-screen">
-        <Layout>
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-semibold text-foreground">
-              {t('app.all_bookmarks')}
-            </h1>
-            <AddBookmarkForm />
-          </div>
-          <BookmarkList bookmarks={[]} showCollection={true} />
-        </Layout>
-      </div>
-    </Suspense>
+    <div id="app-bookmarksmanager-content" className="p-4 min-h-screen">
+      <Layout>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-semibold text-foreground">
+            {t('app.all_bookmarks')}
+          </h1>
+          <AddBookmarkForm />
+        </div>
+        <BookmarkList bookmarks={[]} showCollection={true} />
+      </Layout>
+    </div>
   );
 }
 

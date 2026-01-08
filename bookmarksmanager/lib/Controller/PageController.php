@@ -50,7 +50,8 @@ class PageController extends Controller {
         ];
             $response = new TemplateResponse($this->appName, 'main', $params, 'user');
         $csp = new ContentSecurityPolicy();
-    $csp->addAllowedImageDomain('*'); // Allow all image domains for screenshot preview
+        $csp->addAllowedConnectDomain('https://cdn.jsdelivr.net');
+        $csp->addAllowedImageDomain('*'); // Allow all image domains for screenshot preview
         $response->setContentSecurityPolicy($csp);
             return $response;
     }
