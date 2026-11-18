@@ -12438,6 +12438,28 @@
       }
     ) });
   }
+  function useMatchRoute() {
+    const router2 = useRouter();
+    useRouterState({
+      select: (s) => {
+        var _a;
+        return [s.location.href, (_a = s.resolvedLocation) == null ? void 0 : _a.href, s.status];
+      },
+      structuralSharing: true
+    });
+    return reactExports.useCallback(
+      (opts) => {
+        const { pending, caseSensitive, fuzzy, includeSearch, ...rest } = opts;
+        return router2.matchRoute(rest, {
+          pending,
+          caseSensitive,
+          fuzzy,
+          includeSearch
+        });
+      },
+      [router2]
+    );
+  }
   const createRouter = (options2) => {
     return new Router$1(options2);
   };
@@ -46867,11 +46889,16 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     onCreateNested,
     onUpdateIcon
   }) => {
+    const matchRoute = useMatchRoute();
+    const isSelected = Boolean(matchRoute({
+      to: "/collections/$collectionId",
+      params: { collectionId: String(collection.id) }
+    }));
     const descendantIds = new Set(getDescendantCollectionIds(allCollections, collection.id));
     const count2 = bookmarks.filter((b) => b.collectionId !== null && descendantIds.has(Number(b.collectionId))).length;
     const [menuOpen, setMenuOpen] = reactExports.useState(false);
     const [showIconPicker, setShowIconPicker] = reactExports.useState(false);
-    return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative group flex items-center rounded-md hover:bg-accent pr-2", children: [
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { "data-selected": isSelected ? "true" : void 0, className: "sidebar-nav-item relative group flex items-center rounded-md pr-2", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(
         "div",
         {
@@ -46900,8 +46927,8 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
         {
           to: "/collections/$collectionId",
           params: { collectionId: String(collection.id) },
-          className: "flex items-center space-x-2 py-2 flex-1 cursor-pointer text-foreground",
-          activeProps: { className: "font-medium" },
+          className: "sidebar-nav-link flex items-center space-x-2 py-2 flex-1 cursor-pointer text-foreground",
+          activeOptions: { exact: true },
           children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: collection.name }),
             /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "ml-auto bg-muted-foreground/20 text-muted-foreground rounded-full px-2 py-0.5 text-xs", children: count2 })
@@ -47197,8 +47224,9 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
           Link$1,
           {
             to: "/",
-            className: "flex items-center space-x-2 p-2 hover:bg-accent rounded-md cursor-pointer text-foreground",
-            activeProps: { className: "bg-accent" },
+            className: "sidebar-nav-link flex items-center space-x-2 p-2 hover:bg-accent rounded-md cursor-pointer text-foreground",
+            activeOptions: { exact: true },
+            activeProps: { className: "sidebar-nav-selected" },
             children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx(DashboardIcon, { className: "h-4 w-4" }),
               /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t("All") }),
@@ -49662,15 +49690,20 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     onRename,
     onDelete
   }) => {
+    const matchRoute = useMatchRoute();
+    const isSelected = Boolean(matchRoute({
+      to: "/tags/$tagId",
+      params: { tagId: String(tag.id) }
+    }));
     const [menuOpen, setMenuOpen] = reactExports.useState(false);
-    return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative group flex items-center", children: [
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { "data-selected": isSelected ? "true" : void 0, className: "sidebar-nav-item relative group flex items-center rounded-md", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs(
         Link$1,
         {
           to: "/tags/$tagId",
           params: { tagId: String(tag.id) },
-          className: "flex items-center justify-between text-sm p-2 hover:bg-accent rounded-md cursor-pointer text-foreground flex-1",
-          activeProps: { className: "bg-accent" },
+          className: "sidebar-nav-link flex items-center justify-between text-sm p-2 rounded-md cursor-pointer text-foreground flex-1",
+          activeOptions: { exact: true },
           children: [
             /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
               "# ",
@@ -54309,7 +54342,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
       }
     );
   };
-  const SortableBookmarkCard = ({ bookmark, showCollection, onEdit, onDelete }) => {
+  const SortableBookmarkCard = ({ bookmark, showCollection, onEdit, onDelete, sortingDisabled = false }) => {
     const {
       attributes,
       listeners,
@@ -54317,20 +54350,20 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
       transform,
       transition,
       isDragging
-    } = useSortable({ id: bookmark.id });
+    } = useSortable({ id: bookmark.id, disabled: sortingDisabled });
     const style = {
       transform: CSS$1.Transform.toString(transform),
       transition,
       opacity: isDragging ? 0.5 : 1
     };
-    return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { ref: setNodeRef, style, ...attributes, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+    return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { ref: setNodeRef, style, ...sortingDisabled ? {} : attributes, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
       BookmarkCard,
       {
         bookmark,
         showCollection,
         onEdit,
         onDelete,
-        dragHandleListeners: listeners
+        dragHandleListeners: sortingDisabled ? void 0 : listeners
       }
     ) });
   };
@@ -54430,7 +54463,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
       }
     );
   };
-  const SortableBookmarkListItem = ({ bookmark, onEdit, onDelete }) => {
+  const SortableBookmarkListItem = ({ bookmark, onEdit, onDelete, sortingDisabled = false }) => {
     const {
       attributes,
       listeners,
@@ -54438,19 +54471,19 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
       transform,
       transition,
       isDragging
-    } = useSortable({ id: bookmark.id });
+    } = useSortable({ id: bookmark.id, disabled: sortingDisabled });
     const style = {
       transform: CSS$1.Transform.toString(transform),
       transition,
       opacity: isDragging ? 0.5 : 1
     };
-    return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { ref: setNodeRef, style, ...attributes, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+    return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { ref: setNodeRef, style, ...sortingDisabled ? {} : attributes, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
       BookmarkListItem,
       {
         bookmark,
         onEdit,
         onDelete,
-        dragHandleListeners: listeners
+        dragHandleListeners: sortingDisabled ? void 0 : listeners
       }
     ) });
   };
@@ -54848,11 +54881,36 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
       ] })
     ] }) }) });
   }
+  function normalize(value) {
+    return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  }
+  function searchBookmarks(bookmarks, query, collections = []) {
+    const terms = normalize(query).trim().split(/\s+/).filter(Boolean);
+    if (terms.length === 0) return bookmarks;
+    const collectionNames = new Map(collections.map((collection) => [collection.id, collection.name]));
+    return bookmarks.filter((bookmark) => {
+      const text = normalize([
+        bookmark.title,
+        bookmark.description || "",
+        bookmark.url,
+        ...bookmark.tags.map((tag) => tag.name),
+        collectionNames.get(bookmark.collectionId ?? -1) || ""
+      ].join(" "));
+      return terms.every((term) => text.includes(term));
+    });
+  }
   const BookmarkList = ({ bookmarks = [], isLoading: isLoading2 = false, showCollection = false }) => {
     const [viewMode, setViewMode] = reactExports.useState("grid");
     const [isEditModalOpen, setIsEditModalOpen] = reactExports.useState(false);
     const [selectedBookmark, setSelectedBookmark] = reactExports.useState(null);
     const [localBookmarks, setLocalBookmarks] = reactExports.useState(bookmarks);
+    const [searchQuery, setSearchQuery] = reactExports.useState("");
+    const { collections = [] } = useLoaderData({ from: "__root__" }) || {};
+    const visibleBookmarks = reactExports.useMemo(
+      () => searchBookmarks(localBookmarks, searchQuery, collections),
+      [localBookmarks, searchQuery, collections]
+    );
+    const isSearching = searchQuery.trim().length > 0;
     const router2 = useRouter();
     const sensors = useSensors(
       useSensor(PointerSensor),
@@ -54886,6 +54944,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
       }
     };
     const handleDragEnd = async (event) => {
+      if (isSearching) return;
       const { active, over } = event;
       if (over && active.id !== over.id) {
         const oldIndex = localBookmarks.findIndex((b) => b.id === active.id);
@@ -54905,58 +54964,77 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
         }
       }
     };
-    if (isLoading2) {
-      const skeletons = Array.from({ length: 8 });
-      return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex justify-end mb-4", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(ToggleGroup, { type: "single", value: viewMode, onValueChange: (value) => {
-          if (value) setViewMode(value);
-        }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(ToggleGroupItem, { value: "grid", "aria-label": "Toggle grid", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ViewGridIcon, {}) }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(ToggleGroupItem, { value: "list", "aria-label": "Toggle list", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ViewHorizontalIcon, {}) })
-        ] }) }),
-        viewMode === "grid" ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6", children: skeletons.map((_, index2) => /* @__PURE__ */ jsxRuntimeExports.jsx(BookmarkCardSkeleton, {}, index2)) }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-2", children: skeletons.map((_, index2) => /* @__PURE__ */ jsxRuntimeExports.jsx(BookmarkListItemSkeleton, {}, index2)) })
-      ] });
-    }
-    if (bookmarks.length === 0) {
-      return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col items-center justify-center h-full text-center py-10 min-h-32", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(DrawingPinIcon, { className: "w-16 h-16 text-muted-foreground mb-4 opacity-60" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "text-2xl font-semibold", children: t("No bookmarks here") }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-muted-foreground mt-2", children: t("Add a new bookmark to see it here.") })
-      ] });
-    }
     return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex justify-end mb-4", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        ToggleGroup,
-        {
-          type: "single",
-          value: viewMode,
-          onValueChange: (value) => {
-            if (value) setViewMode(value);
-          },
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(ToggleGroupItem, { value: "grid", "aria-label": "Toggle grid", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ViewGridIcon, {}) }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx(ToggleGroupItem, { value: "list", "aria-label": "Toggle list", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ViewHorizontalIcon, {}) })
-          ]
-        }
-      ) }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(DndContext, { sensors, collisionDetection: closestCenter, onDragEnd: handleDragEnd, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col sm:flex-row gap-3 sm:items-center mb-4", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bookmark-search-control", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Search, { "aria-hidden": "true", className: "bookmark-search-icon" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Input,
+            {
+              type: "search",
+              value: searchQuery,
+              onChange: (event) => setSearchQuery(event.target.value),
+              onKeyDown: (event) => {
+                if (event.key === "Escape") setSearchQuery("");
+              },
+              "aria-label": t("bookmark.search"),
+              placeholder: t("bookmark.search_placeholder"),
+              className: "bookmark-search"
+            }
+          ),
+          searchQuery && /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Button,
+            {
+              type: "button",
+              variant: "ghost",
+              size: "icon",
+              className: "bookmark-search-clear",
+              "aria-label": t("bookmark.clear_search"),
+              onClick: () => setSearchQuery(""),
+              children: /* @__PURE__ */ jsxRuntimeExports.jsx(X$1, { "aria-hidden": "true", className: "h-4 w-4" })
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          ToggleGroup,
+          {
+            className: "self-end sm:self-auto shrink-0",
+            type: "single",
+            value: viewMode,
+            onValueChange: (value) => {
+              if (value) setViewMode(value);
+            },
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(ToggleGroupItem, { value: "grid", "aria-label": "Toggle grid", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ViewGridIcon, {}) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(ToggleGroupItem, { value: "list", "aria-label": "Toggle list", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ViewHorizontalIcon, {}) })
+            ]
+          }
+        )
+      ] }),
+      isLoading2 ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" : "space-y-2", children: Array.from({ length: 8 }, (_, index2) => viewMode === "grid" ? /* @__PURE__ */ jsxRuntimeExports.jsx(BookmarkCardSkeleton, {}, index2) : /* @__PURE__ */ jsxRuntimeExports.jsx(BookmarkListItemSkeleton, {}, index2)) }) : visibleBookmarks.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { role: "status", className: "flex flex-col items-center justify-center text-center py-10 min-h-32", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(DrawingPinIcon, { className: "w-16 h-16 text-muted-foreground mb-4 opacity-60" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "text-2xl font-semibold", children: isSearching ? t("bookmark.no_search_results") : t("No bookmarks here") }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-muted-foreground mt-2", children: isSearching ? t("bookmark.search_hint") : t("Add a new bookmark to see it here.") })
+      ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx(DndContext, { sensors, collisionDetection: closestCenter, onDragEnd: handleDragEnd, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
         SortableContext,
         {
-          items: localBookmarks.map((b) => b.id),
+          items: visibleBookmarks.map((b) => b.id),
           strategy: viewMode === "grid" ? rectSortingStrategy : verticalListSortingStrategy,
-          children: viewMode === "grid" ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6", children: localBookmarks.map((bookmark) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+          children: viewMode === "grid" ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6", children: visibleBookmarks.map((bookmark) => /* @__PURE__ */ jsxRuntimeExports.jsx(
             SortableBookmarkCard,
             {
               bookmark,
+              sortingDisabled: isSearching,
               showCollection,
               onEdit: () => handleBookmarkEdit(bookmark),
               onDelete: () => handleBookmarkDelete(bookmark)
             },
             bookmark.id
-          )) }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-2", children: localBookmarks.map((bookmark) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+          )) }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-2", children: visibleBookmarks.map((bookmark) => /* @__PURE__ */ jsxRuntimeExports.jsx(
             SortableBookmarkListItem,
             {
               bookmark,
+              sortingDisabled: isSearching,
               onEdit: () => handleBookmarkEdit(bookmark),
               onDelete: () => handleBookmarkDelete(bookmark)
             },
@@ -54991,8 +55069,11 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     const tags = routeContext.tags || [];
     const bookmarks = routeContext.bookmarks || [];
     const numericTagId = parseInt(tagId, 10);
-    const tag = tags.find((t2) => t2.id === numericTagId);
-    const taggedBookmarks = bookmarks.filter((b) => b.tags && b.tags.includes(numericTagId));
+    const tag = tags.find((t2) => Number(t2.id) === numericTagId);
+    const taggedBookmarks = bookmarks.filter((b) => {
+      var _a;
+      return (_a = b.tags) == null ? void 0 : _a.some((tag2) => Number(tag2.id) === numericTagId);
+    });
     return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex justify-between items-center mb-6", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsxs("h1", { className: "text-2xl font-semibold", children: [

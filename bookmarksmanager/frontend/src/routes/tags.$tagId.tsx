@@ -15,8 +15,8 @@ function TagComponent() {
   const bookmarks = routeContext.bookmarks || []
 
   const numericTagId = parseInt(tagId, 10)
-  const tag = tags.find(t => t.id === numericTagId)
-  const taggedBookmarks = bookmarks.filter(b => b.tags && b.tags.includes(numericTagId))
+  const tag = tags.find(t => Number(t.id) === numericTagId)
+  const taggedBookmarks = bookmarks.filter(b => b.tags?.some(tag => Number(tag.id) === numericTagId))
 
   return (
     <>

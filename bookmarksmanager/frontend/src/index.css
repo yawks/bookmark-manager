@@ -83,6 +83,135 @@
 }
 
 /* Specific styles for Nextcloud integration */
+/* Keep layout independent of generic utilities overridden by Nextcloud.
+   Important declarations below intentionally isolate these controls from host CSS. */
+#app-bookmarksmanager .bookmark-search-control {
+  display: flex !important;
+  align-items: center;
+  flex: 1 1 0%;
+  min-width: 0;
+  min-height: 44px;
+  box-sizing: border-box;
+  gap: 10px;
+  padding: 0 14px !important;
+  border: 1px solid var(--color-border, #64748b);
+  border-radius: var(--border-radius-large, 8px);
+  background: var(--color-main-background, #fff) !important;
+  color: var(--color-main-text, #18212b) !important;
+}
+
+#app-bookmarksmanager .bookmark-search-control:focus-within {
+  border-color: var(--color-primary-element, #0082c9);
+  outline: 2px solid var(--color-primary-element, #0082c9);
+  outline-offset: 2px;
+}
+
+#app-bookmarksmanager .bookmark-search-control > .bookmark-search-icon {
+  position: static !important;
+  transform: none !important;
+  flex: 0 0 18px;
+  width: 18px !important;
+  height: 18px !important;
+  margin: 0 !important;
+  color: var(--color-main-text, #18212b) !important;
+  stroke: currentColor;
+  opacity: 1 !important;
+  pointer-events: none;
+}
+
+#app-bookmarksmanager .bookmark-search-control > input.bookmark-search {
+  position: static !important;
+  flex: 1 1 0%;
+  box-sizing: border-box;
+  min-width: 0 !important;
+  width: 0 !important;
+  max-width: none !important;
+  height: 42px !important;
+  margin: 0 !important;
+  padding: 8px 4px !important;
+  border: 0 !important;
+  border-radius: 0;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  color: var(--color-main-text, #18212b) !important;
+}
+
+#app-bookmarksmanager .bookmark-search-control > .bookmark-search-clear {
+  position: static !important;
+  transform: none !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 30px;
+  width: 30px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  margin: 0 !important;
+  padding: 6px !important;
+  border: 0;
+  background: transparent !important;
+  color: var(--color-main-text, #18212b) !important;
+}
+
+#app-bookmarksmanager .bookmark-search-control > .bookmark-search-clear:hover {
+  background: var(--color-background-hover, var(--color-background-dark, #eef2f6)) !important;
+}
+
+#app-bookmarksmanager .bookmark-search::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
+
+/* Hover uses the theme's foreground/background pair rather than accent colours. */
+#app-bookmarksmanager .sidebar-nav-link,
+#app-bookmarksmanager .sidebar-nav-item {
+  transition: background-color 150ms ease, box-shadow 150ms ease;
+}
+
+#app-bookmarksmanager .sidebar-nav-link:hover,
+#app-bookmarksmanager .sidebar-nav-item:hover,
+#app-bookmarksmanager .sidebar-nav-item:focus-within {
+  background: var(--color-background-hover, var(--color-background-dark, #eef2f6)) !important;
+  background: color-mix(in srgb, var(--color-main-text, #18212b) 10%, var(--color-main-background, #fff)) !important;
+  color: var(--color-main-text, #18212b) !important;
+}
+
+/* Let the full row, including its icon and menu, carry the hover/active surface. */
+#app-bookmarksmanager .sidebar-nav-item > .sidebar-nav-link {
+  background: transparent !important;
+}
+
+#app-bookmarksmanager .sidebar-nav-item:hover > *,
+#app-bookmarksmanager .sidebar-nav-item:focus-within > * {
+  color: inherit !important;
+}
+
+#app-bookmarksmanager .sidebar-nav-link:focus-visible {
+  outline: 2px solid var(--color-primary-element, #0082c9);
+  outline-offset: 2px;
+}
+
+/* Selection follows the router, including reloads and browser back/forward. */
+#app-bookmarksmanager .sidebar-nav-link.sidebar-nav-selected,
+#app-bookmarksmanager .sidebar-nav-item[data-selected="true"] {
+  background: var(--color-primary-element, #0082c9) !important;
+  color: var(--color-primary-element-text, var(--color-primary-text, #fff)) !important;
+  font-weight: 600 !important;
+}
+
+/* Keep selection visible while still providing hover and keyboard feedback. */
+#app-bookmarksmanager .sidebar-nav-link.sidebar-nav-selected:hover,
+#app-bookmarksmanager .sidebar-nav-item[data-selected="true"]:hover,
+#app-bookmarksmanager .sidebar-nav-item[data-selected="true"]:focus-within {
+  box-shadow: inset 0 0 0 2px var(--color-primary-element-text, var(--color-primary-text, #fff)) !important;
+}
+
+#app-bookmarksmanager .sidebar-nav-link.sidebar-nav-selected *,
+#app-bookmarksmanager .sidebar-nav-item[data-selected="true"] > *,
+#app-bookmarksmanager .sidebar-nav-item[data-selected="true"] .sidebar-nav-link * {
+  color: inherit !important;
+}
+
 .bookmark-favicon {
   box-sizing: border-box;
   padding: 3px;

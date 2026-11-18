@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "test": "node --test tests/*.test.mjs",
     "dev": "vite",
     "build": "vite build",
     "postbuild": "mkdir -p ../js ../css ../locales && cp dist/main.js ../js/main.js && cp dist/style.css ../css/style.css && cp dist/build-id.js ../js/build-id.js 2>/dev/null || true && cp src/locales/*.json ../locales/ 2>/dev/null || true",

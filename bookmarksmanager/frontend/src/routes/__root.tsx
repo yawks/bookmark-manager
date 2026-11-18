@@ -26,7 +26,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     );
   },
   loader: async () => {
-    const fetchData = async (url: string): Promise<any[]> => {
+    const fetchData = async <T,>(url: string): Promise<T[]> => {
       try {
         const headers: HeadersInit = {};
         const oc = (globalThis as any).OC;
@@ -54,9 +54,9 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     };
 
     const [collections, tags, bookmarks] = await Promise.all([
-      fetchData('/apps/bookmarksmanager/api/v1/collections'),
-      fetchData('/apps/bookmarksmanager/api/v1/tags'),
-      fetchData('/apps/bookmarksmanager/api/v1/bookmarks'),
+      fetchData<Collection>('/apps/bookmarksmanager/api/v1/collections'),
+      fetchData<Tag>('/apps/bookmarksmanager/api/v1/tags'),
+      fetchData<Bookmark>('/apps/bookmarksmanager/api/v1/bookmarks'),
     ]);
     console.log('[__root__ loader] collections:', collections);
     console.log('[__root__ loader] tags:', tags);

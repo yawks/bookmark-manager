@@ -8,9 +8,10 @@ interface SortableBookmarkListItemProps {
   bookmark: Bookmark;
   onEdit: () => void;
   onDelete?: () => void;
+  sortingDisabled?: boolean;
 }
 
-const SortableBookmarkListItem = ({ bookmark, onEdit, onDelete }: SortableBookmarkListItemProps) => {
+const SortableBookmarkListItem = ({ bookmark, onEdit, onDelete, sortingDisabled = false }: SortableBookmarkListItemProps) => {
   const {
     attributes,
     listeners,
@@ -18,7 +19,7 @@ const SortableBookmarkListItem = ({ bookmark, onEdit, onDelete }: SortableBookma
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: bookmark.id });
+  } = useSortable({ id: bookmark.id, disabled: sortingDisabled });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -27,12 +28,12 @@ const SortableBookmarkListItem = ({ bookmark, onEdit, onDelete }: SortableBookma
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes}>
+    <div ref={setNodeRef} style={style} {...(sortingDisabled ? {} : attributes)}>
       <BookmarkListItem
         bookmark={bookmark}
         onEdit={onEdit}
         onDelete={onDelete}
-        dragHandleListeners={listeners}
+        dragHandleListeners={sortingDisabled ? undefined : listeners}
       />
     </div>
   );

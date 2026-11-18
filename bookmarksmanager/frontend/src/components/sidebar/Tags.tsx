@@ -12,7 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
-import { Link, useLoaderData, useRouter } from '@tanstack/react-router';
+import { Link, useLoaderData, useMatchRoute, useRouter } from '@tanstack/react-router';
 import React, { useState } from 'react';
 
 import { Button } from '../ui/button';
@@ -47,14 +47,19 @@ const TagItem: React.FC<TagItemProps> = ({
   onRename,
   onDelete,
 }) => {
+  const matchRoute = useMatchRoute();
+  const isSelected = Boolean(matchRoute({
+    to: '/tags/$tagId',
+    params: { tagId: String(tag.id) },
+  }));
   const [menuOpen, setMenuOpen] = useState(false);
   return (
-    <div className="relative group flex items-center">
+    <div data-selected={isSelected ? 'true' : undefined} className="sidebar-nav-item relative group flex items-center rounded-md">
       <Link
         to="/tags/$tagId"
         params={{ tagId: String(tag.id) }}
-        className="flex items-center justify-between text-sm p-2 hover:bg-accent rounded-md cursor-pointer text-foreground flex-1"
-        activeProps={{ className: 'bg-accent' }}
+        className="sidebar-nav-link flex items-center justify-between text-sm p-2 rounded-md cursor-pointer text-foreground flex-1"
+        activeOptions={{ exact: true }}
       >
         <span># {tag.name}</span>
         <span className="bg-muted-foreground/20 text-muted-foreground rounded-full px-2 py-0.5 text-xs">

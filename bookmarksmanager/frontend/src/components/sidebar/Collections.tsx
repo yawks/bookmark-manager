@@ -18,7 +18,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
-import { Link, useLoaderData, useRouter } from '@tanstack/react-router';
+import { Link, useLoaderData, useMatchRoute, useRouter } from '@tanstack/react-router';
 import React, { useEffect, useRef, useState } from 'react';
 
 import { Button } from '../ui/button';
@@ -66,12 +66,17 @@ const CollectionItem: React.FC<CollectionItemProps> = ({
   onCreateNested,
   onUpdateIcon,
 }) => {
+  const matchRoute = useMatchRoute();
+  const isSelected = Boolean(matchRoute({
+    to: '/collections/$collectionId',
+    params: { collectionId: String(collection.id) },
+  }));
   const descendantIds = new Set(getDescendantCollectionIds(allCollections, collection.id))
   const count = bookmarks.filter((b: Bookmark) => b.collectionId !== null && descendantIds.has(Number(b.collectionId))).length;
   const [menuOpen, setMenuOpen] = useState(false);
   const [showIconPicker, setShowIconPicker] = useState(false);
   return (
-    <div className="relative group flex items-center rounded-md hover:bg-accent pr-2">
+    <div data-selected={isSelected ? 'true' : undefined} className="sidebar-nav-item relative group flex items-center rounded-md pr-2">
       <div
         className="p-2 cursor-pointer"
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
@@ -93,8 +98,8 @@ const CollectionItem: React.FC<CollectionItemProps> = ({
       <Link
         to="/collections/$collectionId"
         params={{ collectionId: String(collection.id) }}
-        className="flex items-center space-x-2 py-2 flex-1 cursor-pointer text-foreground"
-        activeProps={{ className: 'font-medium' }}
+        className="sidebar-nav-link flex items-center space-x-2 py-2 flex-1 cursor-pointer text-foreground"
+        activeOptions={{ exact: true }}
       >
         <span>{collection.name}</span>
         <span className="ml-auto bg-muted-foreground/20 text-muted-foreground rounded-full px-2 py-0.5 text-xs">{count}</span>
@@ -398,8 +403,9 @@ const Collections = () => {
       <div className="space-y-1">
         <Link
           to="/"
-          className="flex items-center space-x-2 p-2 hover:bg-accent rounded-md cursor-pointer text-foreground"
-          activeProps={{ className: 'bg-accent' }}
+          className="sidebar-nav-link flex items-center space-x-2 p-2 hover:bg-accent rounded-md cursor-pointer text-foreground"
+          activeOptions={{ exact: true }}
+          activeProps={{ className: 'sidebar-nav-selected' }}
         >
           <DashboardIcon className="h-4 w-4" />
           <span>{t('All')}</span>
