@@ -83,6 +83,95 @@
 }
 
 /* Specific styles for Nextcloud integration */
+.bookmark-favicon {
+  box-sizing: border-box;
+  padding: 3px;
+  background: #e2e8f0;
+  border: 1px solid #94a3b8;
+}
+
+.bookmark-favicon img {
+  min-width: 0;
+  min-height: 0;
+  /* Outline transparent white artwork; black artwork contrasts with the badge. */
+  filter: drop-shadow(0 0 0.75px #111827);
+}
+
+/* Higher specificity than Nextcloud's global button styles. */
+#app-bookmarksmanager .bookmark-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding: 7px;
+  border-radius: 50%;
+  border: 1px solid var(--color-text-maxcontrast, #64748b);
+  background: var(--color-main-background, #fff);
+  color: var(--color-main-text, #111827);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 35%);
+  opacity: 1;
+}
+
+#app-bookmarksmanager .bookmark-action:hover {
+  background: var(--color-background-hover, #e2e8f0);
+  color: var(--color-main-text, #111827);
+}
+
+#app-bookmarksmanager .bookmark-action:focus-visible {
+  outline: 2px solid var(--color-primary-element, #0082c9);
+  outline-offset: 2px;
+}
+
+#app-bookmarksmanager .bookmark-action-delete {
+  background: #fff1f2;
+  color: #9f1239;
+  border-color: #9f1239;
+}
+
+#app-bookmarksmanager .bookmark-action-delete:hover {
+  background: #ffe4e6;
+  color: #881337;
+}
+
+/* Portalled dialogs live outside the app container and need their own sizing reset. */
+.bookmark-dialog,
+.bookmark-dialog * {
+  box-sizing: border-box;
+}
+
+.bookmark-dialog {
+  background-color: var(--color-main-background, var(--background));
+  color: var(--color-main-text, var(--foreground));
+  border: 1px solid color-mix(in srgb, var(--color-main-text, var(--foreground)) 30%, var(--color-main-background, var(--background)));
+  border-radius: 12px;
+  box-shadow: 0 24px 80px rgb(0 0 0 / 55%);
+}
+
+.bookmark-form-body > * {
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.bookmark-form-body .col-span-3 {
+  min-width: 0;
+}
+
+@media (max-width: 639px) {
+  .bookmark-form-body > .grid-cols-4 {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.5rem;
+  }
+
+  .bookmark-form-body > .grid-cols-4 > * {
+    grid-column: 1;
+    text-align: left;
+  }
+}
+
 @layer components {
   .nc-button {
     @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background;

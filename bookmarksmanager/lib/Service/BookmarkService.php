@@ -93,7 +93,9 @@ class BookmarkService {
 
         $updatedBookmark = $this->mapper->update($bookmark);
         $this->mapper->setTags($updatedBookmark->getId(), $tags);
-        return $this->find($updatedBookmark->getId());
+        // Return the written values, not a potentially stale read from a replica.
+        $updatedBookmark->setTags($tags);
+        return $this->enrichBookmarks([$updatedBookmark], $userId)[0];
     }
 
     public function delete(int $id, ?string $userId = null) {

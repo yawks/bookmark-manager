@@ -152,9 +152,18 @@ export function TagSelector({
         </div>
       </PopoverTrigger>
 
-      <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]" align="start" onOpenAutoFocus={(e: Event) => e.preventDefault()}>
-        <Command>
-          <CommandList className="max-h-[200px] overflow-y-auto">
+      <PopoverContent
+        container={inputRef.current?.closest<HTMLElement>('[role="dialog"]')}
+        className="p-0 w-[var(--radix-popover-trigger-width)] overflow-hidden"
+        align="start"
+        onOpenAutoFocus={(e: Event) => e.preventDefault()}
+      >
+        <Command shouldFilter={false} className="h-auto">
+          <CommandList
+            className="min-h-0 max-h-[min(240px,var(--radix-popover-content-available-height))] overflow-y-auto overscroll-contain"
+            onWheel={(event) => event.stopPropagation()}
+            onTouchMove={(event) => event.stopPropagation()}
+          >
             <CommandEmpty>
               {creatable && inputValue.trim() && !isCreating ? (
                 <button

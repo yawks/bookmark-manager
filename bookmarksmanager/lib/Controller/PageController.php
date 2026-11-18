@@ -52,6 +52,7 @@ class PageController extends Controller {
         $csp = new ContentSecurityPolicy();
         $csp->addAllowedConnectDomain('https://cdn.jsdelivr.net');
         $csp->addAllowedImageDomain('*'); // Allow all image domains for screenshot preview
+        $csp->addAllowedImageDomain('data:'); // Embedded favicon images
         $response->setContentSecurityPolicy($csp);
             return $response;
     }

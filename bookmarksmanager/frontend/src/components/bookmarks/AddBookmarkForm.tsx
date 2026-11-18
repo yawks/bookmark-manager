@@ -7,7 +7,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Select,
   SelectContent,
@@ -19,6 +19,7 @@ import { Tag, TagSelector } from '@/components/ui/tag-selector';
 import { useLoaderData, useRouter } from '@tanstack/react-router';
 
 import { Button } from '@/components/ui/button';
+import { FaviconImage } from './FaviconImage';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PlusIcon } from '@radix-ui/react-icons';
@@ -52,7 +53,7 @@ export function AddBookmarkForm() {
   const [url, setUrl] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [collectionId, setCollectionId] = useState<string | undefined>(undefined);
+  const [collectionId, setCollectionId] = useState('');
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   // Screenshot URL for the bookmark
   const [screenshot, setScreenshot] = useState<string | null>(null);
@@ -61,6 +62,8 @@ export function AddBookmarkForm() {
   const [showFaviconInput, setShowFaviconInput] = useState(false);
   // Loading state for fetching page info
   const [isFetching, setIsFetching] = useState(false);
+  const pageInfoRequest = useRef<AbortController | null>(null);
+  useEffect(() => () => pageInfoRequest.current?.abort(), []);
   // Loading and error state for saving bookmark
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -95,21 +98,34 @@ export function AddBookmarkForm() {
 
   // Fetch page info (title, description, image) from backend when URL is entered
   const handleUrlBlur = async () => {
+    pageInfoRequest.current?.abort();
+    pageInfoRequest.current = null;
+    setIsFetching(false);
     if (!url || !url.startsWith('http')) return;
+    const controller = new AbortController();
+    pageInfoRequest.current = controller;
     setIsFetching(true);
     try {
-      const response = await fetch(`/apps/bookmarksmanager/api/v1/page-info?url=${encodeURIComponent(url)}`);
+      const response = await fetch(`/apps/bookmarksmanager/api/v1/page-info?url=${encodeURIComponent(url)}`, {
+        signal: controller.signal,
+      });
       if (response.ok) {
         const data = await response.json();
+        if (controller.signal.aborted) return;
         if (data.title) setTitle(data.title);
         if (data.description) setDescription(data.description);
         if (data.image) setScreenshot(data.image);
         if (data.favicon) setFavicon(data.favicon);
       }
     } catch (error) {
-      console.error('Failed to fetch page info', error);
+      if (!controller.signal.aborted) {
+        console.error('Failed to fetch page info', error);
+      }
     } finally {
-      setIsFetching(false);
+      if (pageInfoRequest.current === controller) {
+        pageInfoRequest.current = null;
+        setIsFetching(false);
+      }
     }
   };
 
@@ -119,7 +135,7 @@ export function AddBookmarkForm() {
     setSaveError(null);
     const requestToken = getRequestToken();
     if (!requestToken) {
-      setSaveError('CSRF token not found!');
+      setSaveError(t('bookmark.save_error'));
       setIsSaving(false);
       return;
     }
@@ -148,32 +164,34 @@ export function AddBookmarkForm() {
       });
 
       if (response.ok) {
-        setOpen(false);
+        handleOpenChange(false);
         await router.invalidate();
       } else {
-        setSaveError('Failed to create bookmark');
+        setSaveError(t('bookmark.save_error'));
       }
     } catch (err) {
-      setSaveError('Network error');
+      setSaveError(t('bookmark.network_error'));
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleOpenChange = (isOpen: boolean) => {
+    pageInfoRequest.current?.abort();
+    pageInfoRequest.current = null;
+    setIsFetching(false);
     setOpen(isOpen);
-    if (!isOpen) {
-      // Reset form on close
-      setUrl('');
-      setTitle('');
-      setDescription('');
-      setCollectionId(undefined);
-      setSelectedTags([]);
-      setScreenshot(null);
-      setFavicon(null);
-      setShowScreenshotInput(false);
-      setShowFaviconInput(false);
-    }
+    // Start every opening with a clean form, including after a successful save.
+    setUrl('');
+    setTitle('');
+    setDescription('');
+    setCollectionId('');
+    setSelectedTags([]);
+    setScreenshot(null);
+    setFavicon(null);
+    setShowScreenshotInput(false);
+    setShowFaviconInput(false);
+    setSaveError(null);
   };
 
   return (
@@ -183,16 +201,16 @@ export function AddBookmarkForm() {
           <PlusIcon className="mr-2 h-4 w-4" /> {t('bookmark.add')}
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] w-full max-w-lg max-h-[90vh] flex flex-col p-0 gap-0">
-        <form onSubmit={handleSubmit} className="flex flex-col h-full overflow-hidden">
-          <DialogHeader className="p-6 pb-2">
+      <DialogContent className="bookmark-dialog w-[calc(100%-2rem)] max-w-3xl max-h-[90dvh] flex flex-col overflow-hidden p-0 gap-0">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-col overflow-hidden">
+          <DialogHeader className="shrink-0 p-6 pb-4 pr-16">
             <DialogTitle>{t('bookmark.add_new')}</DialogTitle>
             <DialogDescription>
               {t('bookmark.add_description')}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto p-6 pt-2 gap-4 flex flex-col">
+          <div className="bookmark-form-body min-h-0 flex-1 overflow-y-auto p-6 pt-2 gap-5 flex flex-col">
             {/* URL input */}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="url" className="text-right">
@@ -201,9 +219,10 @@ export function AddBookmarkForm() {
               <Input id="url" value={url} onChange={e => setUrl(e.target.value)} onBlur={handleUrlBlur} placeholder={t('bookmark.placeholder_url')} className="col-span-3" />
             </div>
             {/* Screenshot & Favicon area */}
-            <div className="col-span-4 flex justify-center items-center gap-6 min-h-[80px]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 items-start gap-4">
               {/* Screenshot */}
-              <div className="flex flex-col items-center gap-2 relative">
+              <div className="flex min-w-0 flex-col items-start gap-2 rounded-md border p-3">
+                <Label htmlFor="add-screenshot">{t('bookmark.screenshot')}</Label>
                 <div className="relative group w-24 h-20 flex-shrink-0">
                   {isFetching ? (
                     <div className="w-24 h-20 bg-muted animate-pulse rounded-md" />
@@ -235,21 +254,22 @@ export function AddBookmarkForm() {
                 </div>
                 {/* Screenshot Input */}
                 {showScreenshotInput && (
-                  <div className="flex flex-col gap-1 absolute top-full mt-2 z-20 bg-background p-2 border rounded shadow-md left-1/2 -translate-x-1/2 min-w-[250px]">
-                    <Label className="text-xs font-semibold">{t('bookmark.screenshot')}</Label>
+                  <div className="w-full min-w-0">
                     <div className="flex items-center gap-1">
                       <Input
+                        id="add-screenshot"
                         value={screenshot || ''}
                         onChange={(e) => setScreenshot(e.target.value)}
                         placeholder={t('bookmark.screenshot')}
-                        className="h-7 text-xs"
+                        className="min-w-0 flex-1 text-sm"
                         autoFocus
                       />
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7"
+                        className="h-9 w-9 shrink-0"
+                        aria-label={t('bookmark.screenshot')}
                         onClick={() => setShowScreenshotInput(false)}
                       >
                         <X className="h-3 w-3" />
@@ -260,15 +280,16 @@ export function AddBookmarkForm() {
               </div>
 
               {/* Favicon */}
-              <div className="flex flex-col items-center gap-2 relative">
-                <div className="relative group w-12 h-12 flex-shrink-0">
+              <div className="flex min-w-0 flex-col items-start gap-2 rounded-md border p-3">
+                <Label htmlFor="add-favicon">{t('bookmark.favicon_url')}</Label>
+                <div className="relative group w-12 h-20 flex-shrink-0 flex items-center">
                   {isFetching ? (
                     <div className="w-12 h-12 bg-muted animate-pulse rounded-md" />
                   ) : favicon ? (
-                    <img
+                    <FaviconImage
                       src={favicon}
                       alt="Favicon"
-                      className="w-12 h-12 object-contain rounded-md border p-1"
+                      className="w-12 h-12"
                     />
                   ) : (
                     <div className="w-12 h-12 bg-muted/30 rounded-md flex items-center justify-center text-[10px] text-muted-foreground border border-dashed border-muted-foreground/30 text-center">
@@ -292,6 +313,7 @@ export function AddBookmarkForm() {
                     >
                       <Button
                         type="button"
+                        aria-label={t('bookmark.favicon_url')}
                         variant="secondary"
                         size="icon"
                         className="h-6 w-6"
@@ -303,21 +325,22 @@ export function AddBookmarkForm() {
                 </div>
                 {/* Favicon Input */}
                 {showFaviconInput && (
-                  <div className="flex flex-col gap-1 absolute top-full mt-2 z-20 bg-background p-2 border rounded shadow-md left-1/2 -translate-x-1/2 min-w-[280px]">
-                    <Label className="text-xs font-semibold">{t('bookmark.favicon_url')}</Label>
+                  <div className="w-full min-w-0">
                     <div className="flex items-center gap-1">
                       <Input
+                        id="add-favicon"
                         value={favicon || ''}
                         onChange={(e) => setFavicon(e.target.value)}
                         placeholder={t('bookmark.favicon_url')}
-                        className="h-7 text-xs"
+                        className="min-w-0 flex-1 text-sm"
                         autoFocus
                       />
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7"
+                        className="h-9 w-9 shrink-0"
+                        aria-label={t('bookmark.favicon_url')}
                         onClick={() => setShowFaviconInput(false)}
                       >
                         <X className="h-3 w-3" />
@@ -376,11 +399,11 @@ export function AddBookmarkForm() {
             </div>
             {/* Error message for save */}
             {saveError && (
-              <div className="col-span-4 text-red-600 text-sm text-center">{saveError}</div>
+              <div role="alert" className="col-span-4 text-sm text-center">{saveError}</div>
             )}
           </div>
 
-          <DialogFooter className="p-6 pt-2 bg-background z-10 border-t">
+          <DialogFooter className="shrink-0 p-6 pt-4 bg-background border-t">
             <Button type="submit" className="w-full md:w-auto" disabled={isSaving}>
               {isSaving ? t('app.saving') : t('bookmark.save')}
             </Button>

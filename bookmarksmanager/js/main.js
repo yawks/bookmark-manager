@@ -1,8 +1,5 @@
 (function() {
   "use strict";
-  var __vite_style__ = document.createElement("style");
-  __vite_style__.textContent = '*, ::before, ::after {\n  --tw-border-spacing-x: 0;\n  --tw-border-spacing-y: 0;\n  --tw-translate-x: 0;\n  --tw-translate-y: 0;\n  --tw-rotate: 0;\n  --tw-skew-x: 0;\n  --tw-skew-y: 0;\n  --tw-scale-x: 1;\n  --tw-scale-y: 1;\n  --tw-pan-x:  ;\n  --tw-pan-y:  ;\n  --tw-pinch-zoom:  ;\n  --tw-scroll-snap-strictness: proximity;\n  --tw-gradient-from-position:  ;\n  --tw-gradient-via-position:  ;\n  --tw-gradient-to-position:  ;\n  --tw-ordinal:  ;\n  --tw-slashed-zero:  ;\n  --tw-numeric-figure:  ;\n  --tw-numeric-spacing:  ;\n  --tw-numeric-fraction:  ;\n  --tw-ring-inset:  ;\n  --tw-ring-offset-width: 0px;\n  --tw-ring-offset-color: #fff;\n  --tw-ring-color: rgb(59 130 246 / 0.5);\n  --tw-ring-offset-shadow: 0 0 #0000;\n  --tw-ring-shadow: 0 0 #0000;\n  --tw-shadow: 0 0 #0000;\n  --tw-shadow-colored: 0 0 #0000;\n  --tw-blur:  ;\n  --tw-brightness:  ;\n  --tw-contrast:  ;\n  --tw-grayscale:  ;\n  --tw-hue-rotate:  ;\n  --tw-invert:  ;\n  --tw-saturate:  ;\n  --tw-sepia:  ;\n  --tw-drop-shadow:  ;\n  --tw-backdrop-blur:  ;\n  --tw-backdrop-brightness:  ;\n  --tw-backdrop-contrast:  ;\n  --tw-backdrop-grayscale:  ;\n  --tw-backdrop-hue-rotate:  ;\n  --tw-backdrop-invert:  ;\n  --tw-backdrop-opacity:  ;\n  --tw-backdrop-saturate:  ;\n  --tw-backdrop-sepia:  ;\n  --tw-contain-size:  ;\n  --tw-contain-layout:  ;\n  --tw-contain-paint:  ;\n  --tw-contain-style:  ;\n}\n\n::backdrop {\n  --tw-border-spacing-x: 0;\n  --tw-border-spacing-y: 0;\n  --tw-translate-x: 0;\n  --tw-translate-y: 0;\n  --tw-rotate: 0;\n  --tw-skew-x: 0;\n  --tw-skew-y: 0;\n  --tw-scale-x: 1;\n  --tw-scale-y: 1;\n  --tw-pan-x:  ;\n  --tw-pan-y:  ;\n  --tw-pinch-zoom:  ;\n  --tw-scroll-snap-strictness: proximity;\n  --tw-gradient-from-position:  ;\n  --tw-gradient-via-position:  ;\n  --tw-gradient-to-position:  ;\n  --tw-ordinal:  ;\n  --tw-slashed-zero:  ;\n  --tw-numeric-figure:  ;\n  --tw-numeric-spacing:  ;\n  --tw-numeric-fraction:  ;\n  --tw-ring-inset:  ;\n  --tw-ring-offset-width: 0px;\n  --tw-ring-offset-color: #fff;\n  --tw-ring-color: rgb(59 130 246 / 0.5);\n  --tw-ring-offset-shadow: 0 0 #0000;\n  --tw-ring-shadow: 0 0 #0000;\n  --tw-shadow: 0 0 #0000;\n  --tw-shadow-colored: 0 0 #0000;\n  --tw-blur:  ;\n  --tw-brightness:  ;\n  --tw-contrast:  ;\n  --tw-grayscale:  ;\n  --tw-hue-rotate:  ;\n  --tw-invert:  ;\n  --tw-saturate:  ;\n  --tw-sepia:  ;\n  --tw-drop-shadow:  ;\n  --tw-backdrop-blur:  ;\n  --tw-backdrop-brightness:  ;\n  --tw-backdrop-contrast:  ;\n  --tw-backdrop-grayscale:  ;\n  --tw-backdrop-hue-rotate:  ;\n  --tw-backdrop-invert:  ;\n  --tw-backdrop-opacity:  ;\n  --tw-backdrop-saturate:  ;\n  --tw-backdrop-sepia:  ;\n  --tw-contain-size:  ;\n  --tw-contain-layout:  ;\n  --tw-contain-paint:  ;\n  --tw-contain-style:  ;\n}/*\n! tailwindcss v3.4.19 | MIT License | https://tailwindcss.com\n*//*\n1. Prevent padding and border from affecting element width. (https://github.com/mozdevs/cssremedy/issues/4)\n2. Allow adding a border to an element by just adding a border-width. (https://github.com/tailwindcss/tailwindcss/pull/116)\n*/\n\n*,\n::before,\n::after {\n  box-sizing: border-box; /* 1 */\n  border-width: 0; /* 2 */\n  border-style: solid; /* 2 */\n  border-color: #e5e7eb; /* 2 */\n}\n\n::before,\n::after {\n  --tw-content: \'\';\n}\n\n/*\n1. Use a consistent sensible line-height in all browsers.\n2. Prevent adjustments of font size after orientation changes in iOS.\n3. Use a more readable tab size.\n4. Use the user\'s configured `sans` font-family by default.\n5. Use the user\'s configured `sans` font-feature-settings by default.\n6. Use the user\'s configured `sans` font-variation-settings by default.\n7. Disable tap highlights on iOS\n*/\n\nhtml,\n:host {\n  line-height: 1.5; /* 1 */\n  -webkit-text-size-adjust: 100%; /* 2 */\n  -moz-tab-size: 4; /* 3 */\n  -o-tab-size: 4;\n     tab-size: 4; /* 3 */\n  font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"; /* 4 */\n  font-feature-settings: normal; /* 5 */\n  font-variation-settings: normal; /* 6 */\n  -webkit-tap-highlight-color: transparent; /* 7 */\n}\n\n/*\n1. Remove the margin in all browsers.\n2. Inherit line-height from `html` so users can set them as a class directly on the `html` element.\n*/\n\nbody {\n  margin: 0; /* 1 */\n  line-height: inherit; /* 2 */\n}\n\n/*\n1. Add the correct height in Firefox.\n2. Correct the inheritance of border color in Firefox. (https://bugzilla.mozilla.org/show_bug.cgi?id=190655)\n3. Ensure horizontal rules are visible by default.\n*/\n\nhr {\n  height: 0; /* 1 */\n  color: inherit; /* 2 */\n  border-top-width: 1px; /* 3 */\n}\n\n/*\nAdd the correct text decoration in Chrome, Edge, and Safari.\n*/\n\nabbr:where([title]) {\n  -webkit-text-decoration: underline dotted;\n          text-decoration: underline dotted;\n}\n\n/*\nRemove the default font size and weight for headings.\n*/\n\nh1,\nh2,\nh3,\nh4,\nh5,\nh6 {\n  font-size: inherit;\n  font-weight: inherit;\n}\n\n/*\nReset links to optimize for opt-in styling instead of opt-out.\n*/\n\na {\n  color: inherit;\n  text-decoration: inherit;\n}\n\n/*\nAdd the correct font weight in Edge and Safari.\n*/\n\nb,\nstrong {\n  font-weight: bolder;\n}\n\n/*\n1. Use the user\'s configured `mono` font-family by default.\n2. Use the user\'s configured `mono` font-feature-settings by default.\n3. Use the user\'s configured `mono` font-variation-settings by default.\n4. Correct the odd `em` font sizing in all browsers.\n*/\n\ncode,\nkbd,\nsamp,\npre {\n  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; /* 1 */\n  font-feature-settings: normal; /* 2 */\n  font-variation-settings: normal; /* 3 */\n  font-size: 1em; /* 4 */\n}\n\n/*\nAdd the correct font size in all browsers.\n*/\n\nsmall {\n  font-size: 80%;\n}\n\n/*\nPrevent `sub` and `sup` elements from affecting the line height in all browsers.\n*/\n\nsub,\nsup {\n  font-size: 75%;\n  line-height: 0;\n  position: relative;\n  vertical-align: baseline;\n}\n\nsub {\n  bottom: -0.25em;\n}\n\nsup {\n  top: -0.5em;\n}\n\n/*\n1. Remove text indentation from table contents in Chrome and Safari. (https://bugs.chromium.org/p/chromium/issues/detail?id=999088, https://bugs.webkit.org/show_bug.cgi?id=201297)\n2. Correct table border color inheritance in all Chrome and Safari. (https://bugs.chromium.org/p/chromium/issues/detail?id=935729, https://bugs.webkit.org/show_bug.cgi?id=195016)\n3. Remove gaps between table borders by default.\n*/\n\ntable {\n  text-indent: 0; /* 1 */\n  border-color: inherit; /* 2 */\n  border-collapse: collapse; /* 3 */\n}\n\n/*\n1. Change the font styles in all browsers.\n2. Remove the margin in Firefox and Safari.\n3. Remove default padding in all browsers.\n*/\n\nbutton,\ninput,\noptgroup,\nselect,\ntextarea {\n  font-family: inherit; /* 1 */\n  font-feature-settings: inherit; /* 1 */\n  font-variation-settings: inherit; /* 1 */\n  font-size: 100%; /* 1 */\n  font-weight: inherit; /* 1 */\n  line-height: inherit; /* 1 */\n  letter-spacing: inherit; /* 1 */\n  color: inherit; /* 1 */\n  margin: 0; /* 2 */\n  padding: 0; /* 3 */\n}\n\n/*\nRemove the inheritance of text transform in Edge and Firefox.\n*/\n\nbutton,\nselect {\n  text-transform: none;\n}\n\n/*\n1. Correct the inability to style clickable types in iOS and Safari.\n2. Remove default button styles.\n*/\n\nbutton,\ninput:where([type=\'button\']),\ninput:where([type=\'reset\']),\ninput:where([type=\'submit\']) {\n  -webkit-appearance: button; /* 1 */\n  background-color: transparent; /* 2 */\n  background-image: none; /* 2 */\n}\n\n/*\nUse the modern Firefox focus style for all focusable elements.\n*/\n\n:-moz-focusring {\n  outline: auto;\n}\n\n/*\nRemove the additional `:invalid` styles in Firefox. (https://github.com/mozilla/gecko-dev/blob/2f9eacd9d3d995c937b4251a5557d95d494c9be1/layout/style/res/forms.css#L728-L737)\n*/\n\n:-moz-ui-invalid {\n  box-shadow: none;\n}\n\n/*\nAdd the correct vertical alignment in Chrome and Firefox.\n*/\n\nprogress {\n  vertical-align: baseline;\n}\n\n/*\nCorrect the cursor style of increment and decrement buttons in Safari.\n*/\n\n::-webkit-inner-spin-button,\n::-webkit-outer-spin-button {\n  height: auto;\n}\n\n/*\n1. Correct the odd appearance in Chrome and Safari.\n2. Correct the outline style in Safari.\n*/\n\n[type=\'search\'] {\n  -webkit-appearance: textfield; /* 1 */\n  outline-offset: -2px; /* 2 */\n}\n\n/*\nRemove the inner padding in Chrome and Safari on macOS.\n*/\n\n::-webkit-search-decoration {\n  -webkit-appearance: none;\n}\n\n/*\n1. Correct the inability to style clickable types in iOS and Safari.\n2. Change font properties to `inherit` in Safari.\n*/\n\n::-webkit-file-upload-button {\n  -webkit-appearance: button; /* 1 */\n  font: inherit; /* 2 */\n}\n\n/*\nAdd the correct display in Chrome and Safari.\n*/\n\nsummary {\n  display: list-item;\n}\n\n/*\nRemoves the default spacing and border for appropriate elements.\n*/\n\nblockquote,\ndl,\ndd,\nh1,\nh2,\nh3,\nh4,\nh5,\nh6,\nhr,\nfigure,\np,\npre {\n  margin: 0;\n}\n\nfieldset {\n  margin: 0;\n  padding: 0;\n}\n\nlegend {\n  padding: 0;\n}\n\nol,\nul,\nmenu {\n  list-style: none;\n  margin: 0;\n  padding: 0;\n}\n\n/*\nReset default styling for dialogs.\n*/\ndialog {\n  padding: 0;\n}\n\n/*\nPrevent resizing textareas horizontally by default.\n*/\n\ntextarea {\n  resize: vertical;\n}\n\n/*\n1. Reset the default placeholder opacity in Firefox. (https://github.com/tailwindlabs/tailwindcss/issues/3300)\n2. Set the default placeholder color to the user\'s configured gray 400 color.\n*/\n\ninput::-moz-placeholder, textarea::-moz-placeholder {\n  opacity: 1; /* 1 */\n  color: #9ca3af; /* 2 */\n}\n\ninput::placeholder,\ntextarea::placeholder {\n  opacity: 1; /* 1 */\n  color: #9ca3af; /* 2 */\n}\n\n/*\nSet the default cursor for buttons.\n*/\n\nbutton,\n[role="button"] {\n  cursor: pointer;\n}\n\n/*\nMake sure disabled buttons don\'t get the pointer cursor.\n*/\n:disabled {\n  cursor: default;\n}\n\n/*\n1. Make replaced elements `display: block` by default. (https://github.com/mozdevs/cssremedy/issues/14)\n2. Add `vertical-align: middle` to align replaced elements more sensibly by default. (https://github.com/jensimmons/cssremedy/issues/14#issuecomment-634934210)\n   This can trigger a poorly considered lint error in some tools but is included by design.\n*/\n\nimg,\nsvg,\nvideo,\ncanvas,\naudio,\niframe,\nembed,\nobject {\n  display: block; /* 1 */\n  vertical-align: middle; /* 2 */\n}\n\n/*\nConstrain images and videos to the parent width and preserve their intrinsic aspect ratio. (https://github.com/mozdevs/cssremedy/issues/14)\n*/\n\nimg,\nvideo {\n  max-width: 100%;\n  height: auto;\n}\n\n/* Make elements with the HTML hidden attribute stay hidden by default */\n[hidden]:where(:not([hidden="until-found"])) {\n  display: none;\n}\n  :root {\n    /* Use Nextcloud CSS variables when available, otherwise fallback */\n    --background: var(--color-main-background, hsl(0, 0%, 100%));\n    --foreground: var(--color-main-text, hsl(222.2, 84%, 4.9%));\n\n    --card: var(--color-main-background, hsl(0, 0%, 100%));\n    --card-foreground: var(--color-main-text, hsl(222.2, 84%, 4.9%));\n\n    --popover: var(--color-main-background, hsl(0, 0%, 100%));\n    --popover-foreground: var(--color-main-text, hsl(222.2, 84%, 4.9%));\n\n    --primary: var(--color-primary, hsl(210, 100%, 39%));\n    --primary-foreground: var(--color-primary-text, hsl(210, 40%, 98%));\n\n    --secondary: var(--color-background-hover, hsl(210, 40%, 96.1%));\n    --secondary-foreground: var(--color-main-text, hsl(222.2, 47.4%, 11.2%));\n\n    --muted: var(--color-background-dark, hsl(210, 40%, 96.1%));\n    --muted-foreground: var(--color-text-lighter, hsl(215.4, 16.3%, 46.9%));\n\n    --accent: var(--color-background-hover, hsl(210, 40%, 96.1%));\n    --accent-foreground: var(--color-main-text, hsl(222.2, 47.4%, 11.2%));\n\n    --destructive: var(--color-error, hsl(0, 84.2%, 60.2%));\n    --destructive-foreground: hsl(210, 40%, 98%);\n\n    --border: var(--color-border, hsl(214.3, 31.8%, 91.4%));\n    --input: var(--color-border, hsl(214.3, 31.8%, 91.4%));\n    --ring: var(--color-primary, hsl(210, 100%, 39%));\n\n    --radius: var(--border-radius, 0.375rem);\n  }\n\n  /* Dark mode with Nextcloud variables */\n  .dark, [data-theme="dark"] {\n    --background: #23272e;\n    --foreground: #f3f6fa;\n    --card: #2c313a;\n    --card-foreground: #f3f6fa;\n    --popover: #2c313a;\n    --popover-foreground: #f3f6fa;\n    --primary: #0099ff;\n    --primary-foreground: #fff;\n    --secondary: #23272e;\n    --secondary-foreground: #f3f6fa;\n    --muted: #2c313a;\n    --muted-foreground: #b0b8c1;\n    --accent: #2c313a;\n    --accent-foreground: #f3f6fa;\n    --destructive: #e5484d;\n    --destructive-foreground: #fff;\n    --border: #181c20;\n    --input: #181c20;\n    --ring: #0099ff;\n  }\n  * {\n  border-color: var(--color-border);\n}\n  \n  /* Main application container */\n  #app-bookmarksmanager {\n    width: 100%;\n    min-height: 100vh;\n    font-family: var(--font-face, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif);\n    background: var(--background);\n    color: var(--foreground);\n  }\n\n  /* Reset to avoid conflicts with Nextcloud */\n  #app-bookmarksmanager * {\n    box-sizing: border-box;\n  }\n.\\!container {\n  width: 100% !important;\n  margin-right: auto !important;\n  margin-left: auto !important;\n  padding-right: 2rem !important;\n  padding-left: 2rem !important;\n}\n.container {\n  width: 100%;\n  margin-right: auto;\n  margin-left: auto;\n  padding-right: 2rem;\n  padding-left: 2rem;\n}\n@media (min-width: 1400px) {\n\n  .\\!container {\n    max-width: 1400px !important;\n  }\n\n  .container {\n    max-width: 1400px;\n  }\n}\n/* Custom rules for Nextcloud integration - height and typography */\nhtml, body, #app-bookmarksmanager, #root {\n    height: 100% !important;\n    min-height: 100% !important;\n  }\nh1, h2, h3, h4, h5, h6, p {\n    color: var(--color-main-text) !important;\n  }\n.sr-only {\n  position: absolute;\n  width: 1px;\n  height: 1px;\n  padding: 0;\n  margin: -1px;\n  overflow: hidden;\n  clip: rect(0, 0, 0, 0);\n  white-space: nowrap;\n  border-width: 0;\n}\n.fixed {\n  position: fixed;\n}\n.absolute {\n  position: absolute;\n}\n.relative {\n  position: relative;\n}\n.inset-0 {\n  inset: 0px;\n}\n.-bottom-10 {\n  bottom: -2.5rem;\n}\n.left-0 {\n  left: 0px;\n}\n.left-1\\/2 {\n  left: 50%;\n}\n.left-2 {\n  left: 0.5rem;\n}\n.left-\\[50\\%\\] {\n  left: 50%;\n}\n.right-2 {\n  right: 0.5rem;\n}\n.right-4 {\n  right: 1rem;\n}\n.top-2 {\n  top: 0.5rem;\n}\n.top-4 {\n  top: 1rem;\n}\n.top-\\[50\\%\\] {\n  top: 50%;\n}\n.top-full {\n  top: 100%;\n}\n.z-10 {\n  z-index: 10;\n}\n.z-20 {\n  z-index: 20;\n}\n.z-50 {\n  z-index: 50;\n}\n.z-\\[99999\\] {\n  z-index: 99999;\n}\n.col-span-3 {\n  grid-column: span 3 / span 3;\n}\n.col-span-4 {\n  grid-column: span 4 / span 4;\n}\n.-mx-1 {\n  margin-left: -0.25rem;\n  margin-right: -0.25rem;\n}\n.mx-1 {\n  margin-left: 0.25rem;\n  margin-right: 0.25rem;\n}\n.my-1 {\n  margin-top: 0.25rem;\n  margin-bottom: 0.25rem;\n}\n.mb-2 {\n  margin-bottom: 0.5rem;\n}\n.mb-4 {\n  margin-bottom: 1rem;\n}\n.mb-6 {\n  margin-bottom: 1.5rem;\n}\n.ml-1 {\n  margin-left: 0.25rem;\n}\n.ml-2 {\n  margin-left: 0.5rem;\n}\n.ml-4 {\n  margin-left: 1rem;\n}\n.ml-auto {\n  margin-left: auto;\n}\n.mr-2 {\n  margin-right: 0.5rem;\n}\n.mt-1 {\n  margin-top: 0.25rem;\n}\n.mt-10 {\n  margin-top: 2.5rem;\n}\n.mt-2 {\n  margin-top: 0.5rem;\n}\n.block {\n  display: block;\n}\n.flex {\n  display: flex;\n}\n.inline-flex {\n  display: inline-flex;\n}\n.grid {\n  display: grid;\n}\n.hidden {\n  display: none;\n}\n.aspect-video {\n  aspect-ratio: 16 / 9;\n}\n.h-10 {\n  height: 2.5rem;\n}\n.h-11 {\n  height: 2.75rem;\n}\n.h-12 {\n  height: 3rem;\n}\n.h-16 {\n  height: 4rem;\n}\n.h-2 {\n  height: 0.5rem;\n}\n.h-20 {\n  height: 5rem;\n}\n.h-3 {\n  height: 0.75rem;\n}\n.h-3\\.5 {\n  height: 0.875rem;\n}\n.h-4 {\n  height: 1rem;\n}\n.h-5 {\n  height: 1.25rem;\n}\n.h-6 {\n  height: 1.5rem;\n}\n.h-7 {\n  height: 1.75rem;\n}\n.h-8 {\n  height: 2rem;\n}\n.h-9 {\n  height: 2.25rem;\n}\n.h-\\[var\\(--radix-select-trigger-height\\)\\] {\n  height: var(--radix-select-trigger-height);\n}\n.h-full {\n  height: 100%;\n}\n.h-px {\n  height: 1px;\n}\n.max-h-\\[--radix-select-content-available-height\\] {\n  max-height: var(--radix-select-content-available-height);\n}\n.max-h-\\[200px\\] {\n  max-height: 200px;\n}\n.max-h-\\[300px\\] {\n  max-height: 300px;\n}\n.max-h-\\[90vh\\] {\n  max-height: 90vh;\n}\n.max-h-\\[var\\(--radix-dropdown-menu-content-available-height\\)\\] {\n  max-height: var(--radix-dropdown-menu-content-available-height);\n}\n.min-h-0 {\n  min-height: 0px;\n}\n.min-h-32 {\n  min-height: 8rem;\n}\n.min-h-\\[40px\\] {\n  min-height: 40px;\n}\n.min-h-\\[80px\\] {\n  min-height: 80px;\n}\n.min-h-screen {\n  min-height: 100vh;\n}\n.w-10 {\n  width: 2.5rem;\n}\n.w-12 {\n  width: 3rem;\n}\n.w-16 {\n  width: 4rem;\n}\n.w-2 {\n  width: 0.5rem;\n}\n.w-20 {\n  width: 5rem;\n}\n.w-24 {\n  width: 6rem;\n}\n.w-3 {\n  width: 0.75rem;\n}\n.w-3\\.5 {\n  width: 0.875rem;\n}\n.w-3\\/4 {\n  width: 75%;\n}\n.w-32 {\n  width: 8rem;\n}\n.w-4 {\n  width: 1rem;\n}\n.w-48 {\n  width: 12rem;\n}\n.w-5 {\n  width: 1.25rem;\n}\n.w-5\\/6 {\n  width: 83.333333%;\n}\n.w-56 {\n  width: 14rem;\n}\n.w-6 {\n  width: 1.5rem;\n}\n.w-64 {\n  width: 16rem;\n}\n.w-7 {\n  width: 1.75rem;\n}\n.w-72 {\n  width: 18rem;\n}\n.w-8 {\n  width: 2rem;\n}\n.w-\\[280px\\] {\n  width: 280px;\n}\n.w-\\[320px\\] {\n  width: 320px;\n}\n.w-\\[var\\(--radix-popover-trigger-width\\)\\] {\n  width: var(--radix-popover-trigger-width);\n}\n.w-full {\n  width: 100%;\n}\n.min-w-\\[120px\\] {\n  min-width: 120px;\n}\n.min-w-\\[250px\\] {\n  min-width: 250px;\n}\n.min-w-\\[280px\\] {\n  min-width: 280px;\n}\n.min-w-\\[8rem\\] {\n  min-width: 8rem;\n}\n.min-w-\\[var\\(--radix-select-trigger-width\\)\\] {\n  min-width: var(--radix-select-trigger-width);\n}\n.max-w-\\[200px\\] {\n  max-width: 200px;\n}\n.max-w-lg {\n  max-width: 32rem;\n}\n.flex-1 {\n  flex: 1 1 0%;\n}\n.flex-shrink-0 {\n  flex-shrink: 0;\n}\n.shrink-0 {\n  flex-shrink: 0;\n}\n.flex-grow {\n  flex-grow: 1;\n}\n.origin-\\[--radix-dropdown-menu-content-transform-origin\\] {\n  transform-origin: var(--radix-dropdown-menu-content-transform-origin);\n}\n.origin-\\[--radix-popover-content-transform-origin\\] {\n  transform-origin: var(--radix-popover-content-transform-origin);\n}\n.origin-\\[--radix-select-content-transform-origin\\] {\n  transform-origin: var(--radix-select-content-transform-origin);\n}\n.-translate-x-1\\/2 {\n  --tw-translate-x: -50%;\n  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));\n}\n.translate-x-\\[-50\\%\\] {\n  --tw-translate-x: -50%;\n  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));\n}\n.translate-y-\\[-50\\%\\] {\n  --tw-translate-y: -50%;\n  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));\n}\n.rotate-45 {\n  --tw-rotate: 45deg;\n  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));\n}\n.transform {\n  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));\n}\n@keyframes pulse {\n\n  50% {\n    opacity: .5;\n  }\n}\n.animate-pulse {\n  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;\n}\n.cursor-default {\n  cursor: default;\n}\n.cursor-grab {\n  cursor: grab;\n}\n.cursor-pointer {\n  cursor: pointer;\n}\n.cursor-text {\n  cursor: text;\n}\n.select-none {\n  -webkit-user-select: none;\n     -moz-user-select: none;\n          user-select: none;\n}\n.grid-cols-1 {\n  grid-template-columns: repeat(1, minmax(0, 1fr));\n}\n.grid-cols-4 {\n  grid-template-columns: repeat(4, minmax(0, 1fr));\n}\n.flex-col {\n  flex-direction: column;\n}\n.flex-col-reverse {\n  flex-direction: column-reverse;\n}\n.flex-wrap {\n  flex-wrap: wrap;\n}\n.items-start {\n  align-items: flex-start;\n}\n.items-center {\n  align-items: center;\n}\n.justify-start {\n  justify-content: flex-start;\n}\n.justify-end {\n  justify-content: flex-end;\n}\n.justify-center {\n  justify-content: center;\n}\n.justify-between {\n  justify-content: space-between;\n}\n.gap-0 {\n  gap: 0px;\n}\n.gap-1 {\n  gap: 0.25rem;\n}\n.gap-2 {\n  gap: 0.5rem;\n}\n.gap-4 {\n  gap: 1rem;\n}\n.gap-6 {\n  gap: 1.5rem;\n}\n.space-x-2 > :not([hidden]) ~ :not([hidden]) {\n  --tw-space-x-reverse: 0;\n  margin-right: calc(0.5rem * var(--tw-space-x-reverse));\n  margin-left: calc(0.5rem * calc(1 - var(--tw-space-x-reverse)));\n}\n.space-x-4 > :not([hidden]) ~ :not([hidden]) {\n  --tw-space-x-reverse: 0;\n  margin-right: calc(1rem * var(--tw-space-x-reverse));\n  margin-left: calc(1rem * calc(1 - var(--tw-space-x-reverse)));\n}\n.space-y-1 > :not([hidden]) ~ :not([hidden]) {\n  --tw-space-y-reverse: 0;\n  margin-top: calc(0.25rem * calc(1 - var(--tw-space-y-reverse)));\n  margin-bottom: calc(0.25rem * var(--tw-space-y-reverse));\n}\n.space-y-1\\.5 > :not([hidden]) ~ :not([hidden]) {\n  --tw-space-y-reverse: 0;\n  margin-top: calc(0.375rem * calc(1 - var(--tw-space-y-reverse)));\n  margin-bottom: calc(0.375rem * var(--tw-space-y-reverse));\n}\n.space-y-2 > :not([hidden]) ~ :not([hidden]) {\n  --tw-space-y-reverse: 0;\n  margin-top: calc(0.5rem * calc(1 - var(--tw-space-y-reverse)));\n  margin-bottom: calc(0.5rem * var(--tw-space-y-reverse));\n}\n.space-y-4 > :not([hidden]) ~ :not([hidden]) {\n  --tw-space-y-reverse: 0;\n  margin-top: calc(1rem * calc(1 - var(--tw-space-y-reverse)));\n  margin-bottom: calc(1rem * var(--tw-space-y-reverse));\n}\n.overflow-hidden {\n  overflow: hidden;\n}\n.overflow-y-auto {\n  overflow-y: auto;\n}\n.overflow-x-hidden {\n  overflow-x: hidden;\n}\n.whitespace-nowrap {\n  white-space: nowrap;\n}\n.rounded {\n  border-radius: 0.25rem;\n}\n.rounded-full {\n  border-radius: 9999px;\n}\n.rounded-lg {\n  border-radius: var(--border-radius-large);\n}\n.rounded-md {\n  border-radius: var(--border-radius);\n}\n.rounded-sm {\n  border-radius: var(--border-radius-small);\n}\n.border {\n  border-width: 1px;\n}\n.border-b {\n  border-bottom-width: 1px;\n}\n.border-r {\n  border-right-width: 1px;\n}\n.border-t {\n  border-top-width: 1px;\n}\n.border-dashed {\n  border-style: dashed;\n}\n.border-border {\n  border-color: var(--color-border);\n}\n.border-gray-300 {\n  --tw-border-opacity: 1;\n  border-color: rgb(209 213 219 / var(--tw-border-opacity, 1));\n}\n.border-input {\n  border-color: var(--color-border);\n}\n.border-primary {\n  border-color: var(--color-primary-element);\n}\n.border-transparent {\n  border-color: transparent;\n}\n.bg-accent {\n  background-color: var(--color-primary-element-light);\n}\n.bg-background {\n  background-color: var(--color-main-background);\n}\n.bg-black\\/50 {\n  background-color: rgb(0 0 0 / 0.5);\n}\n.bg-black\\/80 {\n  background-color: rgb(0 0 0 / 0.8);\n}\n.bg-border {\n  background-color: var(--color-border);\n}\n.bg-card {\n  background-color: var(--color-main-background-blur);\n}\n.bg-destructive {\n  background-color: var(--color-error);\n}\n.bg-muted {\n  background-color: var(--color-background-dark);\n}\n.bg-popover {\n  background-color: var(--color-main-background);\n}\n.bg-primary {\n  background-color: var(--color-primary-element);\n}\n.bg-secondary {\n  background-color: var(--color-secondary-element);\n}\n.bg-transparent {\n  background-color: transparent;\n}\n.bg-white\\/80 {\n  background-color: rgb(255 255 255 / 0.8);\n}\n.fill-current {\n  fill: currentColor;\n}\n.object-contain {\n  -o-object-fit: contain;\n     object-fit: contain;\n}\n.object-cover {\n  -o-object-fit: cover;\n     object-fit: cover;\n}\n.p-0 {\n  padding: 0px;\n}\n.p-0\\.5 {\n  padding: 0.125rem;\n}\n.p-1 {\n  padding: 0.25rem;\n}\n.p-2 {\n  padding: 0.5rem;\n}\n.p-3 {\n  padding: 0.75rem;\n}\n.p-4 {\n  padding: 1rem;\n}\n.p-6 {\n  padding: 1.5rem;\n}\n.px-2 {\n  padding-left: 0.5rem;\n  padding-right: 0.5rem;\n}\n.px-2\\.5 {\n  padding-left: 0.625rem;\n  padding-right: 0.625rem;\n}\n.px-3 {\n  padding-left: 0.75rem;\n  padding-right: 0.75rem;\n}\n.px-4 {\n  padding-left: 1rem;\n  padding-right: 1rem;\n}\n.px-8 {\n  padding-left: 2rem;\n  padding-right: 2rem;\n}\n.py-0\\.5 {\n  padding-top: 0.125rem;\n  padding-bottom: 0.125rem;\n}\n.py-1 {\n  padding-top: 0.25rem;\n  padding-bottom: 0.25rem;\n}\n.py-1\\.5 {\n  padding-top: 0.375rem;\n  padding-bottom: 0.375rem;\n}\n.py-10 {\n  padding-top: 2.5rem;\n  padding-bottom: 2.5rem;\n}\n.py-2 {\n  padding-top: 0.5rem;\n  padding-bottom: 0.5rem;\n}\n.py-3 {\n  padding-top: 0.75rem;\n  padding-bottom: 0.75rem;\n}\n.py-6 {\n  padding-top: 1.5rem;\n  padding-bottom: 1.5rem;\n}\n.pb-2 {\n  padding-bottom: 0.5rem;\n}\n.pl-2 {\n  padding-left: 0.5rem;\n}\n.pl-8 {\n  padding-left: 2rem;\n}\n.pr-1 {\n  padding-right: 0.25rem;\n}\n.pr-2 {\n  padding-right: 0.5rem;\n}\n.pt-0 {\n  padding-top: 0px;\n}\n.pt-2 {\n  padding-top: 0.5rem;\n}\n.text-left {\n  text-align: left;\n}\n.text-center {\n  text-align: center;\n}\n.text-right {\n  text-align: right;\n}\n.font-mono {\n  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;\n}\n.text-2xl {\n  font-size: 1.5rem;\n  line-height: 2rem;\n}\n.text-\\[10px\\] {\n  font-size: 10px;\n}\n.text-base {\n  font-size: 1rem;\n  line-height: 1.5rem;\n}\n.text-lg {\n  font-size: 1.125rem;\n  line-height: 1.75rem;\n}\n.text-sm {\n  font-size: 0.875rem;\n  line-height: 1.25rem;\n}\n.text-xs {\n  font-size: 0.75rem;\n  line-height: 1rem;\n}\n.font-medium {\n  font-weight: 500;\n}\n.font-semibold {\n  font-weight: 600;\n}\n.leading-none {\n  line-height: 1;\n}\n.tracking-tight {\n  letter-spacing: -0.025em;\n}\n.tracking-widest {\n  letter-spacing: 0.1em;\n}\n.text-blue-500 {\n  --tw-text-opacity: 1;\n  color: rgb(59 130 246 / var(--tw-text-opacity, 1));\n}\n.text-card-foreground {\n  color: var(--color-main-text);\n}\n.text-destructive {\n  color: var(--color-error);\n}\n.text-destructive-foreground {\n  color: var(--color-error);\n}\n.text-foreground {\n  color: var(--color-main-text);\n}\n.text-gray-700 {\n  --tw-text-opacity: 1;\n  color: rgb(55 65 81 / var(--tw-text-opacity, 1));\n}\n.text-green-600 {\n  --tw-text-opacity: 1;\n  color: rgb(22 163 74 / var(--tw-text-opacity, 1));\n}\n.text-muted-foreground {\n  color: var(--color-main-text);\n}\n.text-popover-foreground {\n  color: var(--color-main-text);\n}\n.text-primary {\n  color: var(--color-primary-element);\n}\n.text-primary-foreground {\n  color: var(--color-primary-text);\n}\n.text-red-600 {\n  --tw-text-opacity: 1;\n  color: rgb(220 38 38 / var(--tw-text-opacity, 1));\n}\n.text-secondary-foreground {\n  color: var(--color-secondary-text);\n}\n.underline-offset-4 {\n  text-underline-offset: 4px;\n}\n.opacity-0 {\n  opacity: 0;\n}\n.opacity-50 {\n  opacity: 0.5;\n}\n.opacity-60 {\n  opacity: 0.6;\n}\n.opacity-70 {\n  opacity: 0.7;\n}\n.shadow {\n  --tw-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);\n  --tw-shadow-colored: 0 1px 3px 0 var(--tw-shadow-color), 0 1px 2px -1px var(--tw-shadow-color);\n  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);\n}\n.shadow-lg {\n  --tw-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);\n  --tw-shadow-colored: 0 10px 15px -3px var(--tw-shadow-color), 0 4px 6px -4px var(--tw-shadow-color);\n  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);\n}\n.shadow-md {\n  --tw-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);\n  --tw-shadow-colored: 0 4px 6px -1px var(--tw-shadow-color), 0 2px 4px -2px var(--tw-shadow-color);\n  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);\n}\n.shadow-sm {\n  --tw-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);\n  --tw-shadow-colored: 0 1px 2px 0 var(--tw-shadow-color);\n  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);\n}\n.outline-none {\n  outline: 2px solid transparent;\n  outline-offset: 2px;\n}\n.outline {\n  outline-style: solid;\n}\n.ring-offset-background {\n  --tw-ring-offset-color: var(--color-main-background);\n}\n.filter {\n  filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow);\n}\n.transition {\n  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;\n  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);\n  transition-duration: 150ms;\n}\n.transition-colors {\n  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;\n  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);\n  transition-duration: 150ms;\n}\n.transition-opacity {\n  transition-property: opacity;\n  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);\n  transition-duration: 150ms;\n}\n.duration-200 {\n  transition-duration: 200ms;\n}\n@keyframes enter {\n\n  from {\n    opacity: var(--tw-enter-opacity, 1);\n    transform: translate3d(var(--tw-enter-translate-x, 0), var(--tw-enter-translate-y, 0), 0) scale3d(var(--tw-enter-scale, 1), var(--tw-enter-scale, 1), var(--tw-enter-scale, 1)) rotate(var(--tw-enter-rotate, 0));\n  }\n}\n@keyframes exit {\n\n  to {\n    opacity: var(--tw-exit-opacity, 1);\n    transform: translate3d(var(--tw-exit-translate-x, 0), var(--tw-exit-translate-y, 0), 0) scale3d(var(--tw-exit-scale, 1), var(--tw-exit-scale, 1), var(--tw-exit-scale, 1)) rotate(var(--tw-exit-rotate, 0));\n  }\n}\n.duration-200 {\n  animation-duration: 200ms;\n}\n\n/* CSS Variables compatible with Nextcloud */\n\n/* Base styles for Nextcloud application */\n\n/* Specific styles for Nextcloud integration */\n\n.file\\:mr-4::file-selector-button {\n  margin-right: 1rem;\n}\n\n.file\\:rounded-md::file-selector-button {\n  border-radius: var(--border-radius);\n}\n\n.file\\:border-0::file-selector-button {\n  border-width: 0px;\n}\n\n.file\\:bg-primary::file-selector-button {\n  background-color: var(--color-primary-element);\n}\n\n.file\\:bg-transparent::file-selector-button {\n  background-color: transparent;\n}\n\n.file\\:px-4::file-selector-button {\n  padding-left: 1rem;\n  padding-right: 1rem;\n}\n\n.file\\:py-2::file-selector-button {\n  padding-top: 0.5rem;\n  padding-bottom: 0.5rem;\n}\n\n.file\\:text-sm::file-selector-button {\n  font-size: 0.875rem;\n  line-height: 1.25rem;\n}\n\n.file\\:font-medium::file-selector-button {\n  font-weight: 500;\n}\n\n.file\\:font-semibold::file-selector-button {\n  font-weight: 600;\n}\n\n.file\\:text-foreground::file-selector-button {\n  color: var(--color-main-text);\n}\n\n.file\\:text-primary-foreground::file-selector-button {\n  color: var(--color-primary-text);\n}\n\n.placeholder\\:text-muted-foreground::-moz-placeholder {\n  color: var(--color-main-text);\n}\n\n.placeholder\\:text-muted-foreground::placeholder {\n  color: var(--color-main-text);\n}\n\n.last\\:border-b-0:last-child {\n  border-bottom-width: 0px;\n}\n\n.focus-within\\:ring-2:focus-within {\n  --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);\n  --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);\n  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);\n}\n\n.focus-within\\:ring-ring:focus-within {\n  --tw-ring-color: var(--color-primary-element);\n}\n\n.focus-within\\:ring-offset-2:focus-within {\n  --tw-ring-offset-width: 2px;\n}\n\n.hover\\:bg-accent:hover {\n  background-color: var(--color-primary-element-light);\n}\n\n.hover\\:bg-muted:hover {\n  background-color: var(--color-background-dark);\n}\n\n.hover\\:bg-white:hover {\n  --tw-bg-opacity: 1;\n  background-color: rgb(255 255 255 / var(--tw-bg-opacity, 1));\n}\n\n.hover\\:text-accent-foreground:hover {\n  color: var(--color-primary-text);\n}\n\n.hover\\:underline:hover {\n  text-decoration-line: underline;\n}\n\n.hover\\:opacity-100:hover {\n  opacity: 1;\n}\n\n.focus\\:bg-accent:focus {\n  background-color: var(--color-primary-element-light);\n}\n\n.focus\\:text-accent-foreground:focus {\n  color: var(--color-primary-text);\n}\n\n.focus\\:opacity-100:focus {\n  opacity: 1;\n}\n\n.focus\\:outline-none:focus {\n  outline: 2px solid transparent;\n  outline-offset: 2px;\n}\n\n.focus\\:ring-2:focus {\n  --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);\n  --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);\n  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);\n}\n\n.focus\\:ring-ring:focus {\n  --tw-ring-color: var(--color-primary-element);\n}\n\n.focus\\:ring-offset-2:focus {\n  --tw-ring-offset-width: 2px;\n}\n\n.focus-visible\\:outline-none:focus-visible {\n  outline: 2px solid transparent;\n  outline-offset: 2px;\n}\n\n.focus-visible\\:ring-2:focus-visible {\n  --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);\n  --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);\n  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);\n}\n\n.focus-visible\\:ring-ring:focus-visible {\n  --tw-ring-color: var(--color-primary-element);\n}\n\n.focus-visible\\:ring-offset-2:focus-visible {\n  --tw-ring-offset-width: 2px;\n}\n\n.active\\:cursor-grabbing:active {\n  cursor: grabbing;\n}\n\n.disabled\\:pointer-events-none:disabled {\n  pointer-events: none;\n}\n\n.disabled\\:cursor-not-allowed:disabled {\n  cursor: not-allowed;\n}\n\n.disabled\\:opacity-50:disabled {\n  opacity: 0.5;\n}\n\n.group:hover .group-hover\\:opacity-100 {\n  opacity: 1;\n}\n\n.peer:disabled ~ .peer-disabled\\:cursor-not-allowed {\n  cursor: not-allowed;\n}\n\n.peer:disabled ~ .peer-disabled\\:opacity-70 {\n  opacity: 0.7;\n}\n\n.data-\\[disabled\\=true\\]\\:pointer-events-none[data-disabled="true"] {\n  pointer-events: none;\n}\n\n.data-\\[disabled\\]\\:pointer-events-none[data-disabled] {\n  pointer-events: none;\n}\n\n.data-\\[side\\=bottom\\]\\:translate-y-1[data-side="bottom"] {\n  --tw-translate-y: 0.25rem;\n  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));\n}\n\n.data-\\[side\\=left\\]\\:-translate-x-1[data-side="left"] {\n  --tw-translate-x: -0.25rem;\n  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));\n}\n\n.data-\\[side\\=right\\]\\:translate-x-1[data-side="right"] {\n  --tw-translate-x: 0.25rem;\n  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));\n}\n\n.data-\\[side\\=top\\]\\:-translate-y-1[data-side="top"] {\n  --tw-translate-y: -0.25rem;\n  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));\n}\n\n.data-\\[state\\=on\\]\\:border-primary[data-state="on"] {\n  border-color: var(--color-primary-element);\n}\n\n.data-\\[selected\\=\\\'true\\\'\\]\\:bg-accent[data-selected=\'true\'] {\n  background-color: var(--color-primary-element-light);\n}\n\n.data-\\[state\\=on\\]\\:bg-primary[data-state="on"] {\n  background-color: var(--color-primary-element);\n}\n\n.data-\\[state\\=open\\]\\:bg-accent[data-state="open"] {\n  background-color: var(--color-primary-element-light);\n}\n\n.data-\\[placeholder\\]\\:text-muted-foreground[data-placeholder] {\n  color: var(--color-main-text);\n}\n\n.data-\\[selected\\=true\\]\\:text-accent-foreground[data-selected="true"] {\n  color: var(--color-primary-text);\n}\n\n.data-\\[state\\=on\\]\\:text-primary-foreground[data-state="on"] {\n  color: var(--color-primary-text);\n}\n\n.data-\\[state\\=open\\]\\:text-muted-foreground[data-state="open"] {\n  color: var(--color-main-text);\n}\n\n.data-\\[disabled\\=true\\]\\:opacity-50[data-disabled="true"] {\n  opacity: 0.5;\n}\n\n.data-\\[disabled\\]\\:opacity-50[data-disabled] {\n  opacity: 0.5;\n}\n\n.data-\\[state\\=open\\]\\:animate-in[data-state="open"] {\n  animation-name: enter;\n  animation-duration: 150ms;\n  --tw-enter-opacity: initial;\n  --tw-enter-scale: initial;\n  --tw-enter-rotate: initial;\n  --tw-enter-translate-x: initial;\n  --tw-enter-translate-y: initial;\n}\n\n.data-\\[state\\=closed\\]\\:animate-out[data-state="closed"] {\n  animation-name: exit;\n  animation-duration: 150ms;\n  --tw-exit-opacity: initial;\n  --tw-exit-scale: initial;\n  --tw-exit-rotate: initial;\n  --tw-exit-translate-x: initial;\n  --tw-exit-translate-y: initial;\n}\n\n.data-\\[state\\=closed\\]\\:fade-out-0[data-state="closed"] {\n  --tw-exit-opacity: 0;\n}\n\n.data-\\[state\\=open\\]\\:fade-in-0[data-state="open"] {\n  --tw-enter-opacity: 0;\n}\n\n.data-\\[state\\=closed\\]\\:zoom-out-95[data-state="closed"] {\n  --tw-exit-scale: .95;\n}\n\n.data-\\[state\\=open\\]\\:zoom-in-95[data-state="open"] {\n  --tw-enter-scale: .95;\n}\n\n.data-\\[side\\=bottom\\]\\:slide-in-from-top-2[data-side="bottom"] {\n  --tw-enter-translate-y: -0.5rem;\n}\n\n.data-\\[side\\=left\\]\\:slide-in-from-right-2[data-side="left"] {\n  --tw-enter-translate-x: 0.5rem;\n}\n\n.data-\\[side\\=right\\]\\:slide-in-from-left-2[data-side="right"] {\n  --tw-enter-translate-x: -0.5rem;\n}\n\n.data-\\[side\\=top\\]\\:slide-in-from-bottom-2[data-side="top"] {\n  --tw-enter-translate-y: 0.5rem;\n}\n\n.data-\\[state\\=closed\\]\\:slide-out-to-left-1\\/2[data-state="closed"] {\n  --tw-exit-translate-x: -50%;\n}\n\n.data-\\[state\\=closed\\]\\:slide-out-to-top-\\[48\\%\\][data-state="closed"] {\n  --tw-exit-translate-y: -48%;\n}\n\n.data-\\[state\\=open\\]\\:slide-in-from-left-1\\/2[data-state="open"] {\n  --tw-enter-translate-x: -50%;\n}\n\n.data-\\[state\\=open\\]\\:slide-in-from-top-\\[48\\%\\][data-state="open"] {\n  --tw-enter-translate-y: -48%;\n}\n\n@media (min-width: 640px) {\n\n  .sm\\:max-w-\\[425px\\] {\n    max-width: 425px;\n  }\n\n  .sm\\:max-w-\\[500px\\] {\n    max-width: 500px;\n  }\n\n  .sm\\:grid-cols-2 {\n    grid-template-columns: repeat(2, minmax(0, 1fr));\n  }\n\n  .sm\\:flex-row {\n    flex-direction: row;\n  }\n\n  .sm\\:justify-end {\n    justify-content: flex-end;\n  }\n\n  .sm\\:justify-between {\n    justify-content: space-between;\n  }\n\n  .sm\\:space-x-2 > :not([hidden]) ~ :not([hidden]) {\n    --tw-space-x-reverse: 0;\n    margin-right: calc(0.5rem * var(--tw-space-x-reverse));\n    margin-left: calc(0.5rem * calc(1 - var(--tw-space-x-reverse)));\n  }\n\n  .sm\\:rounded-lg {\n    border-radius: var(--border-radius-large);\n  }\n\n  .sm\\:text-left {\n    text-align: left;\n  }\n}\n\n@media (min-width: 768px) {\n\n  .md\\:w-auto {\n    width: auto;\n  }\n\n  .md\\:grid-cols-3 {\n    grid-template-columns: repeat(3, minmax(0, 1fr));\n  }\n\n  .md\\:text-sm {\n    font-size: 0.875rem;\n    line-height: 1.25rem;\n  }\n}\n\n@media (min-width: 1024px) {\n\n  .lg\\:grid-cols-4 {\n    grid-template-columns: repeat(4, minmax(0, 1fr));\n  }\n}\n\n.\\[\\&\\>span\\]\\:line-clamp-1>span {\n  overflow: hidden;\n  display: -webkit-box;\n  -webkit-box-orient: vertical;\n  -webkit-line-clamp: 1;\n}\n\n.\\[\\&_\\[cmdk-group-heading\\]\\]\\:px-2 [cmdk-group-heading] {\n  padding-left: 0.5rem;\n  padding-right: 0.5rem;\n}\n\n.\\[\\&_\\[cmdk-group-heading\\]\\]\\:py-1\\.5 [cmdk-group-heading] {\n  padding-top: 0.375rem;\n  padding-bottom: 0.375rem;\n}\n\n.\\[\\&_\\[cmdk-group-heading\\]\\]\\:text-xs [cmdk-group-heading] {\n  font-size: 0.75rem;\n  line-height: 1rem;\n}\n\n.\\[\\&_\\[cmdk-group-heading\\]\\]\\:font-medium [cmdk-group-heading] {\n  font-weight: 500;\n}\n\n.\\[\\&_\\[cmdk-group-heading\\]\\]\\:text-muted-foreground [cmdk-group-heading] {\n  color: var(--color-main-text);\n}\n\n.\\[\\&_\\[cmdk-group\\]\\:not\\(\\[hidden\\]\\)_\\~\\[cmdk-group\\]\\]\\:pt-0 [cmdk-group]:not([hidden]) ~[cmdk-group] {\n  padding-top: 0px;\n}\n\n.\\[\\&_\\[cmdk-group\\]\\]\\:px-2 [cmdk-group] {\n  padding-left: 0.5rem;\n  padding-right: 0.5rem;\n}\n\n.\\[\\&_\\[cmdk-input-wrapper\\]_svg\\]\\:h-5 [cmdk-input-wrapper] svg {\n  height: 1.25rem;\n}\n\n.\\[\\&_\\[cmdk-input-wrapper\\]_svg\\]\\:w-5 [cmdk-input-wrapper] svg {\n  width: 1.25rem;\n}\n\n.\\[\\&_\\[cmdk-input\\]\\]\\:h-12 [cmdk-input] {\n  height: 3rem;\n}\n\n.\\[\\&_\\[cmdk-item\\]\\]\\:px-2 [cmdk-item] {\n  padding-left: 0.5rem;\n  padding-right: 0.5rem;\n}\n\n.\\[\\&_\\[cmdk-item\\]\\]\\:py-3 [cmdk-item] {\n  padding-top: 0.75rem;\n  padding-bottom: 0.75rem;\n}\n\n.\\[\\&_\\[cmdk-item\\]_svg\\]\\:h-5 [cmdk-item] svg {\n  height: 1.25rem;\n}\n\n.\\[\\&_\\[cmdk-item\\]_svg\\]\\:w-5 [cmdk-item] svg {\n  width: 1.25rem;\n}\n\n.\\[\\&_svg\\]\\:pointer-events-none svg {\n  pointer-events: none;\n}\n\n.\\[\\&_svg\\]\\:size-4 svg {\n  width: 1rem;\n  height: 1rem;\n}\n\n.\\[\\&_svg\\]\\:shrink-0 svg {\n  flex-shrink: 0;\n}/*$vite$:1*/';
-  document.head.appendChild(__vite_style__);
   function _mergeNamespaces(n2, m2) {
     for (var i = 0; i < m2.length; i++) {
       const e = m2[i];
@@ -44781,7 +44778,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
   var Content2$3 = PopoverContent$1;
   const Popover = Root2$3;
   const PopoverTrigger = Trigger$2;
-  const PopoverContent = reactExports.forwardRef(({ className, align = "center", sideOffset = 4, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(Portal$2, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+  const PopoverContent = reactExports.forwardRef(({ className, align = "center", sideOffset = 4, container, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(Portal$2, { container, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
     Content2$3,
     {
       ref,
@@ -48684,6 +48681,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     creatable = false,
     onCreateOption
   }) {
+    var _a;
     const inputRef = reactExports.useRef(null);
     const [open, setOpen] = reactExports.useState(false);
     const [inputValue, setInputValue] = reactExports.useState("");
@@ -48697,8 +48695,8 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
       setInputValue("");
       setOpen(false);
       setTimeout(() => {
-        var _a;
-        (_a = inputRef.current) == null ? void 0 : _a.focus();
+        var _a2;
+        (_a2 = inputRef.current) == null ? void 0 : _a2.focus();
       }, 0);
     }, [value, onChange]);
     const handleCreate = reactExports.useCallback(async () => {
@@ -48716,8 +48714,8 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
           });
           setOpen(false);
           setTimeout(() => {
-            var _a;
-            (_a = inputRef.current) == null ? void 0 : _a.focus();
+            var _a2;
+            (_a2 = inputRef.current) == null ? void 0 : _a2.focus();
             setIsCreating(false);
           }, 0);
         } else {
@@ -48757,8 +48755,8 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
         "div",
         {
           onClick: () => {
-            var _a;
-            return (_a = inputRef.current) == null ? void 0 : _a.focus();
+            var _a2;
+            return (_a2 = inputRef.current) == null ? void 0 : _a2.focus();
           },
           className: "group rounded-md border border-input px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 cursor-text flex flex-wrap gap-1 min-h-[40px]",
           children: [
@@ -48796,48 +48794,68 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
           ]
         }
       ) }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(PopoverContent, { className: "p-0 w-[var(--radix-popover-trigger-width)]", align: "start", onOpenAutoFocus: (e) => e.preventDefault(), children: /* @__PURE__ */ jsxRuntimeExports.jsx(Command, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(CommandList, { className: "max-h-[200px] overflow-y-auto", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(CommandEmpty, { children: creatable && inputValue.trim() && !isCreating ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "button",
-          {
-            type: "button",
-            className: "w-full relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground cursor-pointer text-left",
-            onMouseDown: (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleCreate();
-            },
-            onClick: (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleCreate();
-            },
-            onKeyDown: (e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                e.stopPropagation();
-                handleCreate();
-              }
-            },
-            children: [
-              'Create "',
-              inputValue,
-              '"'
-            ]
-          }
-        ) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "p-2 text-center text-sm block text-muted-foreground", children: isCreating ? "Creating..." : emptyIndicator }) }),
-        filteredOptions.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(CommandGroup, { children: filteredOptions.map((option) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-          CommandItem,
-          {
-            value: option.label,
-            onSelect: () => handleSelect(option),
-            className: "cursor-pointer",
-            children: option.label
-          },
-          option.value
-        )) })
-      ] }) }) })
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        PopoverContent,
+        {
+          container: (_a = inputRef.current) == null ? void 0 : _a.closest('[role="dialog"]'),
+          className: "p-0 w-[var(--radix-popover-trigger-width)] overflow-hidden",
+          align: "start",
+          onOpenAutoFocus: (e) => e.preventDefault(),
+          children: /* @__PURE__ */ jsxRuntimeExports.jsx(Command, { shouldFilter: false, className: "h-auto", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            CommandList,
+            {
+              className: "min-h-0 max-h-[min(240px,var(--radix-popover-content-available-height))] overflow-y-auto overscroll-contain",
+              onWheel: (event) => event.stopPropagation(),
+              onTouchMove: (event) => event.stopPropagation(),
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(CommandEmpty, { children: creatable && inputValue.trim() && !isCreating ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  "button",
+                  {
+                    type: "button",
+                    className: "w-full relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground cursor-pointer text-left",
+                    onMouseDown: (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleCreate();
+                    },
+                    onClick: (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleCreate();
+                    },
+                    onKeyDown: (e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleCreate();
+                      }
+                    },
+                    children: [
+                      'Create "',
+                      inputValue,
+                      '"'
+                    ]
+                  }
+                ) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "p-2 text-center text-sm block text-muted-foreground", children: isCreating ? "Creating..." : emptyIndicator }) }),
+                filteredOptions.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(CommandGroup, { children: filteredOptions.map((option) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  CommandItem,
+                  {
+                    value: option.label,
+                    onSelect: () => handleSelect(option),
+                    className: "cursor-pointer",
+                    children: option.label
+                  },
+                  option.value
+                )) })
+              ]
+            }
+          ) })
+        }
+      )
     ] });
+  }
+  function FaviconImage({ className, ...props }) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: cn("bookmark-favicon inline-flex shrink-0 items-center justify-center rounded-md", className), children: /* @__PURE__ */ jsxRuntimeExports.jsx("img", { ...props, className: "h-full w-full object-contain" }) });
   }
   var NODES = [
     "a",
@@ -48938,13 +48956,18 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     const [url, setUrl] = reactExports.useState("");
     const [title, setTitle] = reactExports.useState("");
     const [description, setDescription] = reactExports.useState("");
-    const [collectionId, setCollectionId] = reactExports.useState(void 0);
+    const [collectionId, setCollectionId] = reactExports.useState("");
     const [selectedTags, setSelectedTags] = reactExports.useState([]);
     const [screenshot, setScreenshot] = reactExports.useState(null);
     const [showScreenshotInput, setShowScreenshotInput] = reactExports.useState(false);
     const [favicon, setFavicon] = reactExports.useState(null);
     const [showFaviconInput, setShowFaviconInput] = reactExports.useState(false);
     const [isFetching, setIsFetching] = reactExports.useState(false);
+    const pageInfoRequest = reactExports.useRef(null);
+    reactExports.useEffect(() => () => {
+      var _a;
+      return (_a = pageInfoRequest.current) == null ? void 0 : _a.abort();
+    }, []);
     const [isSaving, setIsSaving] = reactExports.useState(false);
     const [saveError, setSaveError] = reactExports.useState(null);
     const { setBookmarks } = useBookmarks();
@@ -48971,21 +48994,35 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
       return { label, value: label };
     };
     const handleUrlBlur = async () => {
+      var _a;
+      (_a = pageInfoRequest.current) == null ? void 0 : _a.abort();
+      pageInfoRequest.current = null;
+      setIsFetching(false);
       if (!url || !url.startsWith("http")) return;
+      const controller = new AbortController();
+      pageInfoRequest.current = controller;
       setIsFetching(true);
       try {
-        const response = await fetch(`/apps/bookmarksmanager/api/v1/page-info?url=${encodeURIComponent(url)}`);
+        const response = await fetch(`/apps/bookmarksmanager/api/v1/page-info?url=${encodeURIComponent(url)}`, {
+          signal: controller.signal
+        });
         if (response.ok) {
           const data = await response.json();
+          if (controller.signal.aborted) return;
           if (data.title) setTitle(data.title);
           if (data.description) setDescription(data.description);
           if (data.image) setScreenshot(data.image);
           if (data.favicon) setFavicon(data.favicon);
         }
       } catch (error) {
-        console.error("Failed to fetch page info", error);
+        if (!controller.signal.aborted) {
+          console.error("Failed to fetch page info", error);
+        }
       } finally {
-        setIsFetching(false);
+        if (pageInfoRequest.current === controller) {
+          pageInfoRequest.current = null;
+          setIsFetching(false);
+        }
       }
     };
     const handleSubmit = async (e) => {
@@ -48994,7 +49031,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
       setSaveError(null);
       const requestToken = getRequestToken$4();
       if (!requestToken) {
-        setSaveError("CSRF token not found!");
+        setSaveError(t("bookmark.save_error"));
         setIsSaving(false);
         return;
       }
@@ -49020,30 +49057,33 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
           body: JSON.stringify(bookmarkData)
         });
         if (response.ok) {
-          setOpen(false);
+          handleOpenChange(false);
           await router2.invalidate();
         } else {
-          setSaveError("Failed to create bookmark");
+          setSaveError(t("bookmark.save_error"));
         }
       } catch (err) {
-        setSaveError("Network error");
+        setSaveError(t("bookmark.network_error"));
       } finally {
         setIsSaving(false);
       }
     };
     const handleOpenChange = (isOpen) => {
+      var _a;
+      (_a = pageInfoRequest.current) == null ? void 0 : _a.abort();
+      pageInfoRequest.current = null;
+      setIsFetching(false);
       setOpen(isOpen);
-      if (!isOpen) {
-        setUrl("");
-        setTitle("");
-        setDescription("");
-        setCollectionId(void 0);
-        setSelectedTags([]);
-        setScreenshot(null);
-        setFavicon(null);
-        setShowScreenshotInput(false);
-        setShowFaviconInput(false);
-      }
+      setUrl("");
+      setTitle("");
+      setDescription("");
+      setCollectionId("");
+      setSelectedTags([]);
+      setScreenshot(null);
+      setFavicon(null);
+      setShowScreenshotInput(false);
+      setShowFaviconInput(false);
+      setSaveError(null);
     };
     return /* @__PURE__ */ jsxRuntimeExports.jsxs(Dialog, { open, onOpenChange: handleOpenChange, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(DialogTrigger, { asChild: true, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Button, { children: [
@@ -49051,18 +49091,19 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
         " ",
         t("bookmark.add")
       ] }) }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(DialogContent, { className: "sm:max-w-[425px] w-full max-w-lg max-h-[90vh] flex flex-col p-0 gap-0", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("form", { onSubmit: handleSubmit, className: "flex flex-col h-full overflow-hidden", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogHeader, { className: "p-6 pb-2", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(DialogContent, { className: "bookmark-dialog w-[calc(100%-2rem)] max-w-3xl max-h-[90dvh] flex flex-col overflow-hidden p-0 gap-0", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("form", { onSubmit: handleSubmit, className: "flex min-h-0 flex-col overflow-hidden", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogHeader, { className: "shrink-0 p-6 pb-4 pr-16", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx(DialogTitle, { children: t("bookmark.add_new") }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(DialogDescription, { children: t("bookmark.add_description") })
         ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex-1 overflow-y-auto p-6 pt-2 gap-4 flex flex-col", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bookmark-form-body min-h-0 flex-1 overflow-y-auto p-6 pt-2 gap-5 flex flex-col", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 items-center gap-4", children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "url", className: "text-right", children: t("bookmark.url") }),
             /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { id: "url", value: url, onChange: (e) => setUrl(e.target.value), onBlur: handleUrlBlur, placeholder: t("bookmark.placeholder_url"), className: "col-span-3" })
           ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "col-span-4 flex justify-center items-center gap-6 min-h-[80px]", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col items-center gap-2 relative", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-2 items-start gap-4", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex min-w-0 flex-col items-start gap-2 rounded-md border p-3", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "add-screenshot", children: t("bookmark.screenshot") }),
               /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative group w-24 h-20 flex-shrink-0", children: [
                 isFetching ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-24 h-20 bg-muted animate-pulse rounded-md" }) : screenshot ? /* @__PURE__ */ jsxRuntimeExports.jsx(
                   "img",
@@ -49084,41 +49125,41 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
                   }
                 ) })
               ] }),
-              showScreenshotInput && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1 absolute top-full mt-2 z-20 bg-background p-2 border rounded shadow-md left-1/2 -translate-x-1/2 min-w-[250px]", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { className: "text-xs font-semibold", children: t("bookmark.screenshot") }),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1", children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(
-                    Input,
-                    {
-                      value: screenshot || "",
-                      onChange: (e) => setScreenshot(e.target.value),
-                      placeholder: t("bookmark.screenshot"),
-                      className: "h-7 text-xs",
-                      autoFocus: true
-                    }
-                  ),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(
-                    Button,
-                    {
-                      type: "button",
-                      variant: "ghost",
-                      size: "icon",
-                      className: "h-7 w-7",
-                      onClick: () => setShowScreenshotInput(false),
-                      children: /* @__PURE__ */ jsxRuntimeExports.jsx(X$1, { className: "h-3 w-3" })
-                    }
-                  )
-                ] })
-              ] })
+              showScreenshotInput && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-full min-w-0", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  Input,
+                  {
+                    id: "add-screenshot",
+                    value: screenshot || "",
+                    onChange: (e) => setScreenshot(e.target.value),
+                    placeholder: t("bookmark.screenshot"),
+                    className: "min-w-0 flex-1 text-sm",
+                    autoFocus: true
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  Button,
+                  {
+                    type: "button",
+                    variant: "ghost",
+                    size: "icon",
+                    className: "h-9 w-9 shrink-0",
+                    "aria-label": t("bookmark.screenshot"),
+                    onClick: () => setShowScreenshotInput(false),
+                    children: /* @__PURE__ */ jsxRuntimeExports.jsx(X$1, { className: "h-3 w-3" })
+                  }
+                )
+              ] }) })
             ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col items-center gap-2 relative", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative group w-12 h-12 flex-shrink-0", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex min-w-0 flex-col items-start gap-2 rounded-md border p-3", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "add-favicon", children: t("bookmark.favicon_url") }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative group w-12 h-20 flex-shrink-0 flex items-center", children: [
                 isFetching ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-12 h-12 bg-muted animate-pulse rounded-md" }) : favicon ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "img",
+                  FaviconImage,
                   {
                     src: favicon,
                     alt: "Favicon",
-                    className: "w-12 h-12 object-contain rounded-md border p-1"
+                    className: "w-12 h-12"
                   }
                 ) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-12 h-12 bg-muted/30 rounded-md flex items-center justify-center text-[10px] text-muted-foreground border border-dashed border-muted-foreground/30 text-center", children: "Icon" }),
                 !showFaviconInput && /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -49139,6 +49180,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
                       Button,
                       {
                         type: "button",
+                        "aria-label": t("bookmark.favicon_url"),
                         variant: "secondary",
                         size: "icon",
                         className: "h-6 w-6",
@@ -49151,32 +49193,31 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
                   }
                 )
               ] }),
-              showFaviconInput && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1 absolute top-full mt-2 z-20 bg-background p-2 border rounded shadow-md left-1/2 -translate-x-1/2 min-w-[280px]", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { className: "text-xs font-semibold", children: t("bookmark.favicon_url") }),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1", children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(
-                    Input,
-                    {
-                      value: favicon || "",
-                      onChange: (e) => setFavicon(e.target.value),
-                      placeholder: t("bookmark.favicon_url"),
-                      className: "h-7 text-xs",
-                      autoFocus: true
-                    }
-                  ),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(
-                    Button,
-                    {
-                      type: "button",
-                      variant: "ghost",
-                      size: "icon",
-                      className: "h-7 w-7",
-                      onClick: () => setShowFaviconInput(false),
-                      children: /* @__PURE__ */ jsxRuntimeExports.jsx(X$1, { className: "h-3 w-3" })
-                    }
-                  )
-                ] })
-              ] })
+              showFaviconInput && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-full min-w-0", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  Input,
+                  {
+                    id: "add-favicon",
+                    value: favicon || "",
+                    onChange: (e) => setFavicon(e.target.value),
+                    placeholder: t("bookmark.favicon_url"),
+                    className: "min-w-0 flex-1 text-sm",
+                    autoFocus: true
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  Button,
+                  {
+                    type: "button",
+                    variant: "ghost",
+                    size: "icon",
+                    className: "h-9 w-9 shrink-0",
+                    "aria-label": t("bookmark.favicon_url"),
+                    onClick: () => setShowFaviconInput(false),
+                    children: /* @__PURE__ */ jsxRuntimeExports.jsx(X$1, { className: "h-3 w-3" })
+                  }
+                )
+              ] }) })
             ] })
           ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 items-center gap-4", children: [
@@ -49209,9 +49250,9 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
               }
             ) })
           ] }),
-          saveError && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "col-span-4 text-red-600 text-sm text-center", children: saveError })
+          saveError && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { role: "alert", className: "col-span-4 text-sm text-center", children: saveError })
         ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(DialogFooter, { className: "p-6 pt-2 bg-background z-10 border-t", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "submit", className: "w-full md:w-auto", disabled: isSaving, children: isSaving ? t("app.saving") : t("bookmark.save") }) })
+        /* @__PURE__ */ jsxRuntimeExports.jsx(DialogFooter, { className: "shrink-0 p-6 pt-4 bg-background border-t", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "submit", className: "w-full md:w-auto", disabled: isSaving, children: isSaving ? t("app.saving") : t("bookmark.save") }) })
       ] }) })
     ] });
   }
@@ -54199,10 +54240,10 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
                       type: "button",
                       ...dragHandleListeners,
                       onClick: (e) => e.preventDefault(),
-                      className: "bg-white/80 hover:bg-white rounded-full p-1 shadow cursor-grab active:cursor-grabbing",
+                      className: "bookmark-action cursor-grab active:cursor-grabbing",
                       tabIndex: -1,
                       title: "Déplacer",
-                      children: /* @__PURE__ */ jsxRuntimeExports.jsx(DragHandleDots2Icon, { className: "w-5 h-5 text-gray-700" })
+                      children: /* @__PURE__ */ jsxRuntimeExports.jsx(DragHandleDots2Icon, { className: "w-5 h-5" })
                     }
                   ),
                   /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -54213,10 +54254,10 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
                         e.preventDefault();
                         onEdit();
                       },
-                      className: "bg-white/80 hover:bg-white rounded-full p-1 shadow",
+                      className: "bookmark-action",
                       tabIndex: -1,
                       title: "Modifier",
-                      children: /* @__PURE__ */ jsxRuntimeExports.jsx(Pencil2Icon, { className: "w-5 h-5 text-gray-700" })
+                      children: /* @__PURE__ */ jsxRuntimeExports.jsx(Pencil2Icon, { className: "w-5 h-5" })
                     }
                   ),
                   /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -54227,10 +54268,10 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
                         e.preventDefault();
                         onDelete && onDelete();
                       },
-                      className: "bg-white/80 hover:bg-white rounded-full p-1 shadow",
+                      className: "bookmark-action bookmark-action-delete",
                       tabIndex: -1,
                       title: "Supprimer",
-                      children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { xmlns: "http://www.w3.org/2000/svg", className: "w-5 h-5 text-red-600", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2, children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M6 18L18 6M6 6l12 12" }) })
+                      children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { xmlns: "http://www.w3.org/2000/svg", className: "w-5 h-5", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2, children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M6 18L18 6M6 6l12 12" }) })
                     }
                   )
                 ] })
@@ -54246,13 +54287,13 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
                 ] }, tag.id)) }),
                 /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center space-x-2 text-xs text-muted-foreground w-full", children: [
                   /* @__PURE__ */ jsxRuntimeExports.jsx(
-                    "img",
+                    FaviconImage,
                     {
                       src: bookmark.favicon ? bookmark.favicon : `https://www.google.com/s2/favicons?domain=${domain}&sz=16`,
                       alt: `${domain} favicon`,
                       width: 16,
                       height: 16,
-                      className: "rounded"
+                      className: "h-6 w-6"
                     }
                   ),
                   /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: domain }),
@@ -54323,13 +54364,13 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
                 className: "rounded object-cover w-16 h-16 bg-muted"
               }
             ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
-              "img",
+              FaviconImage,
               {
-                src: `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
+                src: bookmark.favicon || `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
                 alt: `${domain} favicon`,
                 width: 64,
                 height: 64,
-                className: "rounded w-16 h-16 bg-muted"
+                className: "w-16 h-16"
               }
             ),
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col", children: [
@@ -54349,10 +54390,10 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
                   type: "button",
                   ...dragHandleListeners,
                   onClick: (e) => e.preventDefault(),
-                  className: "ml-2 bg-white/80 hover:bg-white rounded-full p-1 shadow cursor-grab active:cursor-grabbing",
+                  className: "bookmark-action ml-2 cursor-grab active:cursor-grabbing",
                   tabIndex: -1,
                   title: "Déplacer",
-                  children: /* @__PURE__ */ jsxRuntimeExports.jsx(DragHandleDots2Icon, { className: "w-5 h-5 text-gray-700" })
+                  children: /* @__PURE__ */ jsxRuntimeExports.jsx(DragHandleDots2Icon, { className: "w-5 h-5" })
                 }
               ),
               /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -54363,10 +54404,10 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
                     e.preventDefault();
                     onEdit();
                   },
-                  className: "ml-2 bg-white/80 hover:bg-white rounded-full p-1 shadow",
+                  className: "bookmark-action ml-2",
                   tabIndex: -1,
                   title: "Modifier",
-                  children: /* @__PURE__ */ jsxRuntimeExports.jsx(Pencil2Icon, { className: "w-5 h-5 text-gray-700" })
+                  children: /* @__PURE__ */ jsxRuntimeExports.jsx(Pencil2Icon, { className: "w-5 h-5" })
                 }
               ),
               /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -54377,10 +54418,10 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
                     e.preventDefault();
                     onDelete && onDelete();
                   },
-                  className: "ml-2 bg-white/80 hover:bg-white rounded-full p-1 shadow",
+                  className: "bookmark-action bookmark-action-delete ml-2",
                   tabIndex: -1,
                   title: "Supprimer",
-                  children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { xmlns: "http://www.w3.org/2000/svg", className: "w-5 h-5 text-red-600", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2, children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M6 18L18 6M6 6l12 12" }) })
+                  children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { xmlns: "http://www.w3.org/2000/svg", className: "w-5 h-5", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2, children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M6 18L18 6M6 6l12 12" }) })
                 }
               )
             ] })
@@ -54508,6 +54549,8 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     const [showScreenshotInput, setShowScreenshotInput] = reactExports.useState(false);
     const [favicon, setFavicon] = reactExports.useState(null);
     const [showFaviconInput, setShowFaviconInput] = reactExports.useState(false);
+    const [isSaving, setIsSaving] = reactExports.useState(false);
+    const [saveError, setSaveError] = reactExports.useState(null);
     const tagOptions = reactExports.useMemo(() => {
       const baseTags = availableTags.map((tag) => ({ label: tag.name, value: String(tag.id) }));
       const localTagsToAdd = localCreatedTags.filter(
@@ -54540,7 +54583,10 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
       return { label, value: label };
     };
     reactExports.useEffect(() => {
-      if (bookmark) {
+      if (bookmark && isOpen) {
+        setShowScreenshotInput(false);
+        setShowFaviconInput(false);
+        setSaveError(null);
         setUrl(bookmark.url);
         setTitle(bookmark.title);
         setDescription(bookmark.description || "");
@@ -54551,13 +54597,14 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
         setSelectedTags(currentTags);
         setLocalCreatedTags([]);
       }
-    }, [bookmark]);
+    }, [bookmark, isOpen]);
     const handleSubmit = async (e) => {
       e.preventDefault();
-      if (!bookmark) return;
+      if (!bookmark || isSaving) return;
+      setSaveError(null);
       const requestToken = getRequestToken();
       if (!requestToken) {
-        console.error("CSRF token not found!");
+        setSaveError(t("bookmark.save_error"));
         return;
       }
       const updatedData = {
@@ -54572,20 +54619,27 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
         screenshot,
         favicon
       };
-      const response = await fetch(`/apps/bookmarksmanager/api/v1/bookmarks/${bookmark.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "requesttoken": requestToken
-        },
-        body: JSON.stringify(updatedData)
-      });
-      if (response.ok) {
-        onOpenChange(false);
-        router2.invalidate();
-        setLocalCreatedTags([]);
-      } else {
-        console.error("Failed to update bookmark");
+      setIsSaving(true);
+      try {
+        const response = await fetch(`/apps/bookmarksmanager/api/v1/bookmarks/${bookmark.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "requesttoken": requestToken
+          },
+          body: JSON.stringify(updatedData)
+        });
+        if (response.ok) {
+          onOpenChange(false);
+          router2.invalidate();
+          setLocalCreatedTags([]);
+        } else {
+          setSaveError(t("bookmark.save_error"));
+        }
+      } catch {
+        setSaveError(t("bookmark.network_error"));
+      } finally {
+        setIsSaving(false);
       }
     };
     const handleDelete = async () => {
@@ -54613,18 +54667,19 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
       }
     };
     if (!bookmark) return null;
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Dialog, { open: isOpen, onOpenChange, children: /* @__PURE__ */ jsxRuntimeExports.jsx(DialogContent, { className: "sm:max-w-[425px] w-full max-w-lg max-h-[90vh] flex flex-col p-0 gap-0", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("form", { onSubmit: handleSubmit, className: "flex flex-col h-full overflow-hidden", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogHeader, { className: "p-6 pb-2", children: [
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(Dialog, { open: isOpen, onOpenChange, children: /* @__PURE__ */ jsxRuntimeExports.jsx(DialogContent, { className: "bookmark-dialog w-[calc(100%-2rem)] max-w-3xl max-h-[90dvh] flex flex-col overflow-hidden p-0 gap-0", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("form", { onSubmit: handleSubmit, className: "flex min-h-0 flex-col overflow-hidden", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogHeader, { className: "shrink-0 p-6 pb-4 pr-16", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx(DialogTitle, { children: t("bookmark.edit_title") }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(DialogDescription, { children: t("bookmark.edit_description") })
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex-1 overflow-y-auto p-6 pt-2 gap-4 flex flex-col", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bookmark-form-body min-h-0 flex-1 overflow-y-auto p-6 pt-2 gap-5 flex flex-col", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 items-center gap-4", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "url", className: "text-right", children: t("bookmark.url") }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { id: "url", value: url, onChange: (e) => setUrl(e.target.value), className: "col-span-3" })
         ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "col-span-4 flex justify-center items-center gap-6 min-h-[80px]", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col items-center gap-2", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-2 items-start gap-4", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex min-w-0 flex-col items-start gap-2 rounded-md border p-3", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "edit-screenshot", children: t("bookmark.screenshot") }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative group w-24 h-20 flex-shrink-0", children: [
               screenshot ? /* @__PURE__ */ jsxRuntimeExports.jsx(
                 "img",
@@ -54639,6 +54694,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
                 Button,
                 {
                   type: "button",
+                  "aria-label": t("bookmark.screenshot"),
                   variant: "secondary",
                   size: "sm",
                   className: "h-6 text-xs px-2",
@@ -54646,14 +54702,15 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
                 }
               ) })
             ] }),
-            showScreenshotInput && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex w-full max-w-[200px] items-center gap-1 absolute -bottom-10 z-10 bg-background p-1 border rounded shadow-md left-0", children: [
+            showScreenshotInput && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex w-full min-w-0 items-center gap-2", children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx(
                 Input,
                 {
+                  id: "edit-screenshot",
                   value: screenshot || "",
                   onChange: (e) => setScreenshot(e.target.value),
                   placeholder: t("bookmark.screenshot"),
-                  className: "h-7 text-xs",
+                  className: "min-w-0 flex-1 text-sm",
                   autoFocus: true
                 }
               ),
@@ -54663,21 +54720,23 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
                   type: "button",
                   variant: "ghost",
                   size: "icon",
-                  className: "h-7 w-7",
+                  className: "h-9 w-9 shrink-0",
+                  "aria-label": t("bookmark.screenshot"),
                   onClick: () => setShowScreenshotInput(false),
                   children: /* @__PURE__ */ jsxRuntimeExports.jsx(Cross2Icon, { className: "h-3 w-3" })
                 }
               )
             ] })
           ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col items-center gap-2 relative", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative group w-12 h-12 flex-shrink-0", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex min-w-0 flex-col items-start gap-2 rounded-md border p-3", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "edit-favicon", children: t("bookmark.favicon_url") }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative group w-12 h-20 flex-shrink-0 flex items-center", children: [
               favicon ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "img",
+                FaviconImage,
                 {
                   src: favicon,
                   alt: "Favicon",
-                  className: "w-12 h-12 object-contain rounded-md border p-1"
+                  className: "w-12 h-12"
                 }
               ) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-12 h-12 bg-muted/30 rounded-md flex items-center justify-center text-[10px] text-muted-foreground border border-dashed border-muted-foreground/30 text-center", children: "Icon" }),
               !showFaviconInput && /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -54698,6 +54757,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
                     Button,
                     {
                       type: "button",
+                      "aria-label": t("bookmark.favicon_url"),
                       variant: "secondary",
                       size: "icon",
                       className: "h-6 w-6",
@@ -54710,14 +54770,15 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
                 }
               )
             ] }),
-            showFaviconInput && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex w-[280px] items-center gap-1 absolute -bottom-10 z-10 bg-background p-1 border rounded shadow-md left-1/2 -translate-x-1/2", children: [
+            showFaviconInput && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex w-full min-w-0 items-center gap-2", children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx(
                 Input,
                 {
+                  id: "edit-favicon",
                   value: favicon || "",
                   onChange: (e) => setFavicon(e.target.value),
                   placeholder: t("bookmark.favicon_url"),
-                  className: "h-7 text-xs",
+                  className: "min-w-0 flex-1 text-sm",
                   autoFocus: true
                 }
               ),
@@ -54727,7 +54788,8 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
                   type: "button",
                   variant: "ghost",
                   size: "icon",
-                  className: "h-7 w-7",
+                  className: "h-9 w-9 shrink-0",
+                  "aria-label": t("bookmark.favicon_url"),
                   onClick: () => setShowFaviconInput(false),
                   children: /* @__PURE__ */ jsxRuntimeExports.jsx(Cross2Icon, { className: "h-3 w-3" })
                 }
@@ -54741,7 +54803,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 items-start gap-4", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "description", className: "text-right pt-2", children: t("bookmark.description") }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { id: "description", value: description, onChange: (e) => setDescription(e.target.value), className: "col-span-3" })
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Textarea, { id: "description", value: description, onChange: (e) => setDescription(e.target.value), className: "col-span-3 min-h-[96px]" })
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 items-center gap-4", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "collection", className: "text-right", children: t("bookmark.collection") }),
@@ -54776,12 +54838,13 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
           ) })
         ] })
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogFooter, { className: "p-6 pt-2 bg-background z-10 border-t justify-between sm:justify-between", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs(Button, { type: "button", variant: "destructive", onClick: handleDelete, children: [
+      saveError && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { role: "alert", className: "shrink-0 px-6 pb-4 text-sm", children: saveError }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogFooter, { className: "shrink-0 gap-2 p-6 pt-4 bg-background border-t justify-between sm:justify-between", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(Button, { type: "button", variant: "destructive", onClick: handleDelete, disabled: isSaving, children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx(TrashIcon, { className: "mr-2 h-4 w-4" }),
           t("bookmark.delete")
         ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "submit", children: t("bookmark.save") })
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "submit", disabled: isSaving, children: isSaving ? t("app.saving") : t("bookmark.save") })
       ] })
     ] }) }) });
   }

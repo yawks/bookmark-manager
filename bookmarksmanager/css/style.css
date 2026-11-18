@@ -626,15 +626,6 @@ h1, h2, h3, h4, h5, h6, p {
 .inset-0 {
   inset: 0px;
 }
-.-bottom-10 {
-  bottom: -2.5rem;
-}
-.left-0 {
-  left: 0px;
-}
-.left-1\/2 {
-  left: 50%;
-}
 .left-2 {
   left: 0.5rem;
 }
@@ -655,9 +646,6 @@ h1, h2, h3, h4, h5, h6, p {
 }
 .top-\[50\%\] {
   top: 50%;
-}
-.z-10 {
-  z-index: 10;
 }
 .z-50 {
   z-index: 50;
@@ -779,6 +767,9 @@ h1, h2, h3, h4, h5, h6, p {
 .h-\[var\(--radix-select-trigger-height\)\] {
   height: var(--radix-select-trigger-height);
 }
+.h-auto {
+  height: auto;
+}
 .h-full {
   height: 100%;
 }
@@ -788,14 +779,14 @@ h1, h2, h3, h4, h5, h6, p {
 .max-h-\[--radix-select-content-available-height\] {
   max-height: var(--radix-select-content-available-height);
 }
-.max-h-\[200px\] {
-  max-height: 200px;
-}
 .max-h-\[300px\] {
   max-height: 300px;
 }
-.max-h-\[90vh\] {
-  max-height: 90vh;
+.max-h-\[90dvh\] {
+  max-height: 90dvh;
+}
+.max-h-\[min\(240px\2c var\(--radix-popover-content-available-height\)\)\] {
+  max-height: min(240px, var(--radix-popover-content-available-height));
 }
 .max-h-\[var\(--radix-dropdown-menu-content-available-height\)\] {
   max-height: var(--radix-dropdown-menu-content-available-height);
@@ -811,6 +802,9 @@ h1, h2, h3, h4, h5, h6, p {
 }
 .min-h-\[80px\] {
   min-height: 80px;
+}
+.min-h-\[96px\] {
+  min-height: 96px;
 }
 .min-h-screen {
   min-height: 100vh;
@@ -866,23 +860,29 @@ h1, h2, h3, h4, h5, h6, p {
 .w-64 {
   width: 16rem;
 }
-.w-7 {
-  width: 1.75rem;
-}
 .w-72 {
   width: 18rem;
 }
-.w-\[280px\] {
-  width: 280px;
+.w-8 {
+  width: 2rem;
 }
-.w-\[300px\] {
-  width: 300px;
+.w-9 {
+  width: 2.25rem;
+}
+.w-\[320px\] {
+  width: 320px;
+}
+.w-\[calc\(100\%-2rem\)\] {
+  width: calc(100% - 2rem);
 }
 .w-\[var\(--radix-popover-trigger-width\)\] {
   width: var(--radix-popover-trigger-width);
 }
 .w-full {
   width: 100%;
+}
+.min-w-0 {
+  min-width: 0px;
 }
 .min-w-\[120px\] {
   min-width: 120px;
@@ -893,8 +893,8 @@ h1, h2, h3, h4, h5, h6, p {
 .min-w-\[var\(--radix-select-trigger-width\)\] {
   min-width: var(--radix-select-trigger-width);
 }
-.max-w-\[200px\] {
-  max-width: 200px;
+.max-w-3xl {
+  max-width: 48rem;
 }
 .max-w-lg {
   max-width: 32rem;
@@ -919,10 +919,6 @@ h1, h2, h3, h4, h5, h6, p {
 }
 .origin-\[--radix-select-content-transform-origin\] {
   transform-origin: var(--radix-select-content-transform-origin);
-}
-.-translate-x-1\/2 {
-  --tw-translate-x: -50%;
-  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
 }
 .translate-x-\[-50\%\] {
   --tw-translate-x: -50%;
@@ -1010,6 +1006,9 @@ h1, h2, h3, h4, h5, h6, p {
 .gap-4 {
   gap: 1rem;
 }
+.gap-5 {
+  gap: 1.25rem;
+}
 .gap-6 {
   gap: 1.5rem;
 }
@@ -1051,6 +1050,9 @@ h1, h2, h3, h4, h5, h6, p {
 }
 .overflow-x-hidden {
   overflow-x: hidden;
+}
+.overscroll-contain {
+  overscroll-behavior: contain;
 }
 .whitespace-nowrap {
   white-space: nowrap;
@@ -1137,9 +1139,6 @@ h1, h2, h3, h4, h5, h6, p {
 .bg-transparent {
   background-color: transparent;
 }
-.bg-white\/80 {
-  background-color: rgb(255 255 255 / 0.8);
-}
 .fill-current {
   fill: currentColor;
 }
@@ -1188,6 +1187,10 @@ h1, h2, h3, h4, h5, h6, p {
   padding-left: 1rem;
   padding-right: 1rem;
 }
+.px-6 {
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
 .px-8 {
   padding-left: 2rem;
   padding-right: 2rem;
@@ -1220,8 +1223,8 @@ h1, h2, h3, h4, h5, h6, p {
   padding-top: 1.5rem;
   padding-bottom: 1.5rem;
 }
-.pb-2 {
-  padding-bottom: 0.5rem;
+.pb-4 {
+  padding-bottom: 1rem;
 }
 .pl-2 {
   padding-left: 0.5rem;
@@ -1232,6 +1235,9 @@ h1, h2, h3, h4, h5, h6, p {
 .pr-1 {
   padding-right: 0.25rem;
 }
+.pr-16 {
+  padding-right: 4rem;
+}
 .pr-2 {
   padding-right: 0.5rem;
 }
@@ -1240,6 +1246,9 @@ h1, h2, h3, h4, h5, h6, p {
 }
 .pt-2 {
   padding-top: 0.5rem;
+}
+.pt-4 {
+  padding-top: 1rem;
 }
 .text-left {
   text-align: left;
@@ -1307,10 +1316,6 @@ h1, h2, h3, h4, h5, h6, p {
 .text-foreground {
   color: var(--color-main-text);
 }
-.text-gray-700 {
-  --tw-text-opacity: 1;
-  color: rgb(55 65 81 / var(--tw-text-opacity, 1));
-}
 .text-green-600 {
   --tw-text-opacity: 1;
   color: rgb(22 163 74 / var(--tw-text-opacity, 1));
@@ -1326,10 +1331,6 @@ h1, h2, h3, h4, h5, h6, p {
 }
 .text-primary-foreground {
   color: var(--color-primary-text);
-}
-.text-red-600 {
-  --tw-text-opacity: 1;
-  color: rgb(220 38 38 / var(--tw-text-opacity, 1));
 }
 .text-secondary-foreground {
   color: var(--color-secondary-text);
@@ -1348,11 +1349,6 @@ h1, h2, h3, h4, h5, h6, p {
 }
 .opacity-70 {
   opacity: 0.7;
-}
-.shadow {
-  --tw-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-  --tw-shadow-colored: 0 1px 3px 0 var(--tw-shadow-color), 0 1px 2px -1px var(--tw-shadow-color);
-  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
 }
 .shadow-lg {
   --tw-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
@@ -1423,6 +1419,94 @@ h1, h2, h3, h4, h5, h6, p {
 /* Base styles for Nextcloud application */
 
 /* Specific styles for Nextcloud integration */
+.bookmark-favicon {
+  box-sizing: border-box;
+  padding: 3px;
+  background: #e2e8f0;
+  border: 1px solid #94a3b8;
+}
+
+.bookmark-favicon img {
+  min-width: 0;
+  min-height: 0;
+  /* Outline transparent white artwork; black artwork contrasts with the badge. */
+  filter: drop-shadow(0 0 0.75px #111827);
+}
+
+/* Higher specificity than Nextcloud's global button styles. */
+#app-bookmarksmanager .bookmark-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding: 7px;
+  border-radius: 50%;
+  border: 1px solid var(--color-text-maxcontrast, #64748b);
+  background: var(--color-main-background, #fff);
+  color: var(--color-main-text, #111827);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 35%);
+  opacity: 1;
+}
+
+#app-bookmarksmanager .bookmark-action:hover {
+  background: var(--color-background-hover, #e2e8f0);
+  color: var(--color-main-text, #111827);
+}
+
+#app-bookmarksmanager .bookmark-action:focus-visible {
+  outline: 2px solid var(--color-primary-element, #0082c9);
+  outline-offset: 2px;
+}
+
+#app-bookmarksmanager .bookmark-action-delete {
+  background: #fff1f2;
+  color: #9f1239;
+  border-color: #9f1239;
+}
+
+#app-bookmarksmanager .bookmark-action-delete:hover {
+  background: #ffe4e6;
+  color: #881337;
+}
+
+/* Portalled dialogs live outside the app container and need their own sizing reset. */
+.bookmark-dialog,
+.bookmark-dialog * {
+  box-sizing: border-box;
+}
+
+.bookmark-dialog {
+  background-color: var(--color-main-background, var(--background));
+  color: var(--color-main-text, var(--foreground));
+  border: 1px solid color-mix(in srgb, var(--color-main-text, var(--foreground)) 30%, var(--color-main-background, var(--background)));
+  border-radius: 12px;
+  box-shadow: 0 24px 80px rgb(0 0 0 / 55%);
+}
+
+.bookmark-form-body > * {
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.bookmark-form-body .col-span-3 {
+  min-width: 0;
+}
+
+@media (max-width: 639px) {
+  .bookmark-form-body > .grid-cols-4 {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.5rem;
+  }
+
+  .bookmark-form-body > .grid-cols-4 > * {
+    grid-column: 1;
+    text-align: left;
+  }
+}
 
 .file\:mr-4::file-selector-button {
   margin-right: 1rem;
@@ -1505,9 +1589,8 @@ h1, h2, h3, h4, h5, h6, p {
   background-color: var(--color-primary-element-light);
 }
 
-.hover\:bg-white:hover {
-  --tw-bg-opacity: 1;
-  background-color: rgb(255 255 255 / var(--tw-bg-opacity, 1));
+.hover\:bg-muted:hover {
+  background-color: var(--color-background-dark);
 }
 
 .hover\:text-accent-foreground:hover {
@@ -1737,10 +1820,6 @@ h1, h2, h3, h4, h5, h6, p {
 }
 
 @media (min-width: 640px) {
-
-  .sm\:max-w-\[425px\] {
-    max-width: 425px;
-  }
 
   .sm\:max-w-\[500px\] {
     max-width: 500px;

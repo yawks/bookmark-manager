@@ -2,6 +2,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import React, { useState } from 'react';
 
 import { Bookmark } from '../../types';
+import { FaviconImage } from './FaviconImage';
 import { Pencil2Icon, DragHandleDots2Icon } from '@radix-ui/react-icons';
 import { useLoaderData } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
@@ -56,30 +57,30 @@ const BookmarkCard = ({ bookmark, showCollection = false, onEdit, onDelete, drag
                   type="button"
                   {...dragHandleListeners}
                   onClick={e => e.preventDefault()}
-                  className="bg-white/80 hover:bg-white rounded-full p-1 shadow cursor-grab active:cursor-grabbing"
+                   className="bookmark-action cursor-grab active:cursor-grabbing"
                   tabIndex={-1}
                   title="Déplacer"
                 >
-                  <DragHandleDots2Icon className="w-5 h-5 text-gray-700" />
+                   <DragHandleDots2Icon className="w-5 h-5" />
                 </button>
               )}
               <button
                 type="button"
                 onClick={e => { e.preventDefault(); onEdit(); }}
-                className="bg-white/80 hover:bg-white rounded-full p-1 shadow"
+                 className="bookmark-action"
                 tabIndex={-1}
                 title="Modifier"
               >
-                <Pencil2Icon className="w-5 h-5 text-gray-700" />
+                 <Pencil2Icon className="w-5 h-5" />
               </button>
               <button
                 type="button"
                 onClick={e => { e.preventDefault(); onDelete && onDelete(); }}
-                className="bg-white/80 hover:bg-white rounded-full p-1 shadow"
+                 className="bookmark-action bookmark-action-delete"
                 tabIndex={-1}
                 title="Supprimer"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                 <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -100,12 +101,12 @@ const BookmarkCard = ({ bookmark, showCollection = false, onEdit, onDelete, drag
         </div>
 
         <div className="flex items-center space-x-2 text-xs text-muted-foreground w-full">
-          <img
+          <FaviconImage
             src={bookmark.favicon ? bookmark.favicon : `https://www.google.com/s2/favicons?domain=${domain}&sz=16`}
             alt={`${domain} favicon`}
             width={16}
             height={16}
-            className="rounded"
+            className="h-6 w-6"
           />
           <span>{domain}</span>
           {showCollection && collection && (

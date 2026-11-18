@@ -20,8 +20,10 @@ import { Tag, TagSelector } from '@/components/ui/tag-selector';
 import { useLoaderData, useRouter } from '@tanstack/react-router';
 
 import { Button } from '@/components/ui/button';
+import { FaviconImage } from './FaviconImage';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { t } from '../../lib/l10n';
 
 // Helper to get Nextcloud's request token
@@ -152,6 +154,8 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
   const [showScreenshotInput, setShowScreenshotInput] = useState(false);
   const [favicon, setFavicon] = useState<string | null>(null);
   const [showFaviconInput, setShowFaviconInput] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Merge available tags with locally created tags
   const tagOptions: Tag[] = useMemo(() => {
@@ -192,7 +196,10 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
   };
 
   useEffect(() => {
-    if (bookmark) {
+    if (bookmark && isOpen) {
+      setShowScreenshotInput(false);
+      setShowFaviconInput(false);
+      setSaveError(null);
       setUrl(bookmark.url);
       setTitle(bookmark.title);
       setDescription(bookmark.description || '');
@@ -205,15 +212,16 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
       // Reset local created tags when bookmark changes
       setLocalCreatedTags([]);
     }
-  }, [bookmark]);
+  }, [bookmark, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!bookmark) return;
+    if (!bookmark || isSaving) return;
+    setSaveError(null);
 
     const requestToken = getRequestToken();
     if (!requestToken) {
-      console.error('CSRF token not found!');
+      setSaveError(t('bookmark.save_error'));
       return;
     }
 
@@ -230,22 +238,29 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
       favicon,
     };
 
-    const response = await fetch(`/apps/bookmarksmanager/api/v1/bookmarks/${bookmark.id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'requesttoken': requestToken,
-      },
-      body: JSON.stringify(updatedData),
-    });
+    setIsSaving(true);
+    try {
+      const response = await fetch(`/apps/bookmarksmanager/api/v1/bookmarks/${bookmark.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'requesttoken': requestToken,
+        },
+        body: JSON.stringify(updatedData),
+      });
 
-    if (response.ok) {
-      onOpenChange(false);
-      // Invalidate router after closing to refresh tags in sidebar
-      router.invalidate();
-      setLocalCreatedTags([]);
-    } else {
-      console.error('Failed to update bookmark');
+      if (response.ok) {
+        onOpenChange(false);
+        // Invalidate router after closing to refresh tags in sidebar
+        router.invalidate();
+        setLocalCreatedTags([]);
+      } else {
+        setSaveError(t('bookmark.save_error'));
+      }
+    } catch {
+      setSaveError(t('bookmark.network_error'));
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -282,16 +297,16 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] w-full max-w-lg max-h-[90vh] flex flex-col p-0 gap-0">
-        <form onSubmit={handleSubmit} className="flex flex-col h-full overflow-hidden">
-          <DialogHeader className="p-6 pb-2">
+      <DialogContent className="bookmark-dialog w-[calc(100%-2rem)] max-w-3xl max-h-[90dvh] flex flex-col overflow-hidden p-0 gap-0">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-col overflow-hidden">
+          <DialogHeader className="shrink-0 p-6 pb-4 pr-16">
             <DialogTitle>{t('bookmark.edit_title')}</DialogTitle>
             <DialogDescription>
               {t('bookmark.edit_description')}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto p-6 pt-2 gap-4 flex flex-col">
+          <div className="bookmark-form-body min-h-0 flex-1 overflow-y-auto p-6 pt-2 gap-5 flex flex-col">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="url" className="text-right">
                 {t('bookmark.url')}
@@ -301,9 +316,10 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
 
             {/* Screenshot preview with hover edit */}
             {/* Screenshot & Favicon area */}
-            <div className="col-span-4 flex justify-center items-center gap-6 min-h-[80px]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 items-start gap-4">
               {/* Screenshot */}
-              <div className="flex flex-col items-center gap-2">
+              <div className="flex min-w-0 flex-col items-start gap-2 rounded-md border p-3">
+                <Label htmlFor="edit-screenshot">{t('bookmark.screenshot')}</Label>
                 <div className="relative group w-24 h-20 flex-shrink-0">
                   {screenshot ? (
                     <img
@@ -322,6 +338,7 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer" onClick={() => setShowScreenshotInput(true)}>
                       <Button
                         type="button"
+                        aria-label={t('bookmark.screenshot')}
                         variant="secondary"
                         size="sm"
                         className="h-6 text-xs px-2"
@@ -333,19 +350,21 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
                 </div>
                 {/* Screenshot Input */}
                 {showScreenshotInput && (
-                  <div className="flex w-full max-w-[200px] items-center gap-1 absolute -bottom-10 z-10 bg-background p-1 border rounded shadow-md left-0">
+                  <div className="flex w-full min-w-0 items-center gap-2">
                     <Input
+                      id="edit-screenshot"
                       value={screenshot || ''}
                       onChange={(e) => setScreenshot(e.target.value)}
                       placeholder={t('bookmark.screenshot')}
-                      className="h-7 text-xs"
+                      className="min-w-0 flex-1 text-sm"
                       autoFocus
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7"
+                      className="h-9 w-9 shrink-0"
+                      aria-label={t('bookmark.screenshot')}
                       onClick={() => setShowScreenshotInput(false)}
                     >
                       <Cross2Icon className="h-3 w-3" />
@@ -355,13 +374,14 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
               </div>
 
               {/* Favicon */}
-              <div className="flex flex-col items-center gap-2 relative">
-                <div className="relative group w-12 h-12 flex-shrink-0">
+              <div className="flex min-w-0 flex-col items-start gap-2 rounded-md border p-3">
+                <Label htmlFor="edit-favicon">{t('bookmark.favicon_url')}</Label>
+                <div className="relative group w-12 h-20 flex-shrink-0 flex items-center">
                   {favicon ? (
-                    <img
+                    <FaviconImage
                       src={favicon}
                       alt="Favicon"
-                      className="w-12 h-12 object-contain rounded-md border p-1"
+                      className="w-12 h-12"
                     />
                   ) : (
                     <div className="w-12 h-12 bg-muted/30 rounded-md flex items-center justify-center text-[10px] text-muted-foreground border border-dashed border-muted-foreground/30 text-center">
@@ -385,6 +405,7 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
                     >
                       <Button
                         type="button"
+                        aria-label={t('bookmark.favicon_url')}
                         variant="secondary"
                         size="icon"
                         className="h-6 w-6"
@@ -396,19 +417,21 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
                 </div>
                 {/* Favicon Input */}
                 {showFaviconInput && (
-                  <div className="flex w-[280px] items-center gap-1 absolute -bottom-10 z-10 bg-background p-1 border rounded shadow-md left-1/2 -translate-x-1/2">
+                  <div className="flex w-full min-w-0 items-center gap-2">
                     <Input
+                      id="edit-favicon"
                       value={favicon || ''}
                       onChange={(e) => setFavicon(e.target.value)}
                       placeholder={t('bookmark.favicon_url')}
-                      className="h-7 text-xs"
+                      className="min-w-0 flex-1 text-sm"
                       autoFocus
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7"
+                      className="h-9 w-9 shrink-0"
+                      aria-label={t('bookmark.favicon_url')}
                       onClick={() => setShowFaviconInput(false)}
                     >
                       <Cross2Icon className="h-3 w-3" />
@@ -428,7 +451,7 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
               <Label htmlFor="description" className="text-right pt-2">
                 {t('bookmark.description')}
               </Label>
-              <Input id="description" value={description} onChange={e => setDescription(e.target.value)} className="col-span-3" />
+              <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} className="col-span-3 min-h-[96px]" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="collection" className="text-right">
@@ -470,12 +493,15 @@ export function EditBookmarkForm({ bookmark, isOpen, onOpenChange }: EditBookmar
             </div>
           </div>
 
-          <DialogFooter className="p-6 pt-2 bg-background z-10 border-t justify-between sm:justify-between">
-            <Button type="button" variant="destructive" onClick={handleDelete}>
+          {saveError && (
+            <p role="alert" className="shrink-0 px-6 pb-4 text-sm">{saveError}</p>
+          )}
+          <DialogFooter className="shrink-0 gap-2 p-6 pt-4 bg-background border-t justify-between sm:justify-between">
+            <Button type="button" variant="destructive" onClick={handleDelete} disabled={isSaving}>
               <TrashIcon className="mr-2 h-4 w-4" />
               {t('bookmark.delete')}
             </Button>
-            <Button type="submit">{t('bookmark.save')}</Button>
+            <Button type="submit" disabled={isSaving}>{isSaving ? t('app.saving') : t('bookmark.save')}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

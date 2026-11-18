@@ -28,6 +28,8 @@ export default defineConfig({
     'process.env.NODE_ENV': '"production"'
   },
   build: {
+    // Nextcloud loads the stylesheet separately from the IIFE bundle.
+    cssCodeSplit: false,
     outDir: 'dist',
     emptyOutDir: true,
     minify: false,

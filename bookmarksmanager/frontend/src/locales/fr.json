@@ -16,6 +16,8 @@
       "add_new": "Ajouter un nouveau favori",
       "add_description": "Entrez les détails du favori que vous souhaitez ajouter.",
       "save": "Enregistrer le favori",
+      "save_error": "Impossible d’enregistrer le favori. Vos modifications sont conservées ; veuillez réessayer.",
+      "network_error": "Erreur réseau lors de l’enregistrement. Vérifiez votre connexion et réessayez.",
       "url": "URL",
       "title": "Titre",
       "description": "Description",
